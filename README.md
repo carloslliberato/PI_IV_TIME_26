@@ -5,7 +5,7 @@
 - **Curso:** Engenharia de Software  
 - **Semestre:** 2026/2
 - **Turma:** T1
-- **Grupo:** G28
+- **Grupo:** G26
 - **Professor:** Renata Antonia Tadeu Arantes
 
 ## Integrantes do Grupo
