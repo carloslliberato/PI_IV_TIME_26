@@ -1,0 +1,439 @@
+/* cria a variavel das cores */
+:root{
+  --green-900:#0f503a;
+  --green-800:#166143;
+  --green-700:#1d7651;
+  --green-100:#e8f3ee;
+  --green-050:#f5faf7;
+  --text:#1d2421;
+  --muted:#69746f;
+  --line:#e7ece9;
+  --danger:#cf3e2e;
+  --warning:#efb51f;
+  --bg:#fbfdfc;
+}
+
+/* regras gerais do corpo da página */
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  color:var(--text);
+  background:var(--bg);
+}
+
+.app-shell{
+  min-height:100vh;
+  display:flex;
+}
+
+/* controla o menu lateral, a barra superior, o conteúdo principal e a barra lateral direita */
+.sidebar{
+  width:258px;
+  flex:0 0 258px;
+  background:#fff;
+  border-right:1px solid var(--line);
+  display:flex;
+  flex-direction:column;
+  padding:28px 20px 20px;
+}
+
+/* controla o logo da aplicação, com o ícone, o nome e o slogan */
+.brand{
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  padding:0 4px 30px;
+}
+.brand-mark{
+  width:40px;height:40px;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--green-700);
+  font-size:39px;
+  line-height:1;
+}
+.brand-name{
+  font-size:28px;
+  font-weight:800;
+  letter-spacing:-.7px;
+  color:var(--green-800);
+  line-height:1.05;
+}
+.brand-tagline{
+  color:#4f6c5f;
+  font-size:12px;
+  line-height:1.35;
+  margin-top:3px;
+}
+
+.sidebar-nav{display:flex;flex-direction:column;gap:7px}
+.nav-item{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:13px 14px;
+  border-radius:11px;
+  text-decoration:none;
+  color:#64706b;
+  font-size:16px;
+  transition:.2s;
+}
+
+/* controla os icones do menu lateral, o tamanho e a largura */
+.nav-item i{font-size:20px; width:22px}
+.nav-item:hover{background:#f2f7f4;color:var(--green-800)}
+.nav-item.active{
+  background:#e9f3ef;
+  color:var(--green-900);
+  font-weight:700;
+  position:relative;
+}
+.nav-item.active::before{
+  content:"";
+  position:absolute;
+  left:-20px;
+  top:0;
+  bottom:0;
+  width:4px;
+  background:var(--green-800);
+  border-radius:0 4px 4px 0;
+}
+
+.sidebar-bottom{margin-top:auto}
+.mission-card{
+  background:linear-gradient(180deg,#eef7f2,#f7fbf9);
+  border:1px solid #e2eee8;
+  border-radius:13px;
+  padding:18px 16px;
+}
+.mission-icon{font-size:31px;color:var(--green-700)}
+.mission-card strong{
+  display:block;color:var(--green-800);font-size:14px;line-height:1.25;
+}
+.mission-card p{
+  margin:12px 0 0;
+  color:#63736b;
+  font-size:13px;
+  line-height:1.4;
+}
+
+.main{min-width:0;flex:1}
+
+/* controla o topbar, com a altura, o padding, o alinhamento dos itens e a cor de fundo */
+.topbar{
+  height:94px;
+  padding:17px 34px;
+  display:flex;
+  align-items:center;
+  gap:22px;
+  border-bottom:1px solid var(--line);
+  background:rgba(255,255,255,.96);
+  position:sticky; top:0; z-index:1000;
+}
+
+.municipality-wrap{width:265px}
+.eyebrow{
+  display:block;
+  font-size:12px;color:#6e7975;
+  margin:0 0 4px 12px;
+}
+.select-shell{
+  height:44px;
+  border:1px solid #dde6e1;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  background:#fff;
+  padding:0 12px;
+  box-shadow:0 2px 8px rgba(22,66,46,.03);
+}
+.select-shell i{font-size:18px;color:#34423c}
+.select-shell .form-select{
+  border:0!important;
+  box-shadow:none!important;
+  font-weight:650;
+  color:#27332e;
+  background-color:transparent;
+  cursor:pointer;
+}
+
+/* parte da busca, com o ícone de lupa, a caixa de texto e o placeholder */
+.search-shell{
+  height:44px;
+  border:1px solid #dde6e1;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  flex:1;
+  max-width:560px;
+  padding:0 14px;
+  background:#fff;
+}
+.search-shell i{font-size:20px;color:#4f5f58}
+.search-shell input{
+  width:100%;border:0;outline:0;
+  font-size:15px;
+  margin-left:10px;
+  color:#2b3732;
+}
+.search-shell input::placeholder{color:#89928e}
+
+.top-actions{margin-left:auto;display:flex;align-items:center;gap:18px}
+.icon-btn{
+  position:relative;
+  width:42px;height:42px;
+  display:flex;align-items:center;justify-content:center;
+  border:0;background:transparent;color:#3e4a45;
+  font-size:22px;
+}
+.notification-btn span{
+  position:absolute;
+  top:1px;right:0;
+  min-width:18px;height:18px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:50%;
+  background:#d73c2c;color:#fff;
+  font-size:10px;font-weight:700;
+  border:2px solid #fff;
+}
+.profile{display:flex;align-items:center;gap:10px}
+.avatar{
+  width:42px;height:42px;border-radius:50%;
+  background:#5c7f71;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;
+}
+.profile-copy{display:flex;flex-direction:column}
+.profile-copy strong{font-size:14px;line-height:1.2}
+.profile-copy small{font-size:12px;color:#6e7874;margin-top:2px}
+.profile > i{color:#4e5b55;font-size:16px;margin-left:6px}
+
+/* define espaçamento da página principal, entre a barra superior e o conteúdo */
+.content{padding:22px 34px 28px}
+.page-head{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  gap:20px;margin-bottom:18px;
+}
+.page-head h1{
+  font-size:29px;font-weight:800;letter-spacing:-.65px;
+  margin:0;color:#1e2522;
+}
+.page-head p{margin:6px 0 0;color:#68746f;font-size:15px}
+.btn-register{
+  border-radius:9px;
+  padding:12px 18px;
+  font-weight:700;
+  background:var(--green-800);
+  border-color:var(--green-800);
+}
+.btn-register:hover{background:var(--green-900);border-color:var(--green-900)}
+
+.workspace{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 350px;
+  gap:24px;
+}
+
+/* define o tamanho do painel do mapa, com altura mínima, borda arredondada, overflow escondido, cor de fundo e sombra */
+.map-panel{
+  min-height:calc(100vh - 185px);
+  position:relative;
+  border-radius:16px;
+  overflow:hidden;
+  border:1px solid #dde6e1;
+  background:#eef3f0;
+  box-shadow:0 4px 20px rgba(28,61,46,.05);
+}
+#map{
+  width:100%;
+  height:100%;
+  min-height:720px;
+}
+
+.map-layer{
+  position:absolute;
+  z-index:500;
+  top:18px;right:18px;
+  width:215px;
+  border:0!important;
+  border-radius:13px;
+  background:rgba(255,255,255,.96);
+}
+.map-layer .card-body{padding:16px}
+.plain-btn{border:0;background:transparent;color:#25332d;padding:0}
+.layer-row{
+  display:flex;align-items:center;gap:9px;
+  font-size:14px;color:#303b37;
+  margin:9px 0;
+  cursor:pointer;
+}
+.layer-row input{display:none}
+.check-custom{
+  width:18px;height:18px;border:1px solid #cbd7d1;
+  border-radius:4px;display:inline-flex;align-items:center;justify-content:center;
+  background:#fff;
+}
+.layer-row input:checked + .check-custom{
+  background:var(--green-800);border-color:var(--green-800);
+}
+.layer-row input:checked + .check-custom::after{
+  content:"✓";color:#fff;font-size:12px;font-weight:800;
+}
+.map-layer hr{margin:13px 0;border-color:#edf1ef}
+.legend-title{font-size:13px;font-weight:800;margin-bottom:7px}
+.legend-item{
+  display:flex;align-items:center;gap:10px;
+  margin:7px 0;font-size:13px;color:#54605b;
+}
+.legend-dot{
+  width:29px;height:29px;border-radius:50%;
+  color:#fff;display:inline-flex;align-items:center;justify-content:center;
+  box-shadow:0 1px 4px rgba(0,0,0,.14);
+}
+.legend-dot.low{background:#45a83d}
+.legend-dot.medium{background:#eab522}
+.legend-dot.high{background:#d94836}
+.legend-dot.critical{background:#8d2018}
+
+.map-toast{
+  position:absolute;z-index:500;right:18px;bottom:18px;
+  background:rgba(247,250,249,.96);
+  border-radius:12px;
+  padding:14px 16px;
+  display:flex;gap:10px;align-items:center;
+  color:#5d6964;font-size:13px;
+  max-width:285px;
+}
+.map-toast i{color:var(--green-800);font-size:18px}
+
+.right-rail{min-width:0}
+.stats-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-bottom:25px;
+}
+
+/* controla os cards de estatísticas, com borda arredondada, sombra, padding e cores diferentes para cada tipo de card */
+.stat-card{
+  border-radius:13px;
+  border:1px solid #e7eeea;
+  background:#fff;
+  padding:14px 15px;
+  box-shadow:0 2px 12px rgba(25,61,45,.03);
+}
+.stat-card.primary{
+  grid-row:span 2;
+  background:#eff7f3;
+  border-color:#e1ece6;
+}
+.stat-card .stat-icon{
+  width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;margin-bottom:7px;
+}
+.primary .stat-icon{background:#dff0e8;color:var(--green-800)}
+.danger .stat-icon{background:#fee6e2;color:#c43d2f}
+.warning .stat-icon{background:#fff1ca;color:#d89e00}
+.stat-value{font-size:24px;font-weight:800;line-height:1}
+.stat-label{font-size:12px;color:#69756f;margin-top:5px}
+.danger .stat-value{color:#be392c}
+.warning .stat-value{color:#d59b00}
+
+.list-heading{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:13px;
+}
+.list-heading h2{font-size:18px;font-weight:800;margin:0}
+.link-btn{
+  border:0;background:transparent;color:#267652;
+  font-weight:700;font-size:13px;
+}
+
+.tree-list{display:flex;flex-direction:column;gap:9px}
+
+/* controla os cards das árvores, com borda arredondada, sombra, padding, espaçamento entre os elementos e efeito de hover */
+.tree-card{
+  background:#fff;border:1px solid #e8edeb;border-radius:11px;
+  padding:10px;display:flex;gap:10px;cursor:pointer;
+  transition:.18s;
+}
+.tree-card:hover{
+  border-color:#cbded4;
+  box-shadow:0 4px 14px rgba(31,77,57,.06);
+  transform:translateY(-1px);
+}
+.tree-photo{
+  width:68px;height:68px;border-radius:9px;object-fit:cover;background:#eef3f0;
+  flex:0 0 68px;
+}
+.tree-info{min-width:0;flex:1}
+.tree-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.tree-name{font-weight:800;font-size:14px;line-height:1.15;margin:0}
+.tree-badge{
+  font-size:11px;font-weight:700;border-radius:999px;padding:4px 7px;white-space:nowrap;
+}
+.badge-low{background:#e2f4df;color:#2f8732}
+.badge-medium{background:#fff2c7;color:#ad7a00}
+.badge-high{background:#ffe5e1;color:#bb3f31}
+.badge-critical{background:#f8d8d4;color:#8d2018}
+.tree-meta{font-size:11px;color:#6f7a75;margin-top:4px}
+.tree-address{font-size:11px;color:#747e79;margin-top:4px;line-height:1.35}
+.tree-distance{font-size:11px;color:#818b86;margin-top:3px}
+
+.leaflet-popup-content-wrapper{
+  border-radius:13px;
+  box-shadow:0 7px 28px rgba(20,50,38,.16);
+}
+.popup-card{min-width:220px}
+.popup-id{font-size:12px;color:#5e6d66}
+.popup-name{font-size:16px;font-weight:800;margin-top:5px}
+.popup-species{font-style:italic;color:#64716b;font-size:12px;margin-top:2px}
+.popup-address{font-size:12px;color:#5d6863;margin-top:10px;line-height:1.45}
+.popup-link{margin-top:9px;color:#1a704c;font-weight:800;font-size:12px;cursor:pointer}
+
+.tree-pin{
+  width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;border:3px solid #fff;
+  box-shadow:0 3px 9px rgba(0,0,0,.2);
+  font-size:14px;
+}
+.tree-pin.low{background:#45a83d}
+.tree-pin.medium{background:#e8b71e}
+.tree-pin.high{background:#d94836}
+.tree-pin.critical{background:#8d2018}
+
+.modal-content{border-radius:15px}
+.modal-header{padding:19px 22px;border-bottom:1px solid var(--line)}
+.modal-body{padding:22px}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--line)}
+
+/* controla a responsividade da página, com ajustes de largura, exibição e alinhamento dos elementos em diferentes tamanhos de tela */
+@media(max-width:1150px){
+  .sidebar{width:220px;flex-basis:220px}
+  .workspace{grid-template-columns:minmax(0,1fr) 310px}
+  .topbar{padding-left:22px;padding-right:22px}
+  .content{padding-left:22px;padding-right:22px}
+}
+@media(max-width:900px){
+  .sidebar{display:none}
+  .workspace{grid-template-columns:1fr}
+  .map-panel{min-height:620px}
+  #map{min-height:620px}
+  .right-rail{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  .stats-grid{margin-bottom:0}
+}
+@media(max-width:680px){
+  .topbar{height:auto;flex-wrap:wrap;padding:13px 15px}
+  .municipality-wrap{width:100%}
+  .search-shell{max-width:none;order:3;width:100%}
+  .top-actions{margin-left:0}
+  .profile-copy{display:none}
+  .content{padding:15px}
+  .page-head{align-items:flex-start;flex-direction:column}
+  .page-head h1{font-size:24px}
+  .right-rail{display:block}
+  .stats-grid{margin-top:16px}
+  .map-layer{right:10px;top:10px;width:200px}
+}
