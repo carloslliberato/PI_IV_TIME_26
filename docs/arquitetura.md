@@ -6,7 +6,7 @@
     - model/ Representa os objetos principais do domínio, como uma árvore ou uma ocorrência
     - dto/ Define os dados usados para receber requisições e devolver respostas pela API
 
-# 2. Como compilar e executar os arquivos Java
+# 2. Como compilar os arquivos Java
 
 Os arquivos Java estão organizados da seguinte forma:
 
@@ -27,7 +27,7 @@ PI_IV_TIME_26/
 - `Main.java`: contém o método `main`, responsável por iniciar a aplicação e configurar os parâmetros da conexão.
 - `service/ConexaoServidor.java`: implementa o estabelecimento e o encerramento da conexão com o servidor.
 
-### Compilação
+-> Compilação
 
 Abra o terminal na pasta `backend` e execute:
 
@@ -39,7 +39,25 @@ O comando compila os dois arquivos Java e grava os arquivos compilados no diret�
 
 Caso existam erros de compilação, eles deverão ser corrigidos antes de executar a aplicação.
 
-### Execução
+##Para compilar todos os arquivos Java do backend de uma vez, abra o terminal na pasta `backend` e execute:
+
+```powershell
+javac -d bin (Get-ChildItem -Recurse -Filter *.java src).FullName
+```
+
+Esse comando procura todos os arquivos `.java` dentro da pasta `src` e de suas subpastas, compilando-os de uma só vez. Os arquivos compilados (`.class`) serão salvos na pasta `bin`, respeitando a organização dos pacotes definidos no código.
+
+Após a compilação, execute a aplicação com:
+
+```powershell
+java -cp bin backend.src.Main
+```
+
+Sempre que houver alterações nos arquivos `.java`, é necessário compilar novamente antes de executar a aplicação.
+
+A pasta `bin` contém apenas os arquivos gerados durante a compilação e não precisa ser enviada ao GitHub. Os arquivos `.class` também devem ser ignorados pelo `.gitignore`.
+
+-> Execução
 
 Ainda na pasta `backend`, execute:
 

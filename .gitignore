@@ -1,0 +1,6 @@
+
+# Arquivos compilados do Java
+*.class
+
+# Pasta de compilação do backend
+backend/bin/
