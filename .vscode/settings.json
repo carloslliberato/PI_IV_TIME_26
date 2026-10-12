@@ -1,0 +1,3 @@
+{
+    "java.jdt.ls.vmargs": "-Xmx3000m -XX:+UseParallelGC"
+}
