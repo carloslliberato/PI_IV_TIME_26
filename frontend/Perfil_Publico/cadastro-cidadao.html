@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arboriza | Cadastro do cidadão</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="cadastro-cidadao.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand brand-link" href="index.html" aria-label="Arboriza - página inicial">
+      <div class="brand-mark"><i class="bi bi-tree-fill"></i></div>
+      <div><div class="brand-name">Arboriza</div><div class="brand-tagline">Cidades mais verdes,<br>vidas melhores</div></div>
+    </a>
+    <nav class="sidebar-nav" aria-label="Menu público">
+      <a class="nav-item" href="index.html#arvores"><i class="bi bi-tree"></i><span>Árvores</span></a>
+      <a class="nav-item" href="index.html#ocorrencias"><i class="bi bi-exclamation-triangle"></i><span>Ocorrências</span></a>
+      <a class="nav-item active" href="cadastro-cidadao.html" aria-current="page"><i class="bi bi-person-plus"></i><span>Faça seu cadastro</span></a>
+      <a class="nav-item" href="abrir-chamado.html" id="navCall"><i class="bi bi-megaphone"></i><span>Abrir chamado</span></a>
+    </nav>
+    <div class="sidebar-bottom"><div class="mission-card"><div class="mission-icon"><i class="bi bi-leaf-fill"></i></div><strong>Juntos por<br>cidades mais verdes</strong><p>Gestão, prevenção<br>e qualidade de vida.</p></div></div>
+  </aside>
+
+  <main class="main citizen-main">
+    <section class="citizen-content">
+      <div class="citizen-page-heading">
+        <div>
+          <span class="citizen-eyebrow"><i class="bi bi-globe2 me-2"></i>PORTAL PÚBLICO</span>
+          <h1>Faça seu cadastro</h1>
+          <p>Receba informações sobre a arborização urbana do município que importa para você.</p>
+        </div>
+        <div class="citizen-heading-icon"><i class="bi bi-person-vcard"></i></div>
+      </div>
+
+      <div class="citizen-form-card">
+        <div class="citizen-form-intro">
+          <div class="citizen-intro-icon"><i class="bi bi-person-plus-fill"></i></div>
+          <div><h2>Seus dados</h2><p>Preencha os campos abaixo para personalizar sua experiência no Arboriza.</p></div>
+        </div>
+
+        <form id="citizenSignupForm" novalidate>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label" for="citizenName">Nome completo <span>*</span></label>
+              <input class="form-control" id="citizenName" name="nome" type="text" autocomplete="name" placeholder="Digite seu nome completo" required minlength="3">
+              <div class="invalid-feedback">Informe seu nome completo.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="citizenEmail">E-mail <span>*</span></label>
+              <input class="form-control" id="citizenEmail" name="email" type="email" autocomplete="email" placeholder="voce@exemplo.com" required>
+              <div class="invalid-feedback">Informe um e-mail válido.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="citizenPhone">Telefone <span>*</span></label>
+              <input class="form-control" id="citizenPhone" name="telefone" type="tel" autocomplete="tel" placeholder="(00) 00000-0000" required minlength="10">
+              <div class="invalid-feedback">Informe um telefone para contato.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="citizenPassword">Criar senha <span>*</span></label>
+              <input class="form-control" id="citizenPassword" name="senha" type="password" autocomplete="new-password" placeholder="Mínimo de 8 caracteres" required minlength="8" aria-describedby="citizenPasswordHelp">
+              <div class="form-text" id="citizenPasswordHelp">Use pelo menos 8 caracteres.</div>
+              <div class="invalid-feedback">A senha deve ter pelo menos 8 caracteres.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="citizenPasswordConfirm">Confirmar senha <span>*</span></label>
+              <input class="form-control" id="citizenPasswordConfirm" name="confirmarSenha" type="password" autocomplete="new-password" placeholder="Digite a senha novamente" required minlength="8">
+              <div class="invalid-feedback" id="citizenPasswordConfirmFeedback">Confirme sua senha.</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="citizenMunicipality">Município de interesse <span>*</span></label>
+              <select class="form-select" id="citizenMunicipality" name="municipio" required>
+                <option value="" selected disabled>Selecione o município</option>
+                <option value="campinas">Campinas - SP</option>
+                <option value="hortolandia">Hortolândia - SP</option>
+                <option value="sumare">Sumaré - SP</option>
+                <option value="outro">Outro município</option>
+              </select>
+              <div class="invalid-feedback">Selecione um município de interesse.</div>
+            </div>
+          </div>
+
+          <div class="notification-preference-box">
+            <label class="notification-toggle" for="wantsNotifications">
+              <span class="notification-toggle-icon"><i class="bi bi-bell-fill"></i></span>
+              <span class="notification-toggle-copy"><strong>Quero receber notificações</strong><small>Escolha se deseja receber novidades e avisos sobre a arborização.</small></span>
+              <input class="form-check-input" type="checkbox" role="switch" id="wantsNotifications" name="receberNotificacoes">
+            </label>
+            <div id="notificationPreferences" class="notification-preferences d-none">
+              <div class="preferences-heading"><strong>Preferências de notificações</strong><span>Selecione uma ou mais opções</span></div>
+              <div class="preference-options">
+                <label class="preference-option"><input class="form-check-input" type="checkbox" name="preferencias" value="arvores-risco"><span><i class="bi bi-exclamation-triangle"></i>Árvores em risco</span></label>
+                <label class="preference-option"><input class="form-check-input" type="checkbox" name="preferencias" value="alertas-meteorologicos"><span><i class="bi bi-cloud-lightning-rain"></i>Alertas meteorológicos</span></label>
+                <label class="preference-option"><input class="form-check-input" type="checkbox" name="preferencias" value="podas-programadas"><span><i class="bi bi-scissors"></i>Podas programadas</span></label>
+                <label class="preference-option"><input class="form-check-input" type="checkbox" name="preferencias" value="floracao"><span><i class="bi bi-flower1"></i>Floração</span></label>
+                <label class="preference-option"><input class="form-check-input" type="checkbox" name="preferencias" value="frutificacao"><span><i class="bi bi-apple"></i>Frutificação</span></label>
+              </div>
+              <p class="preference-hint d-none" id="preferencesHint">Selecione pelo menos uma preferência ou desative as notificações.</p>
+            </div>
+          </div>
+
+          <div class="citizen-privacy-note"><i class="bi bi-shield-check"></i><span>Seus dados serão utilizados para personalizar sua experiência no portal público do Arboriza.</span></div>
+          <div class="citizen-form-actions">
+            <a class="btn-cancel" href="index.html"><i class="bi bi-arrow-left me-2"></i>Voltar ao mapa</a>
+            <button class="btn-citizen-submit" type="submit">Concluir cadastro <i class="bi bi-check2-circle ms-2"></i></button>
+          </div>
+          <p class="citizen-login-note">Já tem cadastro? <a href="../Login/login.html">Fazer login</a></p>
+        </form>
+      </div>
+      <p class="citizen-footnote">Arboriza · Cidades mais verdes, vidas melhores.</p>
+    </section>
+  </main>
+</div>
+<div class="toast-container position-fixed bottom-0 end-0 p-3"><div id="citizenToast" class="toast border-0" role="status" aria-live="polite" aria-atomic="true"><div class="toast-header"><i class="bi bi-check-circle-fill text-success me-2"></i><strong class="me-auto">Arboriza</strong><button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Fechar"></button></div><div class="toast-body">Cadastro validado no modo demonstrativo. A integração com o back-end será feita posteriormente.</div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="cadastro-cidadao.js"></script>
+</body>
+</html>

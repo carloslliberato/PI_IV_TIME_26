@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arboriza | Cadastro de funcionário</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="cadastro.css">
+</head>
+<body>
+  <main class="register-page">
+    <a class="back-link" href="login.html"><i class="bi bi-arrow-left"></i> Voltar para o login</a>
+
+    <section class="register-card" aria-label="Cadastro de funcionário municipal">
+      <aside class="brand-panel">
+        <div class="brand-lockup">
+          <div class="brand-icon"><i class="bi bi-tree-fill"></i><span class="leaf leaf-one"></span><span class="leaf leaf-two"></span></div>
+          <div class="brand-name">arboriza</div>
+          <p class="brand-subtitle">GESTÃO PREVENTIVA DA<br>ARBORIZAÇÃO URBANA</p>
+        </div>
+        <div class="brand-message">
+          <span class="message-icon"><i class="bi bi-leaf-fill"></i></span>
+          <h2>Cuidar da cidade<br>começa com você.</h2>
+          <p>Cadastre-se para solicitar acesso à gestão municipal da arborização urbana.</p>
+        </div>
+        <div class="decor decor-one"></div><div class="decor decor-two"></div><div class="decor decor-three"></div>
+        <div class="brand-footer"><i class="bi bi-geo-alt"></i> Mapeamento <span>•</span> Prevenção <span>•</span> Cuidado</div>
+      </aside>
+
+      <section class="form-panel">
+        <div class="form-content">
+          <div class="mobile-brand"><i class="bi bi-tree-fill"></i><span>arboriza</span></div>
+          <span class="eyebrow">ACESSO DA PREFEITURA</span>
+          <h1>Faça seu cadastro</h1>
+          <p class="intro">Preencha seus dados profissionais para solicitar acesso à plataforma.</p>
+
+          <form id="registerForm" novalidate>
+            <div class="field-group">
+              <label for="nome">Nome completo</label>
+              <div class="input-wrap"><i class="bi bi-person"></i><input id="nome" name="nome" type="text" placeholder="Seu nome completo" autocomplete="name" required minlength="3"></div>
+              <small class="field-error" id="nomeError"></small>
+            </div>
+
+            <div class="form-row">
+              <div class="field-group">
+                <label for="telefone">Telefone</label>
+                <div class="input-wrap"><i class="bi bi-telephone"></i><input id="telefone" name="telefone" type="tel" placeholder="(00) 00000-0000" autocomplete="tel" required></div>
+                <small class="field-error" id="telefoneError"></small>
+              </div>
+              <div class="field-group">
+                <label for="email">E-mail institucional</label>
+                <div class="input-wrap"><i class="bi bi-envelope"></i><input id="email" name="email" type="email" placeholder="nome@prefeitura.sp.gov.br" autocomplete="email" required></div>
+                <small class="field-error" id="emailError"></small>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field-group">
+                <label for="municipio">Município de gestão</label>
+                <div class="select-wrap"><i class="bi bi-geo-alt"></i><select id="municipio" name="municipio" required>
+                  <option value="">Selecione o município</option>
+                  <option>Campinas - SP</option>
+                  <option>Hortolândia - SP</option>
+                  <option>Sumaré - SP</option>
+                  <option>Outro município</option>
+                </select></div>
+                <small class="field-error" id="municipioError"></small>
+              </div>
+              <div class="field-group">
+                <label for="setor">Secretaria ou setor</label>
+                <div class="select-wrap"><i class="bi bi-building"></i><select id="setor" name="setor" required>
+                  <option value="">Selecione a secretaria ou setor</option>
+                  <option value="Secretaria do Meio Ambiente">Secretaria do Meio Ambiente</option>
+                  <option value="Departamento de Arborização Urbana">Departamento de Arborização Urbana</option>
+                  <option value="Departamento de Parques e Jardins">Departamento de Parques e Jardins</option>
+                  <option value="Secretaria de Serviços Públicos">Secretaria de Serviços Públicos</option>
+                  <option value="Defesa Civil">Defesa Civil</option>
+                  <option value="Outro">Outro</option>
+                </select></div>
+                <small class="field-error" id="setorError"></small>
+                <div class="field-group d-none" id="outroSetorGroup">
+                  <label for="outroSetor">Informe o nome do setor</label>
+                  <div class="input-wrap"><i class="bi bi-pencil-square"></i><input id="outroSetor" name="outroSetor" type="text" placeholder="Nome da secretaria ou setor"></div>
+                  <small class="field-error" id="outroSetorError"></small>
+                </div>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="cargo">Cargo ou função</label>
+              <div class="input-wrap"><i class="bi bi-person-badge"></i><input id="cargo" name="cargo" type="text" placeholder="Ex.: técnico ambiental, engenheiro, gestor" required></div>
+              <small class="field-error" id="cargoError"></small>
+            </div>
+
+            <div class="form-row">
+              <div class="field-group">
+                <label for="senha">Criar senha</label>
+                <div class="input-wrap"><i class="bi bi-lock"></i><input id="senha" name="senha" type="password" placeholder="Mínimo de 8 caracteres" autocomplete="new-password" required minlength="8"><button class="password-toggle" id="togglePassword" type="button" aria-label="Mostrar senha"><i class="bi bi-eye"></i></button></div>
+                <small class="field-error" id="senhaError"></small>
+              </div>
+              <div class="field-group">
+                <label for="confirmarSenha">Confirmar senha</label>
+                <div class="input-wrap"><i class="bi bi-shield-lock"></i><input id="confirmarSenha" name="confirmarSenha" type="password" placeholder="Digite a senha novamente" autocomplete="new-password" required minlength="8"></div>
+                <small class="field-error" id="confirmarSenhaError"></small>
+              </div>
+            </div>
+
+            <label class="consent-line"><input id="declaracao" type="checkbox" required><span>Declaro que sou funcionário(a) ou colaborador(a) autorizado(a) do município informado e que os dados são verdadeiros.</span></label>
+            <small class="field-error" id="declaracaoError"></small>
+
+            <button class="submit-button" type="submit">Solicitar cadastro <i class="bi bi-arrow-right"></i></button>
+            <div class="form-message" id="formMessage" role="status" aria-live="polite"></div>
+          </form>
+
+          <div class="signup-line">Já tem uma conta? <a href="login.html">Fazer login</a></div>
+          <div class="secure-note"><i class="bi bi-shield-check"></i> O acesso profissional deve ser validado pela prefeitura.</div>
+        </div>
+      </section>
+    </section>
+    <footer class="page-footer">© Arboriza · Gestão preventiva da arborização urbana</footer>
+  </main>
+  <script src="cadastro.js"></script>
+</body>
+</html>

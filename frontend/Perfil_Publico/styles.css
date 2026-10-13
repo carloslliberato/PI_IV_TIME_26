@@ -437,3 +437,148 @@ body{
   .stats-grid{margin-top:16px}
   .map-layer{right:10px;top:10px;width:200px}
 }
+
+
+/* Portal público: mantém a identidade visual do layout original */
+.public-top-actions{margin-left:auto;white-space:nowrap}
+.login-link{display:inline-flex;align-items:center;gap:8px;color:var(--green-800);text-decoration:none;font-weight:750;padding:10px 12px;border-radius:9px;border:1px solid #dce9e2;background:#f7fbf8;transition:.2s}
+.login-link:hover{background:#e9f3ef;color:var(--green-900)}
+.public-filter-wrap{position:relative;flex:0 0 auto}
+.btn-filter{height:44px;display:flex;align-items:center;gap:9px;padding:0 14px;border:1px solid #dde6e1;border-radius:10px;background:#fff;color:#2b3732;font-weight:650;white-space:nowrap}
+.btn-filter:hover,.btn-filter[aria-expanded="true"]{border-color:#b8d2c4;background:#f5faf7;color:var(--green-800)}
+.filter-chevron{font-size:12px}
+.public-filters{position:absolute;top:calc(100% + 10px);right:0;width:310px;z-index:1200;border:1px solid #e0e9e3;border-radius:13px;background:#fff}
+.public-filters .card-body{padding:17px}
+.filter-panel-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.public-filter-check{display:flex;align-items:flex-start;gap:9px;margin-top:12px;color:#34433b;font-size:13px;cursor:pointer}
+.public-filter-check input{accent-color:var(--green-800);margin-top:3px}
+.public-view-label{display:inline-flex;align-items:center;color:var(--green-800);background:#eaf4ee;padding:11px 15px;border-radius:10px;font-size:14px;font-weight:700}
+.public-info-card{display:flex;gap:12px;align-items:flex-start;padding:16px;margin-bottom:22px;border:1px solid #e1ece6;border-radius:13px;background:linear-gradient(180deg,#eff7f3,#fbfdfc)}
+.public-info-icon{width:38px;height:38px;flex:0 0 38px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#dff0e8;color:var(--green-800);font-size:18px}
+.public-info-card strong{color:var(--green-800);font-size:14px}.public-info-card p{margin:5px 0 0;color:#63736b;font-size:12px;line-height:1.45}
+@media(max-width:1150px){.topbar{gap:12px}.municipality-wrap{width:230px}.search-shell{min-width:150px}}
+@media(max-width:850px){.topbar{height:auto;flex-wrap:wrap}.municipality-wrap{width:calc(50% - 8px)}.search-shell{order:3;max-width:none;flex-basis:100%}.public-filter-wrap{order:4}.top-actions{order:5}}
+@media(max-width:680px){.municipality-wrap{width:100%}.public-filters{position:fixed;top:150px;left:15px;right:15px;width:auto}}
+
+/* ===== Ajuste final: alinhamento da top bar do perfil público ===== */
+.topbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  height: auto;
+  min-height: 94px;
+  padding: 20px 34px;
+}
+
+.municipality-wrap {
+  width: 265px;
+  flex: 0 0 265px;
+  margin: 0;
+}
+
+/* Mantém a legenda do município acima do seletor e alinha os campos */
+.municipality-wrap .eyebrow {
+  margin: 0 0 4px 12px;
+  line-height: 14px;
+}
+
+.select-shell,
+.search-shell,
+.btn-filter,
+.login-link {
+  height: 44px;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.search-shell {
+  align-self: flex-end;
+  min-width: 0;
+  flex: 1 1 auto;
+  max-width: none;
+}
+
+.public-filter-wrap {
+  align-self: flex-end;
+  flex: 0 0 auto;
+}
+
+.public-top-actions {
+  align-self: flex-end;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.login-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 1150px) {
+  .topbar {
+    gap: 12px;
+    padding-left: 22px;
+    padding-right: 22px;
+  }
+
+  .municipality-wrap {
+    width: 230px;
+    flex-basis: 230px;
+  }
+}
+
+@media (max-width: 850px) {
+  .topbar {
+    height: auto;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .municipality-wrap {
+    width: calc(50% - 6px);
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .search-shell {
+    order: 3;
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .public-filter-wrap,
+  .public-top-actions {
+    align-self: center;
+  }
+
+  .public-top-actions {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 680px) {
+  .topbar {
+    padding: 13px 15px;
+    align-items: stretch;
+  }
+
+  .municipality-wrap {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .search-shell {
+    order: 3;
+    width: 100%;
+  }
+
+  .public-filter-wrap {
+    order: 4;
+  }
+
+  .public-top-actions {
+    order: 5;
+    margin-left: auto;
+  }
+}
