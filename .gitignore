@@ -1,1 +1,7 @@
+# Arquivos compilados do Java e VS Code
+bin/
+*.class
 
+# Arquivos temporários do Gradle
+.gradle/
+build/

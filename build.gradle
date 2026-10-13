@@ -1,0 +1,77 @@
+// Configurações que valem tanto para o 'servidor' quanto para o 'backend'
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'application'
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        // Driver do MongoDB disponível para o projeto inteiro
+        implementation 'org.mongodb:mongodb-driver-sync:5.2.0'
+        implementation 'org.slf4j:slf4j-simple:2.0.16'
+    }
+
+    sourceSets {
+        main {
+            java {
+                srcDirs = ['src']
+            }
+        }
+    }
+
+    tasks.withType(JavaCompile) {
+        options.encoding = 'UTF-8'
+    }
+}
+
+// Configuração específica da pasta servidor/
+project(':servidor') {
+    application {
+        mainClass = 'Servidor'
+    }
+
+    tasks.named('run', JavaExec) {
+        standardInput = System.in
+    }
+}
+
+// Configuração específica da pasta backend/
+project(':backend') {
+    dependencies {
+        // Bibliotecas úteis caso o backend suba a API REST para o frontend
+        implementation 'io.javalin:javalin:6.3.0'
+        implementation 'com.google.code.gson:gson:2.11.0'
+    }
+
+    application {
+        // ATENÇÃO: Se no topo do seu Main.java estiver escrito "package backend.src;",
+        // mantenha 'backend.src.Main'. Se você apagar o package do Main.java, mude para 'Main'.
+        mainClass = 'backend.src.Main'
+    }
+
+    tasks.named('run', JavaExec) {
+        // Espera 2 segundos para garantir que o Servidor abriu a porta do Socket
+        // antes de a classe ConexaoServidor do backend tentar se conectar a ele!
+        doFirst {
+            println ">>> Aguardando o Servidor iniciar antes de conectar o Backend..."
+            Thread.sleep(2000)
+        }
+    }
+}
+
+// Tarefa única que liga o Servidor e o Backend juntos!
+tasks.register('rodarTudo') {
+    group = 'application'
+    description = 'Inicia o Servidor, o Backend e abre o Frontend'
+    dependsOn ':servidor:run', ':backend:run'
+
+    doFirst {
+        // Abre o index.html do Perfil Público automaticamente no navegador padrão
+        def indexFile = file('frontend/Perfil_Publico/index.html')
+        if (indexFile.exists() && java.awt.Desktop.isDesktopSupported()) {
+            java.awt.Desktop.getDesktop().browse(indexFile.toURI())
+        }
+    }
+}
