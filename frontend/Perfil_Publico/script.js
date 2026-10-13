@@ -14,6 +14,7 @@ const trees = [
     endereco: "R. Dr. Alberto Sarmento, 123",
     lat: -22.8768, lng: -47.0594,
     risco: "Baixo",
+    frutifera: false, manutencao: false, floracao: true, clima: false,
     distancia: "120 m",
     imagem: "https://images.unsplash.com/photo-1599557626384-36efbcd7f77a?auto=format&fit=crop&w=300&q=80"
   },
@@ -24,7 +25,8 @@ const trees = [
     bairro: "Cambuí",
     endereco: "Av. Orosimbo Maia, 456",
     lat: -22.8953, lng: -47.0517,
-    risco: "Médio",
+    risco: "Moderado",
+    frutifera: true, manutencao: true, floracao: false, clima: false,
     distancia: "340 m",
     imagem: "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=300&q=80"
   },
@@ -36,6 +38,7 @@ const trees = [
     endereco: "R. Maria Monteiro, 789",
     lat: -22.8995, lng: -47.0402,
     risco: "Alto",
+    frutifera: false, manutencao: true, floracao: false, clima: true,
     distancia: "520 m",
     imagem: "https://images.unsplash.com/photo-1522442676585-6f7f3a37c2c5?auto=format&fit=crop&w=300&q=80"
   },
@@ -47,6 +50,7 @@ const trees = [
     endereco: "Av. Heitor Penteado, 1000",
     lat: -22.9055, lng: -47.0602,
     risco: "Baixo",
+    frutifera: false, manutencao: false, floracao: true, clima: false,
     distancia: "680 m",
     imagem: "https://images.unsplash.com/photo-1497250681960-ef046c08a56e?auto=format&fit=crop&w=300&q=80"
   },
@@ -58,6 +62,7 @@ const trees = [
     endereco: "Av. Imperatriz Leopoldina, 300",
     lat: -22.8716, lng: -47.0830,
     risco: "Crítico",
+    frutifera: true, manutencao: true, floracao: false, clima: true,
     distancia: "890 m",
     imagem: "https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=300&q=80"
   },
@@ -68,7 +73,8 @@ const trees = [
     bairro: "Ponte Preta",
     endereco: "Av. das Amoreiras, 121",
     lat: -22.9192, lng: -47.0738,
-    risco: "Médio",
+    risco: "Moderado",
+    frutifera: false, manutencao: false, floracao: true, clima: false,
     distancia: "1,1 km",
     imagem: "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=300&q=80"
   }
@@ -89,7 +95,7 @@ let markersById = new Map();               //map que permite lovalizar rapidamen
 // inicializa depois que o html carregar
 document.addEventListener("DOMContentLoaded", () => {
   initMap();
-  renderTreeList(trees.slice(0, 4));
+  renderTreeList(trees);
   setupEvents();
 });
 
@@ -133,6 +139,7 @@ function riskClass(risco) {
   const mapClass = {
     "Baixo": "low",
     "Médio": "medium",
+    "Moderado": "medium",
     "Alto": "high",
     "Crítico": "critical"
   };
@@ -219,8 +226,7 @@ function renderTreeList(list) {
     card.addEventListener("click", () => {
       const tree = trees.find(t => t.id === card.dataset.treeCard);
       if (!tree) return;
-      if (map) {map.flyTo([selected.lat, selected.lng], selected.zoom, { duration: 0.8 });
-      }
+      if (map) map.flyTo([tree.lat, tree.lng], 16, { duration: 0.8 });
       const marker = markersById.get(tree.id);
       if (marker) marker.openPopup();
     });
@@ -230,103 +236,58 @@ function renderTreeList(list) {
 // seleciona o municipio no select e atualiza o mapa para o centro do município selecionado, além de atualizar o cabeçalho com o nome do município
 // Também adiciona eventos para a busca de árvores, botão "Ver todas", alternância de camadas e envio do formulário de cadastro de árvore.
 function setupEvents() {
-  const municipalitySelect = document.getElementById("municipioSelect");
-  municipalitySelect.addEventListener("change", (event) => {
+  document.getElementById("municipioSelect").addEventListener("change", event => {
     const selected = municipalityCenters[event.target.value];
     if (!selected) return;
-    map.flyTo([selected.lat, selected.lng], selected.zoom, { duration: 0.8 });
-
-    // No back-end real, a lista local é reutilizada apenas como demonstração.
+    if (map) map.flyTo([selected.lat, selected.lng], selected.zoom, { duration: 0.8 });
     updateHeaderForMunicipality(selected.name);
   });
-
-  // na parte de busca, quando o usuário digita no campo de pesquisa, o código filtra a lista de árvores com base no termo digitado. Se o campo estiver vazio, ele renderiza as primeiras 4 árvores e reconstrói os marcadores
-  // Caso contrário, ele filtra as árvores que contêm o termo em qualquer um dos campos relevantes (nome, espécie, ID, bairro ou endereço) e renderiza até 6 resultados. Se houver apenas uma árvore correspondente, o mapa se aproxima dela.
-  document.getElementById("searchInput").addEventListener("input", (event) => {
-    const term = event.target.value.trim().toLowerCase();
-
-    if (!term) {
-      renderTreeList(trees.slice(0, 4));
-      buildTreeMarkers();
-      return;
-    }
-
-    const filtered = trees.filter(tree =>
-      [tree.nome, tree.especie, tree.id, tree.bairro, tree.endereco]
-        .some(value => value.toLowerCase().includes(term))
-    );
-
-    renderTreeList(filtered.slice(0, 6));
-    buildTreeMarkers(filtered);
-
-    if (filtered.length === 1) {
-      const tree = filtered[0];
-      map.flyTo([tree.lat, tree.lng], 16, { duration: 0.8 });
-    }
-  });
-
-  // controla as camadas de seleção
+  document.getElementById("searchInput").addEventListener("input", applyPublicFilters);
   document.getElementById("btnVerTodas").addEventListener("click", () => {
-    renderTreeList(trees);
-    buildTreeMarkers();
-    if (map) {map.fitBounds(trees.map(tree => [tree.lat, tree.lng]), { padding: [50, 50]});
-}
+    document.getElementById("searchInput").value = ""; clearFilterInputs(); renderTreeList(trees); buildTreeMarkers();
+    if (map) map.fitBounds(trees.map(tree => [tree.lat, tree.lng]), { padding: [50,50] });
   });
-
-  document.getElementById("treesLayer").addEventListener("change", (event) => {
+  document.getElementById("treesLayer").addEventListener("change", event => {
+    if (!map) return; if (event.target.checked) map.addLayer(markerLayer); else map.removeLayer(markerLayer);
+  });
+  document.getElementById("riskLayer").addEventListener("change", event => markerLayer.eachLayer(marker => marker.setOpacity(event.target.checked ? 1 : 0.18)));
+  document.getElementById("occurrencesLayer").addEventListener("change", event => {
     if (!map) return;
-
-    if (event.target.checked) {
-        map.addLayer(markerLayer);
-    } else {
-        map.removeLayer(markerLayer);
-    }
-    });
-
-  document.getElementById("riskLayer").addEventListener("change", (event) => {
-    if (event.target.checked) {
-      markerLayer.eachLayer(marker => marker.setOpacity(1));
-    } else {
-      markerLayer.eachLayer(marker => marker.setOpacity(0.18));
-    }
+    if (event.target.checked) { if (!map.hasLayer(occurrenceLayer)) occurrenceLayer.addTo(map); addOccurrenceExample(); }
+    else { map.removeLayer(occurrenceLayer); occurrenceLayer.clearLayers(); }
   });
-
-  document.getElementById("occurrencesLayer").addEventListener("change", (event) => {
-    if (event.target.checked) {
-      if (!map.hasLayer(occurrenceLayer)) occurrenceLayer.addTo(map);
-      addOccurrenceExample();
-    } else {
-      map.removeLayer(occurrenceLayer);
-      occurrenceLayer.clearLayers();
-    }
-  });
-
   document.getElementById("toggleLayers").addEventListener("click", () => {
-    const body = document.getElementById("layerBody");
-    const icon = document.querySelector("#toggleLayers i");
-    body.classList.toggle("d-none");
-    icon.className = body.classList.contains("d-none")
-      ? "bi bi-chevron-down"
-      : "bi bi-chevron-up";
+    const body=document.getElementById("layerBody"), icon=document.querySelector("#toggleLayers i");
+    body.classList.toggle("d-none"); icon.className=body.classList.contains("d-none")?"bi bi-chevron-down":"bi bi-chevron-up";
   });
+  const filters=document.getElementById("publicFilters"), filterButton=document.getElementById("btnFilters");
+  filterButton.addEventListener("click",()=>{const open=filters.classList.contains("d-none");filters.classList.toggle("d-none",!open);filterButton.setAttribute("aria-expanded",String(open));document.querySelector(".filter-chevron").className=open?"bi bi-chevron-up filter-chevron":"bi bi-chevron-down filter-chevron";});
+  document.getElementById("applyFilters").addEventListener("click",()=>{applyPublicFilters();filters.classList.add("d-none");filterButton.setAttribute("aria-expanded","false");document.querySelector(".filter-chevron").className="bi bi-chevron-down filter-chevron";});
+  document.getElementById("clearFilters").addEventListener("click",()=>{clearFilterInputs();applyPublicFilters();});
+  ["filterFruitBearing","filterRisk","filterMaintenance","filterFlowering","filterWeather"].forEach(id=>document.getElementById(id).addEventListener("change",applyPublicFilters));
 
-
-  // faz o evento de cadastro da arvore, abrindo o modal de cadastro e tratando o envio do formulário. Quando o botão "Cadastrar" é clicado, o modal é exibido
-  // Ao enviar o formulário, os dados são coletados, uma mensagem de sucesso é exibida (modo demonstrativo), o formulário é resetado e o modal é fechado.
-  const modalElement = document.getElementById("treeModal");
-  const modal = new bootstrap.Modal(modalElement);
-
-  document.getElementById("btnCadastrar").addEventListener("click", () => modal.show());
-
-  document.getElementById("treeForm").addEventListener("submit", (event) => {
-    event.preventDefault();
-
-    const data = Object.fromEntries(new FormData(event.target).entries());
-
-    alert(`Árvore "${data.nomePopular}" cadastrada com sucesso (modo demonstrativo).`);
-    event.target.reset();
-    modal.hide();
+  const modal=new bootstrap.Modal(document.getElementById("publicActionModal"));
+  const title=document.getElementById("publicActionTitle"), body=document.getElementById("publicActionBody"), submit=document.getElementById("publicActionSubmit");
+  let current="";
+  const forms={
+    signup:{title:"Faça seu cadastro",button:"Criar cadastro",html:`<p class="text-secondary small">Cadastre-se para participar do portal público.</p><label class="form-label">Nome completo</label><input class="form-control mb-3" name="nome" required><label class="form-label">E-mail</label><input class="form-control" name="email" type="email" required`},
+    call:{title:"Abrir chamado",button:"Enviar chamado",html:`<p class="text-secondary small">Informe uma situação relacionada à arborização urbana.</p><label class="form-label">Tipo de ocorrência</label><select class="form-select mb-3" name="tipo"><option>Galho quebrado</option><option>Árvore com risco</option><option>Necessidade de poda</option><option>Árvore caída</option><option>Outro</option></select><label class="form-label">Endereço ou local</label><input class="form-control mb-3" name="local" required><label class="form-label">Descrição</label><textarea class="form-control" name="descricao" rows="3" required></textarea>`},
+  };
+  function openAction(key){current=key;title.textContent=forms[key].title;body.innerHTML=forms[key].html;submit.textContent=forms[key].button;modal.show();}
+  document.getElementById("navSignup").addEventListener("click", e => {e.preventDefault(); window.location.href = "cadastro-cidadao.html";}); 
+  document.getElementById("navCall").addEventListener("click", e => {e.preventDefault(); window.location.href = "abrir-chamado.html";});
+  document.getElementById("navContact").addEventListener("click",e=>{e.preventDefault();openAction("contact")});
+  document.getElementById("navOccurrences").addEventListener("click",e=>{e.preventDefault();openAction("call")});
+  document.getElementById("publicActionForm").addEventListener("submit",e=>{e.preventDefault();alert(({signup:"Cadastro",call:"Chamado",contact:"Mensagem",login:"Login"})[current]+" em modo demonstrativo. A integração real será feita posteriormente.");e.target.reset();modal.hide();});
+}
+function clearFilterInputs(){document.getElementById("filterFruitBearing").checked=false;document.getElementById("filterRisk").value="";document.getElementById("filterMaintenance").checked=false;document.getElementById("filterFlowering").checked=false;document.getElementById("filterWeather").checked=false;}
+function applyPublicFilters(){
+  const term=document.getElementById("searchInput").value.trim().toLowerCase(), fruit=document.getElementById("filterFruitBearing").checked, risk=document.getElementById("filterRisk").value, maintenance=document.getElementById("filterMaintenance").checked, flowering=document.getElementById("filterFlowering").checked, weather=document.getElementById("filterWeather").checked;
+  const filtered=trees.filter(tree=>{
+    const textMatch=!term||[tree.nome,tree.especie,tree.id,tree.bairro,tree.endereco].some(v=>v.toLowerCase().includes(term));
+    return textMatch&&(!fruit||tree.frutifera)&&(!risk||tree.risco===risk)&&(!maintenance||tree.manutencao)&&(!flowering||tree.floracao)&&(!weather||tree.clima);
   });
+  renderTreeList(filtered);buildTreeMarkers(filtered);if(map&&filtered.length===1)map.flyTo([filtered[0].lat,filtered[0].lng],16,{duration:.8});
 }
 
 function addOccurrenceExample() {

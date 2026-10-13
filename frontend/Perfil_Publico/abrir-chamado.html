@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arboriza | Abrir chamado</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="abrir-chamado.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand brand-link" href="index.html" aria-label="Arboriza - página inicial">
+      <div class="brand-mark"><i class="bi bi-tree-fill"></i></div>
+      <div><div class="brand-name">Arboriza</div><div class="brand-tagline">Cidades mais verdes,<br>vidas melhores</div></div>
+    </a>
+    <nav class="sidebar-nav" aria-label="Menu público">
+      <a class="nav-item" href="index.html#arvores"><i class="bi bi-tree"></i><span>Árvores</span></a>
+      <a class="nav-item" href="index.html#ocorrencias"><i class="bi bi-exclamation-triangle"></i><span>Ocorrências</span></a>
+      <a class="nav-item" href="cadastro-cidadao.html"><i class="bi bi-person-plus"></i><span>Faça seu cadastro</span></a>
+      <a class="nav-item active" href="abrir-chamado.html" aria-current="page"><i class="bi bi-megaphone"></i><span>Abrir chamado</span></a>
+    </nav>
+    <div class="sidebar-bottom"><div class="mission-card"><div class="mission-icon"><i class="bi bi-leaf-fill"></i></div><strong>Juntos por<br>cidades mais verdes</strong><p>Gestão, prevenção<br>e qualidade de vida.</p></div></div>
+  </aside>
+
+  <main class="main report-main">
+    <section class="report-content">
+      <div class="report-page-heading">
+        <div>
+          <span class="report-eyebrow"><i class="bi bi-globe2 me-2"></i>PORTAL PÚBLICO</span>
+          <h1>Abrir chamado</h1>
+          <p>Ajude a cuidar da arborização urbana informando problemas que precisam da atenção do município.</p>
+        </div>
+        <div class="report-heading-icon"><i class="bi bi-megaphone-fill"></i></div>
+      </div>
+
+      <div class="report-form-card">
+        <div class="report-form-intro">
+          <div class="report-intro-icon"><i class="bi bi-clipboard2-plus-fill"></i></div>
+          <div><h2>Informações da ocorrência</h2><p>Descreva o problema e indique o local para ajudar a equipe a identificar a situação.</p></div>
+        </div>
+
+        <form id="reportForm" novalidate>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="reportType">Tipo de ocorrência <span>*</span></label>
+              <select class="form-select" id="reportType" name="tipo" required>
+                <option value="" selected disabled>Selecione o tipo de ocorrência</option>
+                <option value="galho-quebrado">Galho quebrado</option>
+                <option value="arvore-caida">Árvore caída</option>
+                <option value="arvore-em-risco">Árvore em risco</option>
+                <option value="necessidade-de-poda">Necessidade de poda</option>
+                <option value="outro">Outro</option>
+              </select>
+              <div class="invalid-feedback">Selecione o tipo de ocorrência.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="reportAddress">Endereço do local <span>*</span></label>
+              <input class="form-control" id="reportAddress" name="endereco" type="text" placeholder="Rua, número, bairro ou ponto de referência" required minlength="5">
+              <div class="invalid-feedback">Informe o endereço ou um ponto de referência.</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="reportDescription">Descrição do problema <span>*</span></label>
+              <textarea class="form-control" id="reportDescription" name="descricao" rows="4" placeholder="Conte o que aconteceu e outras informações que possam ajudar a equipe..." required minlength="10"></textarea>
+              <div class="invalid-feedback">Descreva o problema com pelo menos 10 caracteres.</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="reportImage">Anexar imagem <span class="optional-label">(opcional)</span></label>
+              <label class="upload-area" for="reportImage" id="uploadArea">
+                <i class="bi bi-cloud-arrow-up-fill"></i>
+                <strong>Selecione uma imagem</strong>
+                <span>PNG, JPG ou WEBP · até 8 MB</span>
+                <input class="visually-hidden" id="reportImage" name="imagem" type="file" accept="image/png,image/jpeg,image/webp">
+              </label>
+              <div id="imagePreviewWrap" class="image-preview-wrap d-none">
+                <img id="imagePreview" alt="Prévia da imagem anexada">
+                <div class="image-preview-info"><strong id="imageFileName"></strong><span id="imageFileSize"></span></div>
+                <button type="button" class="remove-image-btn" id="removeImage" aria-label="Remover imagem"><i class="bi bi-x-lg"></i></button>
+              </div>
+              <div class="invalid-feedback d-block d-none" id="imageError">Escolha uma imagem PNG, JPG ou WEBP de até 8 MB.</div>
+            </div>
+          </div>
+
+          <div class="report-notification-box">
+            <label class="report-notification-toggle" for="wantsReportNotifications">
+              <span class="report-notification-icon"><i class="bi bi-bell-fill"></i></span>
+              <span class="report-notification-copy"><strong>Quero receber notificações sobre este chamado</strong><small>Podemos usar seus dados para informar atualizações sobre esta ocorrência.</small></span>
+              <input class="form-check-input" type="checkbox" role="switch" id="wantsReportNotifications" name="receberNotificacoes">
+            </label>
+            <div id="reportNotificationFields" class="report-notification-fields d-none">
+              <div class="notification-fields-heading"><strong>Dados para contato</strong><span>Todos os campos são obrigatórios</span></div>
+              <div class="row g-3">
+                <div class="col-md-4"><label class="form-label" for="reportContactName">Nome completo <span>*</span></label><input class="form-control" id="reportContactName" name="nomeContato" autocomplete="name" placeholder="Seu nome completo" disabled><div class="invalid-feedback">Informe seu nome.</div></div>
+                <div class="col-md-4"><label class="form-label" for="reportContactEmail">E-mail <span>*</span></label><input class="form-control" id="reportContactEmail" name="emailContato" type="email" autocomplete="email" placeholder="voce@exemplo.com" disabled><div class="invalid-feedback">Informe um e-mail válido.</div></div>
+                <div class="col-md-4"><label class="form-label" for="reportContactPhone">Telefone <span>*</span></label><input class="form-control" id="reportContactPhone" name="telefoneContato" type="tel" autocomplete="tel" placeholder="(00) 00000-0000" disabled><div class="invalid-feedback">Informe um telefone válido.</div></div>
+              </div>
+              <p class="logged-in-note"><i class="bi bi-info-circle me-1"></i>Quando o login estiver integrado ao back-end, os dados do cidadão autenticado serão preenchidos automaticamente.</p>
+            </div>
+          </div>
+
+          <div class="report-privacy-note"><i class="bi bi-shield-check"></i><span>As informações serão utilizadas para registrar a ocorrência e apoiar o atendimento pela equipe responsável.</span></div>
+          <div class="report-form-actions">
+            <a class="report-cancel" href="index.html"><i class="bi bi-arrow-left me-2"></i>Voltar ao mapa</a>
+            <button class="report-submit" type="submit">Enviar chamado <i class="bi bi-send ms-2"></i></button>
+          </div>
+        </form>
+      </div>
+      <p class="report-footnote">Arboriza · Cidades mais verdes, vidas melhores.</p>
+    </section>
+  </main>
+</div>
+<div class="toast-container position-fixed bottom-0 end-0 p-3"><div id="reportToast" class="toast border-0" role="status" aria-live="polite" aria-atomic="true"><div class="toast-header"><i class="bi bi-check-circle-fill text-success me-2"></i><strong class="me-auto">Arboriza</strong><button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Fechar"></button></div><div class="toast-body">Chamado enviado com sucesso, agradecemos a colaboração.</div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="abrir-chamado.js"></script>
+</body>
+</html>

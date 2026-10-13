@@ -1,0 +1,52 @@
+/* Página de cadastro do cidadão — identidade visual do portal público Arboriza */
+.citizen-main{background:#fbfdfc;min-height:100vh;}
+.brand-link{color:inherit;text-decoration:none;}
+.brand-link:hover{color:inherit;}
+.citizen-content{max-width:1040px;margin:0 auto;padding:38px clamp(22px,4vw,58px) 24px;}
+.citizen-page-heading{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:25px;}
+.citizen-eyebrow{display:inline-flex;align-items:center;color:#67986b;font-size:12px;font-weight:800;letter-spacing:1.1px;margin-bottom:9px;}
+.citizen-page-heading h1{font-size:clamp(27px,3vw,34px);font-weight:800;letter-spacing:-.7px;color:#1d2923;margin:0 0 8px;}
+.citizen-page-heading p{color:#748078;margin:0;max-width:660px;line-height:1.55;}
+.citizen-heading-icon{width:64px;height:64px;flex:0 0 64px;border-radius:18px;display:flex;align-items:center;justify-content:center;background:#e7f2eb;color:#1b7650;font-size:29px;}
+.citizen-form-card{background:#fff;border:1px solid #e4ece7;border-radius:18px;padding:clamp(20px,3vw,32px);box-shadow:0 10px 35px rgba(23,72,48,.045);}
+.citizen-form-intro{display:flex;align-items:center;gap:13px;padding-bottom:22px;margin-bottom:22px;border-bottom:1px solid #edf1ee;}
+.citizen-intro-icon{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:#e8f3ee;color:#166143;font-size:20px;flex:0 0 44px;}
+.citizen-form-intro h2{font-size:18px;font-weight:800;color:#174f35;margin:0 0 4px;}
+.citizen-form-intro p{font-size:13px;color:#77827c;margin:0;}
+.citizen-form-card .form-label{font-size:13px;font-weight:700;color:#34443b;margin-bottom:7px;}
+.citizen-form-card .form-label span{color:#b34a39;}
+.citizen-form-card .form-control,.citizen-form-card .form-select{min-height:46px;border:1px solid #dfe8e2;border-radius:10px;color:#26362d;font-size:14px;padding:11px 13px;box-shadow:none;}
+.citizen-form-card .form-control:focus,.citizen-form-card .form-select:focus{border-color:#82b59a;box-shadow:0 0 0 .2rem rgba(40,132,79,.1);}
+.citizen-form-card .form-control::placeholder{color:#a0aaa4;}
+.notification-preference-box{margin-top:24px;border:1px solid #e1ebe5;background:#fbfdfb;border-radius:14px;padding:16px;}
+.notification-toggle{display:flex;align-items:center;gap:12px;cursor:pointer;}
+.notification-toggle-icon{width:42px;height:42px;border-radius:12px;background:#e5f2e9;color:#24784c;display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 42px;}
+.notification-toggle-copy{display:flex;flex-direction:column;gap:4px;flex:1;}
+.notification-toggle-copy strong{font-size:14px;color:#234332;}
+.notification-toggle-copy small{font-size:12px;color:#758179;line-height:1.4;}
+.notification-toggle .form-check-input{width:2.5em;height:1.3em;cursor:pointer;flex:0 0 auto;margin:0;}
+.notification-toggle .form-check-input:checked{background-color:#24784c;border-color:#24784c;}
+.notification-preferences{border-top:1px solid #e7eee9;margin-top:16px;padding-top:16px;}
+.preferences-heading{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.preferences-heading strong{font-size:13px;color:#234332;}
+.preferences-heading span{font-size:11px;color:#7d8982;}
+.preference-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+.preference-option{display:flex;align-items:center;gap:10px;min-height:45px;padding:10px 12px;border:1px solid #e2eae5;border-radius:10px;background:#fff;cursor:pointer;transition:.15s;}
+.preference-option:has(input:checked){border-color:#9bc8ac;background:#f0f8f3;}
+.preference-option .form-check-input{margin:0;flex:0 0 auto;accent-color:#166143;}
+.preference-option span{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#425249;}
+.preference-option span i{font-size:16px;color:#36805a;}
+.preference-hint{font-size:12px;color:#b34a39;margin:10px 0 0;}
+.citizen-privacy-note{display:flex;align-items:flex-start;gap:10px;margin:20px 0;color:#738078;font-size:12px;line-height:1.5;}
+.citizen-privacy-note i{font-size:17px;color:#36805a;flex:0 0 auto;}
+.citizen-form-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px;}
+.btn-cancel{display:inline-flex;align-items:center;text-decoration:none;color:#587064;font-size:13px;font-weight:700;padding:12px 4px;}
+.btn-cancel:hover{color:#166143;}
+.btn-citizen-submit{border:0;border-radius:10px;background:#166143;color:white;font-size:14px;font-weight:750;padding:13px 19px;box-shadow:0 5px 12px rgba(22,97,67,.12);}
+.btn-citizen-submit:hover{background:#0f503a;}
+.citizen-login-note{text-align:center;color:#77827c;font-size:13px;margin:22px 0 0;}
+.citizen-login-note a{color:#166143;font-weight:750;text-decoration:none;}
+.citizen-login-note a:hover{text-decoration:underline;}
+.citizen-footnote{text-align:center;color:#91a097;font-size:11px;margin:20px 0 0;}
+@media(max-width:800px){.citizen-content{padding:28px 22px 20px;}.sidebar{width:235px;flex-basis:235px;}}
+@media(max-width:650px){.app-shell{display:block;}.sidebar{width:100%;padding:16px;}.brand{padding-bottom:16px;}.sidebar-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;}.nav-item{font-size:13px;padding:10px;gap:8px;}.nav-item i{font-size:17px;width:19px;}.nav-item.active::before{left:-16px;}.sidebar-bottom{display:none;}.citizen-content{padding:24px 14px;}.citizen-page-heading{align-items:flex-start;}.citizen-heading-icon{width:48px;height:48px;flex-basis:48px;font-size:23px;}.preference-options{grid-template-columns:1fr;}.citizen-form-actions{align-items:stretch;flex-direction:column-reverse;}.btn-citizen-submit{width:100%;}.btn-cancel{justify-content:center;}}

@@ -1,0 +1,63 @@
+:root{
+  --green-900:#0f503a;
+  --green-800:#166143;
+  --green-700:#1d7651;
+  --green-100:#e8f3ee;
+  --green-050:#f5faf7;
+  --text:#1d2421;
+  --muted:#69746f;
+  --line:#e3ebe6;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--text);background:#f6faf7}
+a{color:var(--green-800);text-decoration:none}
+a:hover{text-decoration:underline}
+.login-page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:34px 22px 20px;position:relative;overflow:hidden;background:radial-gradient(ellipse at 5% 8%,rgba(191,218,178,.32),transparent 32%),radial-gradient(ellipse at 96% 94%,rgba(191,218,178,.28),transparent 28%),#f8fbf8}
+.back-link{align-self:flex-start;margin:0 auto 18px; width:min(1060px,100%);font-size:14px;color:#536b5e;display:flex;align-items:center;gap:8px}
+.back-link i{font-size:17px}
+.login-card{width:min(1060px,100%);min-height:590px;background:#fff;border:1px solid rgba(218,231,222,.9);border-radius:24px;overflow:hidden;display:grid;grid-template-columns: .92fr 1.08fr;box-shadow:0 22px 70px rgba(24,69,46,.11)}
+.brand-panel{position:relative;overflow:hidden;padding:54px 48px 30px;background:linear-gradient(145deg,#eaf5ec 0%,#dceedd 52%,#c7dfc4 100%);display:flex;flex-direction:column;justify-content:space-between;color:var(--green-900)}
+.brand-lockup{position:relative;z-index:1;text-align:center;margin:0 auto;width:100%}
+.brand-icon{height:112px;width:120px;margin:0 auto 9px;position:relative;display:flex;align-items:flex-end;justify-content:center;color:#24784c}
+.brand-icon>i{font-size:98px;line-height:1;filter:drop-shadow(0 4px 1px rgba(18,80,47,.12))}
+.leaf{position:absolute;display:block;background:#7caf43;border-radius:100% 0 100% 0;width:27px;height:15px;transform:rotate(-25deg)}
+.leaf-one{top:13px;left:27px}.leaf-two{top:26px;right:23px;transform:rotate(48deg);background:#9bc65c}
+.brand-name{font-size:57px;line-height:1;font-weight:850;letter-spacing:-2.6px;color:#175c38}
+.brand-subtitle{font-size:11px;line-height:1.5;letter-spacing:1.2px;font-weight:800;margin:10px 0 0;color:#365f43}
+.brand-message{position:relative;z-index:1;margin:42px 0 30px;text-align:center}
+.message-icon{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.65);color:#347b4c;font-size:22px;margin-bottom:13px}
+.brand-message h2{font-size:26px;line-height:1.25;font-weight:800;letter-spacing:-.6px;margin:0 0 12px;color:#174f35}
+.brand-message p{max-width:270px;margin:0 auto;color:#53705d;font-size:14px;line-height:1.6}
+.brand-footer{position:relative;z-index:1;text-align:center;font-size:10px;letter-spacing:.5px;text-transform:uppercase;font-weight:750;color:#4f7955;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.brand-footer i{font-size:15px}.brand-footer span{color:#9cb985}
+.decor{position:absolute;border:1px solid rgba(80,139,75,.14);border-radius:50%;pointer-events:none}
+.decor-one{width:330px;height:330px;top:-165px;left:-145px}.decor-two{width:280px;height:280px;bottom:-130px;right:-110px}.decor-three{width:170px;height:170px;bottom:80px;left:-100px;background:rgba(255,255,255,.13)}
+.form-panel{display:flex;align-items:center;justify-content:center;padding:60px 70px;background:rgba(255,255,255,.98)}
+.form-content{width:100%;max-width:365px}
+.mobile-brand{display:none;align-items:center;gap:8px;color:var(--green-800);font-size:25px;font-weight:850;margin-bottom:30px}.mobile-brand i{font-size:28px}
+.eyebrow{font-size:11px;letter-spacing:1.6px;font-weight:800;color:#6c9b68}
+h1{font-size:34px;letter-spacing:-1px;font-weight:800;margin:9px 0 8px;color:#172b21}
+.intro{font-size:14px;color:var(--muted);margin:0 0 34px}
+.field-group{margin-bottom:21px}
+.field-group label,.password-label label{font-size:13px;font-weight:700;color:#35463c;margin-bottom:8px;display:block}
+.password-label{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.password-label a{font-size:12px;font-weight:650;margin-bottom:8px}
+.input-wrap{height:51px;display:flex;align-items:center;gap:12px;border:1px solid #dce6df;border-radius:11px;padding:0 14px;background:#fff;transition:border-color .2s,box-shadow .2s}
+.input-wrap:focus-within{border-color:#72a886;box-shadow:0 0 0 3px rgba(29,118,81,.10)}
+.input-wrap>i{font-size:17px;color:#809087;flex:0 0 auto}
+.input-wrap input{width:100%;height:100%;min-width:0;border:0;outline:0;background:transparent;color:var(--text);font-size:14px}
+.input-wrap input::placeholder{color:#a0aaa4}
+.password-toggle{border:0;background:transparent;color:#74837a;font-size:17px;padding:4px;display:flex;align-items:center;justify-content:center}
+.field-error{display:block;min-height:0;color:#b83227;font-size:12px;margin-top:5px}
+.submit-button{width:100%;height:51px;margin-top:4px;border:0;border-radius:11px;background:var(--green-800);color:#fff;font-size:14px;font-weight:750;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 7px 16px rgba(22,97,67,.15);transition:background .2s,transform .2s}
+.submit-button:hover{background:var(--green-900);transform:translateY(-1px)}
+.form-message{font-size:13px;line-height:1.5;margin-top:12px;color:#a33a2e;min-height:0}
+.form-message.success{color:var(--green-800)}
+.signup-line{text-align:center;margin-top:27px;font-size:13px;color:#68756e}
+.signup-line a{font-weight:750;margin-left:3px}
+.secure-note{margin-top:31px;padding-top:18px;border-top:1px solid #edf1ee;display:flex;justify-content:center;align-items:center;gap:7px;font-size:11px;color:#87948c}
+.secure-note i{font-size:15px;color:#6c9b68}
+.page-footer{font-size:11px;color:#8a978f;text-align:center;margin-top:18px}
+@media(max-width:800px){.login-card{grid-template-columns: .8fr 1.2fr;min-height:560px}.brand-panel{padding:42px 26px 26px}.brand-name{font-size:45px}.brand-icon{transform:scale(.85);margin-bottom:0}.brand-message h2{font-size:22px}.form-panel{padding:45px 35px}}
+@media(max-width:600px){.login-page{padding:20px 14px}.back-link{margin-bottom:14px}.login-card{grid-template-columns:1fr;min-height:0;border-radius:18px}.brand-panel{display:none}.form-panel{padding:35px 25px 30px}.mobile-brand{display:flex}h1{font-size:30px}.intro{margin-bottom:27px}.secure-note{margin-top:25px}.page-footer{line-height:1.5}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;scroll-behavior:auto!important}}
