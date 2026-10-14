@@ -31,8 +31,15 @@ loginForm.addEventListener('submit', (event) => {
   }
   if (!valid) return;
 
-  formMessage.textContent = 'A tela está pronta para integração. A autenticação será habilitada quando conectarmos a API do Arboriza.';
+  const emailName = emailInput.value.trim().split('@')[0].replace(/[._-]+/g, ' ');
+  const nome = emailName.replace(/\b\p{L}/gu, letra => letra.toLocaleUpperCase('pt-BR')) || 'Cidadão';
+  localStorage.setItem('login', 'true');
+  localStorage.setItem('nome', nome);
+  localStorage.setItem('idSetor', 'null');
+  localStorage.setItem('arborizaUsuario', JSON.stringify({ login: true, nome, idSetor: null }));
+  formMessage.textContent = 'Sessão demonstrativa iniciada. A autenticação real será conectada à API do Arboriza.';
   formMessage.classList.add('success');
+  window.location.href = '../Perfil_Publico/index.html';
 });
 
 document.getElementById('forgotPassword').addEventListener('click', (event) => {

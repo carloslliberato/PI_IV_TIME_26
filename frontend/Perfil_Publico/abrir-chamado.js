@@ -1,7 +1,7 @@
 // Arboriza — formulário demonstrativo para abertura de chamado.
 // A integração com a API Java será feita posteriormente.
 
-document.addEventListener("DOMContentLoaded", () => {
+function initializeReportForm() {
   const form = document.getElementById("reportForm");
   const wantsNotifications = document.getElementById("wantsReportNotifications");
   const notificationFields = document.getElementById("reportNotificationFields");
@@ -134,4 +134,9 @@ document.addEventListener("DOMContentLoaded", () => {
     alert("Chamado enviado com sucesso, agradecemos a colaboração.");
     window.location.href = "index.html";
   });
-});
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializeReportForm, { once: true });
+} else {
+  initializeReportForm();
+}

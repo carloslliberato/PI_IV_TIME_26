@@ -93,11 +93,16 @@ let occurrenceLayer = L.layerGroup();      //camada de marcadores de ocorrência
 let markersById = new Map();               //map que permite lovalizar rapidamente o marcador de uma árvore pelo seu ID
 
 // inicializa depois que o html carregar
-document.addEventListener("DOMContentLoaded", () => {
+function initializePublicMap() {
   initMap();
   renderTreeList(trees);
   setupEvents();
-});
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializePublicMap, { once: true });
+} else {
+  initializePublicMap();
+}
 
 // cria o mapa, adiciona a camada de tiles do OpenStreetMap, adiciona controles de zoom, adiciona a camada de marcadores e constrói os marcadores das árvores.
 function initMap() {
@@ -123,11 +128,14 @@ function initMap() {
     [municipalityCenters.campinas.lat, municipalityCenters.campinas.lng],
     municipalityCenters.campinas.zoom
   );
-
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
+  L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+    {
+      attribution:
+        "Tiles © Esri — Sources: Esri, OpenStreetMap contributors",
+      maxZoom: 19
+    }
+  ).addTo(map);
 
   L.control.zoom({ position: "topleft" }).addTo(map);
 
@@ -274,9 +282,8 @@ function setupEvents() {
     call:{title:"Abrir chamado",button:"Enviar chamado",html:`<p class="text-secondary small">Informe uma situação relacionada à arborização urbana.</p><label class="form-label">Tipo de ocorrência</label><select class="form-select mb-3" name="tipo"><option>Galho quebrado</option><option>Árvore com risco</option><option>Necessidade de poda</option><option>Árvore caída</option><option>Outro</option></select><label class="form-label">Endereço ou local</label><input class="form-control mb-3" name="local" required><label class="form-label">Descrição</label><textarea class="form-control" name="descricao" rows="3" required></textarea>`},
   };
   function openAction(key){current=key;title.textContent=forms[key].title;body.innerHTML=forms[key].html;submit.textContent=forms[key].button;modal.show();}
-  document.getElementById("navSignup").addEventListener("click", e => {e.preventDefault(); window.location.href = "cadastro-cidadao.html";}); 
-  document.getElementById("navCall").addEventListener("click", e => {e.preventDefault(); window.location.href = "abrir-chamado.html";});
-  document.getElementById("navContact").addEventListener("click",e=>{e.preventDefault();openAction("contact")});
+  const navContact = document.getElementById("navContact");
+  if (navContact) navContact.addEventListener("click",e=>{e.preventDefault();openAction("contact")});
   document.getElementById("navOccurrences").addEventListener("click",e=>{e.preventDefault();openAction("call")});
   document.getElementById("publicActionForm").addEventListener("submit",e=>{e.preventDefault();alert(({signup:"Cadastro",call:"Chamado",contact:"Mensagem",login:"Login"})[current]+" em modo demonstrativo. A integração real será feita posteriormente.");e.target.reset();modal.hide();});
 }

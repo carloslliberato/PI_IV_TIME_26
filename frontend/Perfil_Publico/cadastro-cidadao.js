@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+function initializeCitizenSignup() {
   const form = document.getElementById("citizenSignupForm");
   const notificationToggle = document.getElementById("wantsNotifications");
   const preferencesPanel = document.getElementById("notificationPreferences");
@@ -72,4 +72,9 @@ document.addEventListener("DOMContentLoaded", () => {
     form.classList.remove("was-validated");
     togglePreferences();
   });
-});
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializeCitizenSignup, { once: true });
+} else {
+  initializeCitizenSignup();
+}
