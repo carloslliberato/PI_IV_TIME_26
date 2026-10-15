@@ -1,4 +1,6 @@
+// Prepara os controles do cadastro quando o DOM estiver disponivel.
 function initializeCitizenSignup() {
+  // Guarda referencias aos campos, preferencias e aviso de sucesso usados na tela.
   const form = document.getElementById("citizenSignupForm");
   const notificationToggle = document.getElementById("wantsNotifications");
   const preferencesPanel = document.getElementById("notificationPreferences");
@@ -7,6 +9,7 @@ function initializeCitizenSignup() {
   const toastElement = document.getElementById("citizenToast");
   const successToast = bootstrap.Toast.getOrCreateInstance(toastElement, { delay: 4500 });
 
+  // Exibe as preferencias quando notificacoes estao ligadas e limpa selecoes ao desativar.
   function togglePreferences() {
     const enabled = notificationToggle.checked;
     preferencesPanel.classList.toggle("d-none", !enabled);
@@ -17,6 +20,7 @@ function initializeCitizenSignup() {
     }
   }
 
+  // Atualiza o painel sempre que a opcao principal de notificacoes muda.
   notificationToggle.addEventListener("change", togglePreferences);
   preferenceInputs.forEach(input => input.addEventListener("change", () => {
     const anySelected = preferenceInputs.some(option => option.checked);
@@ -27,6 +31,7 @@ function initializeCitizenSignup() {
   const passwordConfirm = document.getElementById("citizenPasswordConfirm");
   const passwordConfirmFeedback = document.getElementById("citizenPasswordConfirmFeedback");
 
+  // Compara as senhas e atualiza a mensagem de validacao da confirmacao.
   function validatePasswordMatch() {
     const matches = password.value === passwordConfirm.value;
     passwordConfirm.setCustomValidity(matches ? "" : "As senhas não coincidem.");
@@ -39,6 +44,7 @@ function initializeCitizenSignup() {
   password.addEventListener("input", validatePasswordMatch);
   passwordConfirm.addEventListener("input", validatePasswordMatch);
 
+  // Formata o telefone durante a digitacao e limita a entrada a 11 numeros.
   const phone = document.getElementById("citizenPhone");
   phone.addEventListener("input", () => {
     const digits = phone.value.replace(/\D/g, "").slice(0, 11);
@@ -49,16 +55,19 @@ function initializeCitizenSignup() {
     }
   });
 
+  // Intercepta o envio para validar os dados antes da confirmacao demonstrativa.
   form.addEventListener("submit", event => {
     event.preventDefault();
     form.classList.add("was-validated");
     validatePasswordMatch();
 
+    // Usa as regras HTML dos campos e move o foco ao primeiro campo invalido.
     if (!form.checkValidity()) {
       form.querySelector(":invalid")?.focus();
       return;
     }
 
+    // Exige uma categoria quando a pessoa opta por receber notificacoes.
     if (notificationToggle.checked && !preferenceInputs.some(input => input.checked)) {
       preferencesHint.classList.remove("d-none");
       preferencesHint.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -73,6 +82,7 @@ function initializeCitizenSignup() {
     togglePreferences();
   });
 }
+// Aguarda o DOM ou inicializa imediatamente se ele ja estiver pronto.
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initializeCitizenSignup, { once: true });
 } else {

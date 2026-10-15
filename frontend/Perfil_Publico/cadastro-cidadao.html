@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <!-- Bootstrap, icones e estilos compartilhados e especificos da tela de cadastro. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Arboriza | Cadastro do cidadão</title>
@@ -11,10 +12,12 @@
 </head>
 <body>
 <div class="app-shell">
+  <!-- sidebar.js cria o menu publico e carrega o JavaScript desta pagina. -->
   <div id="sidebar-container" data-script="cadastro-cidadao.js" aria-live="polite"></div>
 
   <main class="main citizen-main">
     <section class="citizen-content">
+      <!-- Cabecalho com a finalidade do cadastro para o cidadao. -->
       <div class="citizen-page-heading">
         <div>
           <span class="citizen-eyebrow"><i class="bi bi-globe2 me-2"></i>PORTAL PÚBLICO</span>
@@ -24,12 +27,14 @@
         <div class="citizen-heading-icon"><i class="bi bi-person-vcard"></i></div>
       </div>
 
+      <!-- Cartao que agrupa dados pessoais, preferencias e acoes do cadastro. -->
       <div class="citizen-form-card">
         <div class="citizen-form-intro">
           <div class="citizen-intro-icon"><i class="bi bi-person-plus-fill"></i></div>
           <div><h2>Seus dados</h2><p>Preencha os campos abaixo para personalizar sua experiência no Arboriza.</p></div>
         </div>
 
+        <!-- O JavaScript valida os campos, a senha e as preferencias antes da confirmacao. -->
         <form id="citizenSignupForm" novalidate>
           <div class="row g-3">
             <div class="col-12">
@@ -71,6 +76,7 @@
             </div>
           </div>
 
+          <!-- Ativar notificacoes exibe as categorias que a pessoa pode acompanhar. -->
           <div class="notification-preference-box">
             <label class="notification-toggle" for="wantsNotifications">
               <span class="notification-toggle-icon"><i class="bi bi-bell-fill"></i></span>
@@ -104,6 +110,7 @@
 </div>
 <div class="toast-container position-fixed bottom-0 end-0 p-3"><div id="citizenToast" class="toast border-0" role="status" aria-live="polite" aria-atomic="true"><div class="toast-header"><i class="bi bi-check-circle-fill text-success me-2"></i><strong class="me-auto">Arboriza</strong><button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Fechar"></button></div><div class="toast-body">Cadastro validado no modo demonstrativo. A integração com o back-end será feita posteriormente.</div></div></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- sidebar.js injeta cadastro-cidadao.js depois de montar o menu compartilhado. -->
 <script src="sidebar.js"></script>
 </body>
 </html>

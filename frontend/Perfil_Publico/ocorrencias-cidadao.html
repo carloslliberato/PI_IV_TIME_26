@@ -1,0 +1,112 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arboriza | Ocorrências</title>
+  <!-- Bootstrap fornece o grid, os formulários e os ícones usados nesta página. -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Mantém os estilos gerais e o sidebar compartilhados com as outras telas públicas. -->
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="ocorrencias-cidadao.css">
+</head>
+<body>
+<div class="app-shell">
+  <!-- sidebar.js substitui este contêiner pelo menu e identifica o estado de login. -->
+  <div id="sidebar-container" data-script="ocorrencias-cidadao.js" aria-live="polite"></div>
+
+  <main class="main occurrences-main">
+    <section class="occurrences-content">
+      <!-- Cabeçalho da página: apresenta o propósito da consulta ao cidadão. -->
+      <div class="occurrences-page-heading">
+        <div>
+          <span class="occurrences-eyebrow"><i class="bi bi-globe2 me-2"></i>PORTAL PÚBLICO</span>
+          <h1>Ocorrências</h1>
+          <p>Acompanhe as ocorrências de arborização e encontre os registros por município, tipo, status ou prioridade.</p>
+        </div>
+        <div class="occurrences-heading-icon" aria-hidden="true"><i class="bi bi-clipboard2-pulse-fill"></i></div>
+      </div>
+
+      <!-- Os selects permitem combinar critérios; o JavaScript refaz as linhas conforme as escolhas. -->
+      <section class="occurrences-card" aria-labelledby="filtersTitle">
+        <div class="occurrences-card-heading">
+          <div class="occurrences-intro-icon"><i class="bi bi-funnel-fill"></i></div>
+          <div><h2 id="filtersTitle">Filtrar ocorrências</h2><p>Escolha um ou mais filtros para atualizar a tabela.</p></div>
+        </div>
+        <div class="row g-3 occurrence-filters">
+          <div class="col-12 col-md-6 col-xl-3">
+            <label class="form-label" for="filterMunicipality">Município</label>
+            <select class="form-select" id="filterMunicipality">
+              <option value="">Todos os municípios</option>
+              <option value="Campinas">Campinas - SP</option>
+              <option value="Hortolândia">Hortolândia - SP</option>
+              <option value="Sumaré">Sumaré - SP</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-6 col-xl-3">
+            <label class="form-label" for="filterType">Tipo de ocorrência</label>
+            <select class="form-select" id="filterType">
+              <option value="">Todos os tipos</option>
+              <option value="Galho quebrado">Galho quebrado</option>
+              <option value="Árvore caída">Árvore caída</option>
+              <option value="Árvore em risco">Árvore em risco</option>
+              <option value="Necessidade de poda">Necessidade de poda</option>
+              <option value="Manutenção preventiva">Manutenção preventiva</option>
+              <option value="Outros">Outros</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-6 col-xl-3">
+            <label class="form-label" for="filterStatus">Status</label>
+            <select class="form-select" id="filterStatus">
+              <option value="">Todos os status</option>
+              <option value="Aberta">Aberta</option>
+              <option value="Em andamento">Em andamento</option>
+              <option value="Concluída">Concluída</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-6 col-xl-3">
+            <label class="form-label" for="filterPriority">Prioridade</label>
+            <select class="form-select" id="filterPriority">
+              <option value="">Todas as prioridades</option>
+              <option value="Baixa">Baixa</option>
+              <option value="Média">Média</option>
+              <option value="Alta">Alta</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- A tabela recebe registros temporários até a conexão com a API do sistema. -->
+      <section class="occurrences-card table-card" aria-labelledby="tableTitle">
+        <div class="table-card-heading">
+          <div><h2 id="tableTitle">Ocorrências registradas</h2><p id="resultsCount" aria-live="polite">Carregando ocorrências...</p></div>
+          <span class="table-heading-icon"><i class="bi bi-list-ul"></i></span>
+        </div>
+        <div class="table-responsive">
+          <table class="table align-middle occurrences-table">
+            <thead><tr>
+              <th scope="col">ID</th>
+              <th scope="col">Município</th>
+              <th scope="col">Bairro</th>
+              <th scope="col">Tipo de ocorrência</th>
+              <th scope="col">Status</th>
+              <th scope="col">Prioridade</th>
+            </tr></thead>
+            <tbody id="occurrencesTableBody">
+              <!-- O JavaScript desenha aqui os dados temporários ou os dados recebidos da API. -->
+            </tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="empty-state d-none" role="status">
+          <i class="bi bi-search"></i><strong>Nenhuma ocorrência encontrada</strong><span>Tente alterar ou limpar os filtros selecionados.</span>
+        </div>
+      </section>
+      <p class="occurrences-footnote">Arboriza · Cidades mais verdes, vidas melhores.</p>
+    </section>
+  </main>
+</div>
+<!-- O sidebar compartilhado injeta ocorrencias-cidadao.js após preparar o menu. -->
+<script src="sidebar.js"></script>
+</body>
+</html>

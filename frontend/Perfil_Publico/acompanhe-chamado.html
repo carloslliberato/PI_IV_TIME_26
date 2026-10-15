@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arboriza | Acompanhe seus chamados</title>
+  <!-- Bootstrap, Bootstrap Icons e os estilos gerais do portal publico. -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="acompanhe-chamado.css">
+</head>
+<body>
+<div class="app-shell">
+  <!-- O sidebar compartilhado identifica a sessao e carrega o JavaScript desta tela. -->
+  <div id="sidebar-container" data-script="acompanhe-chamado.js" aria-live="polite"></div>
+
+  <main class="main tracking-main">
+    <section class="tracking-content">
+      <!-- Cabecalho explica que a tabela lista os chamados do cidadao autenticado. -->
+      <div class="tracking-page-heading">
+        <div>
+          <span class="tracking-eyebrow"><i class="bi bi-person-check-fill me-2"></i>AREA DO CIDADAO</span>
+          <h1>Acompanhe seus chamados</h1>
+          <p>Consulte o andamento dos chamados que voce registrou. Selecione um ID para ver os detalhes.</p>
+        </div>
+        <div class="tracking-heading-icon" aria-hidden="true"><i class="bi bi-clipboard2-check-fill"></i></div>
+      </div>
+
+      <!-- Cartao com a tabela preenchida pelos dados demonstrativos ou pela futura API. -->
+      <section class="tracking-card" aria-labelledby="trackingTableTitle">
+        <div class="tracking-card-heading">
+          <div class="tracking-intro-icon"><i class="bi bi-list-check"></i></div>
+          <div>
+            <h2 id="trackingTableTitle">Meus chamados</h2>
+            <p id="ticketCount" aria-live="polite">Carregando chamados...</p>
+          </div>
+        </div>
+        <div class="table-responsive" id="ticketsTableWrap">
+          <table class="table align-middle tracking-table">
+            <thead>
+              <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Município</th>
+                <th scope="col">Bairro</th>
+                <th scope="col">Tipo de ocorrência</th>
+                <th scope="col">Status</th>
+                <th scope="col">Prioridade</th>
+              </tr>
+            </thead>
+            <tbody id="ticketsTableBody">
+              <!-- acompanhe-chamado.js cria as linhas e os links de detalhes nesta area. -->
+            </tbody>
+          </table>
+        </div>
+        <div id="ticketsEmptyState" class="tracking-empty-state d-none" role="status">
+          <i class="bi bi-inbox"></i>
+          <strong>Você não possui chamados para acompanhar</strong>
+        </div>
+      </section>
+      <p class="tracking-footnote">Arboriza · Cidades mais verdes, vidas melhores.</p>
+    </section>
+  </main>
+</div>
+
+<!-- Modal Bootstrap: apresenta os detalhes e a preferencia de notificacao do chamado selecionado. -->
+<div class="modal fade" id="ticketDetailsModal" tabindex="-1" aria-labelledby="ticketModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content ticket-modal-content">
+      <div class="modal-header ticket-modal-header">
+        <div>
+          <span class="modal-eyebrow">DETALHES DO CHAMADO</span>
+          <h2 class="modal-title" id="ticketModalTitle">Chamado</h2>
+        </div>
+        <!-- Botao X fecha o modal para a pessoa poder abrir outro ID da tabela. -->
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <!-- O JavaScript preenche estes campos com os dados do chamado selecionado. -->
+        <dl class="ticket-detail-grid">
+          <div class="ticket-detail"><dt>ID</dt><dd id="detailId"></dd></div>
+          <div class="ticket-detail"><dt>Município</dt><dd id="detailMunicipality"></dd></div>
+          <div class="ticket-detail ticket-detail-wide"><dt>Endereço completo</dt><dd id="detailAddress"></dd></div>
+          <div class="ticket-detail"><dt>Tipo de ocorrência</dt><dd id="detailType"></dd></div>
+          <div class="ticket-detail"><dt>Status</dt><dd id="detailStatus"></dd></div>
+          <div class="ticket-detail"><dt>Prioridade</dt><dd id="detailPriority"></dd></div>
+        </dl>
+
+        <!-- Ilustracao local ficticia para representar a foto anexada ate existir dado real. -->
+        <section class="ticket-photo-section" aria-labelledby="detailPhotoTitle">
+          <h3 id="detailPhotoTitle">Foto anexada</h3>
+          <div class="ticket-photo-placeholder" role="img" aria-label="Imagem ilustrativa de uma arvore em uma calcada">
+            <svg viewBox="0 0 720 300" aria-hidden="true" focusable="false">
+              <rect width="720" height="300" fill="#dcefe4" />
+              <circle cx="590" cy="62" r="31" fill="#f7d77b" />
+              <path d="M0 220 C130 190 210 218 330 198 C465 175 560 204 720 178 V300 H0Z" fill="#b8d8bd" />
+              <rect x="0" y="250" width="720" height="50" fill="#c9c9bb" />
+              <rect x="319" y="143" width="33" height="109" rx="8" fill="#8c6042" />
+              <circle cx="335" cy="115" r="66" fill="#43835c" />
+              <circle cx="287" cy="133" r="39" fill="#5b9b6c" />
+              <circle cx="377" cy="135" r="42" fill="#34734f" />
+              <path d="M120 250h110m260 0h115" stroke="#f7f5e8" stroke-width="8" stroke-linecap="round" />
+            </svg>
+            <span><i class="bi bi-image me-2"></i>Imagem ilustrativa do anexo</span>
+          </div>
+        </section>
+
+        <!-- A preferencia controla a inscricao do cidadao para receber atualizacoes do chamado. -->
+        <section class="ticket-notification-box">
+          <label class="ticket-notification-toggle" for="ticketNotificationsToggle">
+            <span class="ticket-notification-icon"><i class="bi bi-bell-fill"></i></span>
+            <span class="ticket-notification-copy">
+              <strong>Receber notificações deste chamado</strong>
+              <small>Avise-me quando houver atualizações no andamento.</small>
+            </span>
+            <input class="form-check-input" type="checkbox" role="switch" id="ticketNotificationsToggle">
+          </label>
+          <!-- Quando ativado, os dados de contato ficticios simulam o preenchimento automatico. -->
+          <div id="notificationContactDetails" class="notification-contact-details d-none">
+            <strong>Contato usado para as notificações</strong>
+            <span id="notificationContactName"></span>
+            <span id="notificationContactEmail"></span>
+            <span id="notificationContactPhone"></span>
+          </div>
+          <p id="notificationFeedback" class="notification-feedback d-none" role="status" aria-live="polite"></p>
+        </section>
+      </div>
+      <!-- O botao aparece quando a preferencia e alterada; salvar libera o fechamento do modal. -->
+      <div class="modal-footer ticket-modal-footer">
+        <button type="button" id="saveNotificationPreference" class="ticket-save-button d-none" disabled>Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap fornece o funcionamento do modal; sidebar.js carrega o script desta tela. -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="sidebar.js"></script>
+</body>
+</html>

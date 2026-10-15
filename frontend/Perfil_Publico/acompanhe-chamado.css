@@ -1,0 +1,44 @@
+/* Estrutura da pagina de acompanhamento usando a identidade visual do portal publico. */
+.tracking-main{background:#fbfdfc;min-height:100vh;flex:1;min-width:0}
+.tracking-content{max-width:1240px;margin:0 auto;padding:38px clamp(22px,4vw,58px) 24px}
+.tracking-page-heading{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:25px}
+.tracking-eyebrow{display:inline-flex;align-items:center;color:#67986b;font-size:12px;font-weight:800;letter-spacing:1.1px;margin-bottom:9px}
+.tracking-page-heading h1{font-size:clamp(27px,3vw,34px);font-weight:800;letter-spacing:-.7px;color:#1d2923;margin:0 0 8px}
+.tracking-page-heading p{color:#748078;margin:0;max-width:760px;line-height:1.55}
+.tracking-heading-icon{width:64px;height:64px;flex:0 0 64px;border-radius:18px;display:flex;align-items:center;justify-content:center;background:#e7f2eb;color:#1b7650;font-size:28px}
+/* Cartao da tabela e cabecalho de resultados. */
+.tracking-card{background:#fff;border:1px solid #e4ece7;border-radius:18px;padding:clamp(19px,2.5vw,28px) clamp(19px,2.5vw,28px) 8px;box-shadow:0 10px 35px rgba(23,72,48,.045)}
+.tracking-card-heading{display:flex;align-items:center;gap:13px;padding-bottom:20px;margin-bottom:18px;border-bottom:1px solid #edf1ee}
+.tracking-intro-icon{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:#e8f3ee;color:#166143;font-size:19px;flex:0 0 44px}
+.tracking-card-heading h2{font-size:17px;font-weight:800;color:#174f35;margin:0 0 4px}.tracking-card-heading p{font-size:13px;color:#77827c;margin:0}
+.tracking-table{min-width:780px;margin:0;color:#34443b;font-size:13px}
+.tracking-table thead th{background:#f5f8f5;color:#607267;font-size:11px;font-weight:800;letter-spacing:.45px;text-transform:uppercase;padding:13px 14px;border-bottom:1px solid #e7eee9;white-space:nowrap}
+.tracking-table tbody td{padding:14px;border-bottom:1px solid #edf1ee;vertical-align:middle}.tracking-table tbody tr:last-child td{border-bottom:0}
+.ticket-id-link{font-weight:800;color:#24784c;text-decoration:none;border-bottom:1px solid rgba(36,120,76,.35)}.ticket-id-link:hover,.ticket-id-link:focus{color:#0f503a;border-color:#0f503a}
+.ticket-badge{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:750;white-space:nowrap}
+.ticket-status-aberta{background:#fff3dc;color:#96630a}.ticket-status-andamento{background:#e4f0ff;color:#28639b}.ticket-status-concluida{background:#e5f4e9;color:#287045}
+.ticket-priority-baixa{background:#edf4ef;color:#557362}.ticket-priority-media{background:#fff3dc;color:#96630a}.ticket-priority-alta{background:#fbe9e7;color:#a83e32}
+.tracking-empty-state{align-items:center;flex-direction:column;gap:6px;padding:35px 16px;color:#7c8981;text-align:center}.tracking-empty-state:not(.d-none){display:flex}.tracking-empty-state i{font-size:25px;color:#6e9b7d;margin-bottom:3px}.tracking-empty-state strong{font-size:14px;color:#34443b}.tracking-empty-state span{font-size:12px}
+.tracking-footnote{text-align:center;color:#91a097;font-size:11px;margin:20px 0 0}
+/* Modal com detalhes do chamado, foto demonstrativa e preferencias de notificacao. */
+.ticket-modal-content{border:1px solid #e4ece7;border-radius:18px;overflow:hidden;box-shadow:0 18px 55px rgba(23,72,48,.16)}
+.ticket-modal-header{padding:22px 25px;background:#f7faf8;border-bottom:1px solid #e7eee9}.ticket-modal-header .btn-close{align-self:flex-start;margin-top:3px}
+.ticket-modal-footer{border-top:1px solid #edf1ee;padding:14px 25px 20px}
+.ticket-save-button{border:0;border-radius:10px;background:#166143;color:#fff;font-size:13px;font-weight:750;padding:11px 20px;box-shadow:0 5px 12px rgba(22,97,67,.12);transition:background .15s ease}
+.ticket-save-button:hover:not(:disabled){background:#0f503a}.ticket-save-button:disabled{opacity:.6;cursor:wait}
+.modal-eyebrow{display:block;color:#67986b;font-size:10px;font-weight:800;letter-spacing:1.1px;margin-bottom:5px}.ticket-modal-header .modal-title{color:#174f35;font-size:21px;font-weight:800}
+.ticket-modal-content .modal-body{padding:22px 25px 25px}
+.ticket-detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 22px}
+.ticket-detail{padding:12px 13px;background:#f7faf8;border:1px solid #e9efeb;border-radius:11px;min-width:0}.ticket-detail-wide{grid-column:span 3}
+.ticket-detail dt{color:#77827c;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px}.ticket-detail dd{color:#26362d;font-size:13px;font-weight:650;margin:0;overflow-wrap:anywhere}
+.ticket-photo-section h3{color:#34443b;font-size:13px;font-weight:800;margin:0 0 9px}
+.ticket-photo-placeholder{position:relative;overflow:hidden;border:1px solid #dfe8e2;border-radius:12px;background:#dcefe4}.ticket-photo-placeholder svg{display:block;width:100%;height:auto;max-height:240px;object-fit:cover}.ticket-photo-placeholder>span{position:absolute;right:10px;bottom:10px;border-radius:7px;background:rgba(20,48,32,.76);color:#fff;padding:6px 9px;font-size:10px;font-weight:650}
+.ticket-notification-box{margin-top:20px;border:1px solid #e1ebe5;background:#fbfdfb;border-radius:14px;padding:15px}
+.ticket-notification-toggle{display:flex;align-items:center;gap:12px;cursor:pointer}.ticket-notification-icon{width:40px;height:40px;border-radius:12px;background:#e5f2e9;color:#24784c;display:flex;align-items:center;justify-content:center;font-size:17px;flex:0 0 40px}
+.ticket-notification-copy{display:flex;flex-direction:column;gap:4px;flex:1}.ticket-notification-copy strong{font-size:13px;color:#234332}.ticket-notification-copy small{font-size:11px;color:#758179;line-height:1.4}
+.ticket-notification-toggle .form-check-input{width:2.5em;height:1.3em;cursor:pointer;flex:0 0 auto;margin:0}.ticket-notification-toggle .form-check-input:checked{background-color:#24784c;border-color:#24784c}
+.notification-contact-details{display:flex;flex-direction:column;gap:4px;margin:14px 0 0 52px;padding-top:12px;border-top:1px solid #e7eee9;color:#69766e;font-size:11px}.notification-contact-details strong{color:#234332;font-size:11px;margin-bottom:2px}
+.notification-feedback{font-size:11px;line-height:1.45;margin:12px 0 0 52px;color:#557362}.notification-feedback.is-error{color:#a83e32;font-size:13px;font-weight:700}
+@media(max-width:800px){.tracking-content{padding:28px 22px 20px}}
+@media(max-width:650px){.app-shell{display:block}.sidebar{width:100%;padding:16px}.brand{padding-bottom:16px}.sidebar-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.nav-item{font-size:13px;padding:10px;gap:8px}.nav-item i{font-size:17px;width:19px}.nav-item.active::before{left:-16px}.sidebar-bottom{display:none}.tracking-content{padding:24px 14px}.tracking-page-heading{align-items:flex-start}.tracking-heading-icon{width:48px;height:48px;flex-basis:48px;font-size:23px}.tracking-card{border-radius:14px}.ticket-modal-header{padding:18px}.ticket-modal-content .modal-body{padding:18px}.ticket-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.ticket-detail-wide{grid-column:span 2}}
+@media(max-width:420px){.ticket-notification-toggle{gap:8px}.ticket-notification-copy strong{font-size:12px}.notification-contact-details,.notification-feedback{margin-left:0}}

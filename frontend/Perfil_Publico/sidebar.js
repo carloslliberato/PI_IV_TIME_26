@@ -1,3 +1,4 @@
+// Define a estrutura HTML reutilizada como menu lateral nas paginas do portal publico.
 const publicSidebarMarkup = `
 <aside class="sidebar">
   <a class="brand brand-link" href="index.html" aria-label="Arboriza - página inicial">
@@ -24,29 +25,39 @@ const publicSidebarMarkup = `
   </div>
 </aside>`;
 
+// Localiza o ponto reservado no HTML para inserir o sidebar compartilhado.
 const sidebarContainer = document.getElementById("sidebar-container");
 if (sidebarContainer) {
+  // Guarda o script especifico da pagina antes de substituir o contêiner do menu.
   const pageScript = sidebarContainer.dataset.script;
   sidebarContainer.outerHTML = publicSidebarMarkup;
 
+  // Identifica qual arquivo esta aberto para ajustar os links e o item selecionado.
   const currentPage = window.location.pathname.split("/").pop() || "index.html";
   document.querySelectorAll(".sidebar-nav .nav-item").forEach(link => {
     const page = link.dataset.page;
     if (page) {
+      // Na pagina inicial, o link de arvores aponta para a secao local; nas outras, volta ao mapa.
       link.href = page === "index.html"
         ? (currentPage === "index.html" ? "#arvores" : "index.html#arvores")
         : page;
     }
 
+    // Aplica o estado visual ativo e a indicacao acessivel na pagina correspondente.
     const isActive = page === currentPage;
     link.classList.toggle("active", isActive);
     if (isActive) link.setAttribute("aria-current", "page");
   });
 
-  document.getElementById("navOccurrences").href = currentPage === "index.html"
-    ? "#ocorrencias"
-    : "index.html#ocorrencias";
+  // Sempre leva o item Ocorrencias para a tela de consulta e marca-o quando ela estiver aberta.
+  const occurrencesLink = document.getElementById("navOccurrences");
+  occurrencesLink.href = "ocorrencias-cidadao.html";
+  const isOccurrencesPage = currentPage === "ocorrencias-cidadao.html";
+  occurrencesLink.classList.toggle("active", isOccurrencesPage);
+  if (isOccurrencesPage) occurrencesLink.setAttribute("aria-current", "page");
+  else occurrencesLink.removeAttribute("aria-current");
 
+  // Tenta recuperar os dados salvos do usuario; se o JSON estiver invalido, remove o valor corrompido.
   let currentUser = null;
   try {
     currentUser = JSON.parse(localStorage.getItem("arborizaUsuario") || "null");
@@ -54,12 +65,15 @@ if (sidebarContainer) {
     localStorage.removeItem("arborizaUsuario");
   }
 
+  // Combina os formatos de sessao usados pelo projeto para identificar o login atual.
   const loginFlag = localStorage.getItem("login");
   const isLoggedIn = loginFlag === "true" || currentUser?.login === true;
+  // Descobre o setor/perfil do usuario, aceitando os nomes de campo ja usados no armazenamento.
   const storedSetorId = localStorage.getItem("idSetor");
   const setorId = storedSetorId !== null
     ? (storedSetorId === "null" ? null : storedSetorId)
     : (currentUser?.idSetor ?? currentUser?.setorId ?? currentUser?.setor);
+  // Procura o nome do usuario nas chaves antigas e atuais para montar a saudacao.
   const userName = localStorage.getItem("nome")
     || localStorage.getItem("nomeUsuario")
     || localStorage.getItem("nomeLogado")
@@ -67,17 +81,25 @@ if (sidebarContainer) {
     || "";
 
   if (isLoggedIn && userName) {
+    // Um perfil sem setor associado e tratado como cidadao no portal publico.
     const isCitizen = setorId == null || String(setorId).trim() === "";
 
     if (isCitizen) {
+      // Para cidadaos autenticados, troca o cadastro por um atalho de acompanhamento.
       const accountLink = document.getElementById("navSignup");
-      accountLink.href = "#acompanhar-chamados";
+      accountLink.href = "acompanhe-chamado.html";
       accountLink.querySelector("i").className = "bi bi-clipboard2-check";
       accountLink.querySelector("span").textContent = "Acompanhe seus chamados";
       accountLink.removeAttribute("data-page");
       accountLink.dataset.accountRole = "citizen";
+      // Mantem o atalho selecionado quando o cidadao estiver na tela de acompanhamento.
+      const isTrackingPage = currentPage === "acompanhe-chamado.html";
+      accountLink.classList.toggle("active", isTrackingPage);
+      if (isTrackingPage) accountLink.setAttribute("aria-current", "page");
+      else accountLink.removeAttribute("aria-current");
     }
 
+    // Substitui o link de login por saudacao e acao de sair, se o cabecalho tiver esse controle.
     const loginLink = document.querySelector(".public-top-actions .login-link");
     if (loginLink) {
       const actions = loginLink.parentElement;
@@ -94,6 +116,7 @@ if (sidebarContainer) {
       logoutLink.textContent = "Sair";
       logoutLink.addEventListener("click", event => {
         event.preventDefault();
+        // Encerra a sessao local removendo os dados usados para reconhecer o usuario.
         localStorage.removeItem("arborizaUsuario");
         localStorage.removeItem("login");
         localStorage.removeItem("idSetor");
@@ -107,9 +130,11 @@ if (sidebarContainer) {
     }
   }
 
+  // Carrega a logica especifica desta tela depois que o sidebar ja foi inserido no documento.
   if (pageScript) {
     const script = document.createElement("script");
     script.src = pageScript;
     document.body.appendChild(script);
   }
 }
+

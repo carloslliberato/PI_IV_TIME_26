@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <!-- Bootstrap, icones e estilos compartilhados e especificos desta tela. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Arboriza | Abrir chamado</title>
@@ -11,10 +12,12 @@
 </head>
 <body>
 <div class="app-shell">
+  <!-- sidebar.js cria o menu publico e carrega o JavaScript desta pagina. -->
   <div id="sidebar-container" data-script="abrir-chamado.js" aria-live="polite"></div>
 
   <main class="main report-main">
     <section class="report-content">
+      <!-- Cabecalho com o titulo e a explicacao da abertura de chamado. -->
       <div class="report-page-heading">
         <div>
           <span class="report-eyebrow"><i class="bi bi-globe2 me-2"></i>PORTAL PÚBLICO</span>
@@ -24,12 +27,14 @@
         <div class="report-heading-icon"><i class="bi bi-megaphone-fill"></i></div>
       </div>
 
+      <!-- Cartao principal que organiza os campos de registro do problema. -->
       <div class="report-form-card">
         <div class="report-form-intro">
           <div class="report-intro-icon"><i class="bi bi-clipboard2-plus-fill"></i></div>
           <div><h2>Informações da ocorrência</h2><p>Descreva o problema e indique o local para ajudar a equipe a identificar a situação.</p></div>
         </div>
 
+        <!-- O JavaScript controla validacao, anexo e envio demonstrativo deste formulario. -->
         <form id="reportForm" novalidate>
           <div class="row g-3">
             <div class="col-md-6">
@@ -71,6 +76,7 @@
             </div>
           </div>
 
+          <!-- A opcao de notificacao revela os campos para contato quando ativada. -->
           <div class="report-notification-box">
             <label class="report-notification-toggle" for="wantsReportNotifications">
               <span class="report-notification-icon"><i class="bi bi-bell-fill"></i></span>
@@ -101,6 +107,7 @@
 </div>
 <div class="toast-container position-fixed bottom-0 end-0 p-3"><div id="reportToast" class="toast border-0" role="status" aria-live="polite" aria-atomic="true"><div class="toast-header"><i class="bi bi-check-circle-fill text-success me-2"></i><strong class="me-auto">Arboriza</strong><button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Fechar"></button></div><div class="toast-body">Chamado enviado com sucesso, agradecemos a colaboração.</div></div></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- sidebar.js injeta abrir-chamado.js depois de montar o menu compartilhado. -->
 <script src="sidebar.js"></script>
 </body>
 </html>

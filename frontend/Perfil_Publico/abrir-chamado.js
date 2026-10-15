@@ -1,7 +1,9 @@
 // Arboriza — formulário demonstrativo para abertura de chamado.
 // A integração com a API Java será feita posteriormente.
 
+// Inicializa os controles do formulario depois que a pagina e o sidebar estiverem carregados.
 function initializeReportForm() {
+  // Guarda referencias aos campos que serao controlados por eventos e validacoes.
   const form = document.getElementById("reportForm");
   const wantsNotifications = document.getElementById("wantsReportNotifications");
   const notificationFields = document.getElementById("reportNotificationFields");
@@ -37,6 +39,7 @@ function initializeReportForm() {
   //   .catch(error => console.error("Não foi possível carregar o perfil do cidadão:", error));
   // }
 
+  // Mostra os dados de contato e exige seu preenchimento apenas se notificacoes forem solicitadas.
   function toggleNotificationFields() {
     const enabled = wantsNotifications.checked;
     notificationFields.classList.toggle("d-none", !enabled);
@@ -50,6 +53,7 @@ function initializeReportForm() {
     // Evite confiar apenas em dados guardados no navegador; o back-end deve validar a sessão.
   }
 
+  // Conecta a opcao de notificacao aos campos de contato e define o estado inicial.
   wantsNotifications.addEventListener("change", toggleNotificationFields);
   toggleNotificationFields();
 
@@ -64,10 +68,12 @@ function initializeReportForm() {
     }
   });
 
+  // Converte o tamanho do arquivo para uma exibicao em KB ou MB.
   function formatBytes(bytes) {
     return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
+  // Valida formato e tamanho da imagem e mostra uma previa local se ela for aceita.
   imageInput.addEventListener("change", () => {
     imageError.classList.add("d-none");
     const file = imageInput.files && imageInput.files[0];
@@ -96,6 +102,7 @@ function initializeReportForm() {
     imageError.classList.add("d-none");
   });
 
+  // Intercepta o envio padrao para validar os dados antes da futura chamada a API.
   form.addEventListener("submit", async event => {
     event.preventDefault();
     form.classList.add("was-validated");
@@ -135,6 +142,7 @@ function initializeReportForm() {
     window.location.href = "index.html";
   });
 }
+// Aguarda o DOM se necessario; caso ele ja esteja pronto, inicializa imediatamente.
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initializeReportForm, { once: true });
 } else {
