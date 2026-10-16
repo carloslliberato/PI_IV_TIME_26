@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <!-- estrutura básica do documento -->
-  <meta charset="UTF-8"> <!-- permite caracteres especiais, como acentos e cedilha, garantindo que o texto seja exibido corretamente. -->
-  <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- permite que o site seja responsivo, ajustando-se a diferentes tamanhos de tela, como smartphones e tablets. -->
+  <meta charset="UTF-8">
+  <!-- permite caracteres especiais, como acentos e cedilha, garantindo que o texto seja exibido corretamente. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- permite que o site seja responsivo, ajustando-se a diferentes tamanhos de tela, como smartphones e tablets. -->
   <title>Arboriza | Portal Público</title>
 
   <!-- Bootstrap 5 -->
@@ -12,141 +15,185 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <!-- Leaflet: biblioteca que possui mapa, zoom, marcadores, do css-->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="/Perfil_Publico/styles.css">
+  <!-- <link rel="stylesheet" href="styles.css"> -->
 </head>
+
 <body>
 
-<div class="app-shell">
-  <div id="sidebar-container" data-script="script.js" aria-live="polite"></div>
+  <div class="app-shell">
+    <div id="sidebar-container" data-script="/Perfil_Publico/script.js" aria-live="polite"></div>
+    <!-- <div id="sidebar-container" data-script="script.js" aria-live="polite"></div> -->
 
-  <!-- Main content, topbar = barra superior -->
-  <main class="main">
-    <header class="topbar">
-      <div class="municipality-wrap">
-        <label for="municipioSelect" class="eyebrow">Município</label>
-        <div class="select-shell">
-          <i class="bi bi-geo-alt"></i>
-          <select id="municipioSelect" class="form-select form-select-sm">
-            <option value="campinas">Campinas - SP</option>
-            <option value="hortolandia">Hortolândia - SP</option>
-            <option value="sumare">Sumaré - SP</option>
-          </select>
+
+    <!-- Main content, topbar = barra superior -->
+    <main class="main">
+      <header class="topbar">
+        <div class="municipality-wrap">
+          <label for="municipioSelect" class="eyebrow">Município</label>
+          <div class="select-shell">
+            <i class="bi bi-geo-alt"></i>
+            <select id="municipioSelect" class="form-select form-select-sm">
+              <option value="campinas">Campinas - SP</option>
+              <option value="hortolandia">Hortolândia - SP</option>
+              <option value="sumare">Sumaré - SP</option>
+            </select>
+          </div>
         </div>
-      </div>
 
-      <!-- campo de pesquisa, com ícone de lupa e placeholder -->
-      <div class="search-shell">
-        <i class="bi bi-search"></i>
-        <input id="searchInput" type="search" placeholder="Buscar endereço, árvore, espécie ou ID...">
-      </div>
-      <div class="public-filter-wrap">
-        <button class="btn-filter" id="btnFilters" type="button" aria-expanded="false" aria-controls="publicFilters"><i class="bi bi-sliders"></i><span>Filtros</span><i class="bi bi-chevron-down filter-chevron"></i></button>
-        <div class="public-filters card shadow-sm d-none" id="publicFilters"><div class="card-body">
-          <div class="filter-panel-heading"><strong>Filtrar árvores</strong><button class="plain-btn" id="clearFilters" type="button">Limpar</button></div>
-          <label class="public-filter-check"><input type="checkbox" id="filterFruitBearing"><span>Árvores frutíferas</span></label>
-          <label class="form-label mt-2 mb-1" for="filterRisk">Nível de risco</label><select class="form-select form-select-sm" id="filterRisk"><option value="">Todos os níveis</option><option>Baixo</option><option>Moderado</option><option>Alto</option><option>Crítico</option></select>
-          <label class="public-filter-check"><input type="checkbox" id="filterMaintenance"><span>Necessidade de manutenção</span></label>
-          <label class="public-filter-check"><input type="checkbox" id="filterFlowering"><span>Floração</span></label>
-          <label class="public-filter-check"><input type="checkbox" id="filterWeather"><span>Região afetada por condições meteorológicas</span></label>
-          <button class="btn btn-success w-100 mt-3" id="applyFilters" type="button">Aplicar filtros</button>
-        </div></div>
-      </div>
-
-      <div class="top-actions public-top-actions">
-        <a href="../Login/login.html" class="login-link">
-          <i class="bi bi-box-arrow-in-right"></i>
-          Fazer login
-        </a>
-      </div>
-    </header>
-
-    <!-- título, descrição e botão para cadastrar árvores, além de uma área de mapa e uma barra lateral com estatísticas e lista de árvores próximas. -->
-    <section class="content">
-      <div class="page-head">
-        <div>
-          <h1 id="arvores">Mapa da cidade</h1>
-          <p>Consulte a arborização urbana, conheça as espécies e acompanhe informações de risco e manutenção.</p>
+        <!-- campo de pesquisa, com ícone de lupa e placeholder -->
+        <div class="search-shell">
+          <i class="bi bi-search"></i>
+          <input id="searchInput" type="search" placeholder="Buscar endereço, árvore, espécie ou ID...">
         </div>
-        <span class="public-view-label"><i class="bi bi-globe2 me-2"></i>Portal público</span>
-      </div>
-
-      <div class="workspace">
-        <!-- área do mapa -->
-        <section class="map-panel">
-          <div id="map"></div>
-
-          <!-- filtros do mapa, com opções para ativar ou desativar camadas  -->
-          <div class="map-layer card shadow-sm">
+        <div class="public-filter-wrap">
+          <button class="btn-filter" id="btnFilters" type="button" aria-expanded="false"
+            aria-controls="publicFilters"><i class="bi bi-sliders"></i><span>Filtros</span><i
+              class="bi bi-chevron-down filter-chevron"></i></button>
+          <div class="public-filters card shadow-sm d-none" id="publicFilters">
             <div class="card-body">
-              <div class="d-flex align-items-center justify-content-between mb-2">
-                <strong>Camadas</strong>
-                <button class="plain-btn" id="toggleLayers" title="Recolher">
-                  <i class="bi bi-chevron-up"></i>
-                </button>
-              </div>
-
-              <div id="layerBody">
-                <label class="layer-row">
-                  <input type="checkbox" checked id="treesLayer">
-                  <span class="check-custom"></span>
-                  <span>Árvores cadastradas</span>
-                </label>
-
-                <label class="layer-row">
-                  <input type="checkbox" id="occurrencesLayer">
-                  <span class="check-custom"></span>
-                  <span>Ocorrências</span>
-                </label>
-
-                <label class="layer-row">
-                  <input type="checkbox" checked id="riskLayer">
-                  <span class="check-custom"></span>
-                  <span>Risco</span>
-                </label>
-
-                <hr>
-
-                <div class="legend-title">Legenda (Nível de risco)</div>
-                <div class="legend-item"><span class="legend-dot low"><i class="bi bi-tree-fill"></i></span>Baixo</div>
-                <div class="legend-item"><span class="legend-dot medium"><i class="bi bi-tree-fill"></i></span>Médio</div>
-                <div class="legend-item"><span class="legend-dot high"><i class="bi bi-tree-fill"></i></span>Alto</div>
-                <div class="legend-item"><span class="legend-dot critical"><i class="bi bi-tree-fill"></i></span>Crítico</div>
-              </div>
+              <div class="filter-panel-heading"><strong>Filtrar árvores</strong><button class="plain-btn"
+                  id="clearFilters" type="button">Limpar</button></div>
+              <label class="public-filter-check"><input type="checkbox" id="filterFruitBearing"><span>Árvores
+                  frutíferas</span></label>
+              <label class="form-label mt-2 mb-1" for="filterRisk">Nível de risco</label><select
+                class="form-select form-select-sm" id="filterRisk">
+                <option value="">Todos os níveis</option>
+                <option>Baixo</option>
+                <option>Moderado</option>
+                <option>Alto</option>
+                <option>Crítico</option>
+              </select>
+              <label class="public-filter-check"><input type="checkbox" id="filterMaintenance"><span>Necessidade de
+                  manutenção</span></label>
+              <label class="public-filter-check"><input type="checkbox"
+                  id="filterFlowering"><span>Floração</span></label>
+              <label class="public-filter-check"><input type="checkbox" id="filterWeather"><span>Região afetada por
+                  condições meteorológicas</span></label>
+              <button class="btn btn-success w-100 mt-3" id="applyFilters" type="button">Aplicar filtros</button>
             </div>
           </div>
+        </div>
 
-          <div class="map-toast" id="mapToast">
-            <i class="bi bi-info-circle"></i>
-            <span>Clique em um marcador para ver as informações da árvore.</span>
+        <div class="top-actions public-top-actions">
+          <!-- <a href="../Login/login.html" class="login-link"> -->
+          <a href="/login" class="login-link">
+            <i class="bi bi-box-arrow-in-right"></i>
+            Fazer login
+          </a>
+        </div>
+      </header>
+
+      <!-- título, descrição e botão para cadastrar árvores, além de uma área de mapa e uma barra lateral com estatísticas e lista de árvores próximas. -->
+      <section class="content">
+        <div class="page-head">
+          <div>
+            <h1 id="arvores">Mapa da cidade</h1>
+            <p>Consulte a arborização urbana, conheça as espécies e acompanhe informações de risco e manutenção.</p>
           </div>
-        </section>
+          <span class="public-view-label"><i class="bi bi-globe2 me-2"></i>Portal público</span>
+        </div>
 
-        <!-- área lateral de indicadores -->
-        <aside class="right-rail">
-          <div class="public-info-card"><div class="public-info-icon"><i class="bi bi-tree-fill"></i></div><div><strong>Arborização urbana</strong><p>Explore as árvores cadastradas no município e consulte seus dados públicos.</p></div></div>
+        <div class="workspace">
+          <!-- área do mapa -->
+          <section class="map-panel">
+            <div id="map"></div>
 
-          <div class="list-heading">
-            <h2 id="ocorrencias">Árvores em destaque</h2>
-            <button class="link-btn" id="btnVerTodas">Ver todas</button>
-          </div>
+            <!-- filtros do mapa, com opções para ativar ou desativar camadas  -->
+            <div class="map-layer card shadow-sm">
+              <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <strong>Camadas</strong>
+                  <button class="plain-btn" id="toggleLayers" title="Recolher">
+                    <i class="bi bi-chevron-up"></i>
+                  </button>
+                </div>
 
-          <!-- Lista das árvores próximas, gerada automaticamente pelo JavaScript -->
-          <div id="treeList" class="tree-list"></div>
-        </aside>
+                <div id="layerBody">
+                  <label class="layer-row">
+                    <input type="checkbox" checked id="treesLayer">
+                    <span class="check-custom"></span>
+                    <span>Árvores cadastradas</span>
+                  </label>
+
+                  <label class="layer-row">
+                    <input type="checkbox" id="occurrencesLayer">
+                    <span class="check-custom"></span>
+                    <span>Ocorrências</span>
+                  </label>
+
+                  <label class="layer-row">
+                    <input type="checkbox" checked id="riskLayer">
+                    <span class="check-custom"></span>
+                    <span>Risco</span>
+                  </label>
+
+                  <hr>
+
+                  <div class="legend-title">Legenda (Nível de risco)</div>
+                  <div class="legend-item"><span class="legend-dot low"><i class="bi bi-tree-fill"></i></span>Baixo
+                  </div>
+                  <div class="legend-item"><span class="legend-dot medium"><i class="bi bi-tree-fill"></i></span>Médio
+                  </div>
+                  <div class="legend-item"><span class="legend-dot high"><i class="bi bi-tree-fill"></i></span>Alto
+                  </div>
+                  <div class="legend-item"><span class="legend-dot critical"><i
+                        class="bi bi-tree-fill"></i></span>Crítico</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="map-toast" id="mapToast">
+              <i class="bi bi-info-circle"></i>
+              <span>Clique em um marcador para ver as informações da árvore.</span>
+            </div>
+          </section>
+
+          <!-- área lateral de indicadores -->
+          <aside class="right-rail">
+            <div class="public-info-card">
+              <div class="public-info-icon"><i class="bi bi-tree-fill"></i></div>
+              <div><strong>Arborização urbana</strong>
+                <p>Explore as árvores cadastradas no município e consulte seus dados públicos.</p>
+              </div>
+            </div>
+
+            <div class="list-heading">
+              <h2 id="ocorrencias">Árvores em destaque</h2>
+              <button class="link-btn" id="btnVerTodas">Ver todas</button>
+            </div>
+
+            <!-- Lista das árvores próximas, gerada automaticamente pelo JavaScript -->
+            <div id="treeList" class="tree-list"></div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Formulários demonstrativos do portal público -->
+  <div class="modal fade" id="publicActionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0">
+        <div class="modal-header">
+          <h5 class="modal-title" id="publicActionTitle">Portal público</h5><button type="button" class="btn-close"
+            data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <form id="publicActionForm">
+          <div class="modal-body" id="publicActionBody"></div>
+          <div class="modal-footer"><button type="button" class="btn btn-light"
+              data-bs-dismiss="modal">Cancelar</button><button class="btn btn-success" type="submit"
+              id="publicActionSubmit">Continuar</button></div>
+        </form>
       </div>
-    </section>
-  </main>
-</div>
+    </div>
+  </div>
 
-<!-- Formulários demonstrativos do portal público -->
-<div class="modal fade" id="publicActionModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0">
-  <div class="modal-header"><h5 class="modal-title" id="publicActionTitle">Portal público</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button></div>
-  <form id="publicActionForm"><div class="modal-body" id="publicActionBody"></div><div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-success" type="submit" id="publicActionSubmit">Continuar</button></div></form>
-</div></div></div>
-
-<!-- Bootstrap + Leaflet -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="sidebar.js"></script>
+  <!-- Bootstrap + Leaflet -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/Perfil_Publico/sidebar.js"></script>
+  <!-- <script src="sidebar.js"></script> -->
 </body>
+
 </html>

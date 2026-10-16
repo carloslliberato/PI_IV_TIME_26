@@ -30,7 +30,8 @@ function initializeCitizenOccurrences() {
   // Marca a opção de ocorrências no sidebar compartilhado como a página atual.
   const occurrencesNavLink = document.getElementById("navOccurrences");
   if (occurrencesNavLink) {
-    occurrencesNavLink.href = "ocorrencias-cidadao.html";
+    // occurrencesNavLink.href = "ocorrencias-cidadao.html";
+    occurrencesNavLink.href = "/ocorrencias-cidadao";
     occurrencesNavLink.classList.add("active");
     occurrencesNavLink.setAttribute("aria-current", "page");
   }
