@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <!-- Define idioma, viewport e os recursos visuais usados pelo mapa profissional. -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arboriza | Mapa profissional</title>
+
+  <!-- Bibliotecas de ícones e mapa; os arquivos do próprio projeto usam caminhos relativos. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="styles-profissional.css" data-professional-sidebar-styles="true">
+  <link rel="stylesheet" href="mapa-profissional.css">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- O sidebar verifica login e setor, destaca Mapa e carrega a lógica desta tela. -->
+    <div id="sidebar-profissional" data-script="mapa-profissional.js"></div>
+
+    <main class="main professional-main">
+      <section class="professional-content professional-map-content" aria-labelledby="mapPageTitle">
+        <div class="professional-page-heading professional-map-heading">
+          <div>
+            <span class="professional-eyebrow">GESTÃO MUNICIPAL</span>
+            <h1 id="mapPageTitle">Mapa da cidade</h1>
+            <p>Consulte as árvores cadastradas, espécies, níveis de risco e ocorrências.</p>
+          </div>
+          <span class="professional-map-scope"><i class="bi bi-pin-map-fill" aria-hidden="true"></i><span id="mapScopeName">Município do profissional</span></span>
+        </div>
+
+        <div class="professional-map-workspace">
+          <!-- Área geográfica com marcadores e controles de camadas. -->
+          <section class="professional-map-panel" aria-label="Mapa de árvores e ocorrências">
+            <div id="professionalMap" role="application" aria-label="Mapa interativo do município"></div>
+
+            <!-- Alterna marcadores, ocorrências e destaque visual dos níveis de risco. -->
+            <section class="professional-map-layers" aria-label="Camadas do mapa">
+              <div class="professional-map-layers-heading">
+                <strong>Camadas</strong>
+                <button class="professional-map-plain-button" id="toggleMapLayers" type="button" aria-label="Recolher camadas" title="Recolher camadas">
+                  <i class="bi bi-chevron-up" aria-hidden="true"></i>
+                </button>
+              </div>
+              <div id="mapLayerBody">
+                <label class="professional-layer-row">
+                  <input type="checkbox" checked id="treesMapLayer">
+                  <span class="professional-check-custom" aria-hidden="true"></span>
+                  <span>Árvores cadastradas</span>
+                </label>
+                <label class="professional-layer-row">
+                  <input type="checkbox" id="occurrencesMapLayer">
+                  <span class="professional-check-custom" aria-hidden="true"></span>
+                  <span>Ocorrências</span>
+                </label>
+                <label class="professional-layer-row">
+                  <input type="checkbox" checked id="riskMapLayer">
+                  <span class="professional-check-custom" aria-hidden="true"></span>
+                  <span>Risco</span>
+                </label>
+                <hr>
+                <div class="professional-legend-title">Legenda (nível de risco)</div>
+                <div class="professional-legend-item"><span class="professional-legend-dot low"><i class="bi bi-tree-fill"></i></span>Baixo</div>
+                <div class="professional-legend-item"><span class="professional-legend-dot medium"><i class="bi bi-tree-fill"></i></span>Médio</div>
+                <div class="professional-legend-item"><span class="professional-legend-dot high"><i class="bi bi-tree-fill"></i></span>Alto</div>
+                <div class="professional-legend-item"><span class="professional-legend-dot critical"><i class="bi bi-tree-fill"></i></span>Crítico</div>
+              </div>
+            </section>
+
+            <!-- Mensagem breve atualizada após ações no mapa. -->
+            <div class="professional-map-toast" id="professionalMapToast" role="status" aria-live="polite">
+              <i class="bi bi-info-circle" aria-hidden="true"></i>
+              <span>Clique em um marcador para consultar os dados da árvore.</span>
+            </div>
+          </section>
+
+          <!-- Busca e lista de árvores do município associado ao perfil. -->
+          <aside class="professional-map-rail" aria-label="Árvores do município">
+            <section class="professional-map-info-card">
+              <span class="professional-map-info-icon"><i class="bi bi-tree-fill" aria-hidden="true"></i></span>
+              <div>
+                <strong>Arborização municipal</strong>
+                <p>Os registros e marcadores exibidos pertencem ao município vinculado ao seu cadastro.</p>
+              </div>
+            </section>
+
+            <label class="professional-map-search-label" for="treeSearch">Buscar árvore</label>
+            <div class="professional-map-search">
+              <i class="bi bi-search" aria-hidden="true"></i>
+              <input id="treeSearch" type="search" placeholder="Nome, espécie, bairro ou ID..." autocomplete="off">
+            </div>
+
+            <div class="professional-map-list-heading">
+              <h2>Árvores em destaque</h2>
+              <button class="professional-map-text-button" id="showAllTrees" type="button">Ver todas</button>
+            </div>
+            <div class="professional-tree-list" id="professionalTreeList" aria-live="polite"></div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Ficha demonstrativa da árvore selecionada, aberta pelo link do pop-up do marcador. -->
+  <div class="professional-tree-modal" id="professionalTreeModal" role="dialog" aria-modal="true" aria-labelledby="professionalTreeModalTitle" hidden>
+    <section class="professional-tree-modal-card">
+      <header class="professional-tree-modal-header">
+        <div>
+          <span class="professional-tree-modal-id" id="professionalTreeModalId"></span>
+          <h2 id="professionalTreeModalTitle">Ficha da árvore</h2>
+        </div>
+        <button class="professional-tree-modal-close" id="closeProfessionalTreeModal" type="button" aria-label="Fechar ficha">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+      </header>
+      <div class="professional-tree-modal-body" id="professionalTreeModalBody"></div>
+    </section>
+  </div>
+
+  <!-- Leaflet fornece o mapa interativo; o sidebar carrega mapa-profissional.js após validar o acesso. -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="sidebar-profissional.js"></script>
+</body>
+</html>

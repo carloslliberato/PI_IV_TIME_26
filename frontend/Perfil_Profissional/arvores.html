@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <!-- Configura o idioma, a escala para celular e o título da tela. -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arboriza | Árvores</title>
+
+  <!-- Ícones e estilos próprios do perfil profissional. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="styles-profissional.css" data-professional-sidebar-styles="true">
+  <link rel="stylesheet" href="arvores.css">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- O sidebar valida login/setor, marca Árvores como ativa e carrega arvores.js. -->
+    <div id="sidebar-profissional" data-script="arvores.js"></div>
+
+    <main class="main professional-main">
+      <section class="professional-content trees-page" aria-labelledby="treesPageTitle">
+        <!-- Cabeçalho, contexto municipal e ação para incluir um registro. -->
+        <header class="trees-heading">
+          <div>
+            <span class="professional-eyebrow">GESTÃO MUNICIPAL</span>
+            <h1 id="treesPageTitle">Árvores</h1>
+            <p>Consulte e gerencie as árvores cadastradas no seu município.</p>
+          </div>
+          <button class="tree-button tree-button-primary" id="openCreateTree" type="button">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> Cadastrar nova árvore
+          </button>
+        </header>
+
+        <!-- Busca por árvore, bairro ou ordem de serviço e filtro por situação. -->
+        <section class="trees-toolbar" aria-label="Buscar e filtrar árvores">
+          <label class="tree-search" for="treeSearchInput">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input id="treeSearchInput" type="search" placeholder="Buscar árvore, bairro ou ordem de serviço..." autocomplete="off">
+          </label>
+          <label class="tree-filter" for="treeRiskFilter">
+            <i class="bi bi-sliders" aria-hidden="true"></i>
+            <select id="treeRiskFilter" aria-label="Filtrar por nível de risco">
+              <option value="">Todos os níveis e situações</option>
+              <option value="baixo">Baixo</option>
+              <option value="moderado">Moderado</option>
+              <option value="alto">Alto</option>
+              <option value="crítico">Crítico</option>
+              <option value="manutenção">Manutenção</option>
+              <option value="floração">Floração</option>
+            </select>
+          </label>
+        </section>
+
+        <!-- A tabela recebe os registros municipais carregados pela lógica da página. -->
+        <section class="trees-table-card" aria-label="Árvores cadastradas">
+          <div class="trees-table-heading">
+            <div><h2>Árvores cadastradas</h2><p id="treeResultCount" aria-live="polite"></p></div>
+            <span class="trees-municipality"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i><span id="treeMunicipality">Campinas - SP</span></span>
+          </div>
+          <div class="trees-table-scroll">
+            <table class="trees-table">
+              <thead><tr><th scope="col">ID</th><th scope="col">Nome</th><th scope="col">Bairro</th><th scope="col">Nível de risco</th><th scope="col">Última visita</th></tr></thead>
+              <tbody id="treesTableBody"></tbody>
+            </table>
+          </div>
+          <div class="trees-empty" id="treesEmpty" hidden>
+            <i class="bi bi-tree" aria-hidden="true"></i><strong>Nenhuma árvore encontrada</strong><span>Ajuste a busca ou o filtro para ver outros registros.</span>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <!-- Ficha da árvore: galeria, dados gerais, classificação e registros relacionados. -->
+  <div class="tree-modal-backdrop" id="treeDetailsModal" role="dialog" aria-modal="true" aria-labelledby="treeDetailsTitle" hidden>
+    <section class="tree-modal tree-details-modal">
+      <button class="tree-modal-close" data-close-modal type="button" aria-label="Fechar ficha"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+      <div class="tree-detail-topline">
+        <div><span class="tree-species-tag" id="treeSpeciesTag">Árvore nativa</span><h2 id="treeDetailsTitle"></h2><p id="treeScientificName"></p></div>
+        <div class="tree-detail-actions"><button class="tree-button tree-button-edit" id="startInterventionButton" type="button"><i class="bi bi-clipboard-plus" aria-hidden="true"></i> Registrar nova intervenção</button><button class="tree-button tree-button-edit" id="editTreeButton" type="button"><i class="bi bi-pencil" aria-hidden="true"></i> Editar árvore</button><button class="tree-button tree-button-delete" id="showDeleteTree" type="button"><i class="bi bi-trash3" aria-hidden="true"></i> Excluir árvore</button></div>
+      </div>
+      <!-- O motivo é coletado antes da confirmação explícita da exclusão. -->
+      <div class="tree-delete-panel" id="deleteTreePanel" hidden>
+        <label for="deleteReason">Motivo da exclusão</label>
+        <select id="deleteReason"><option value="">Selecione o motivo</option><option>Árvore removida com autorização</option><option>Árvore morta ou caída</option><option>Cadastro duplicado</option><option>Outro motivo</option></select>
+        <button class="tree-button tree-button-delete" id="confirmDeleteTree" type="button">Confirmar exclusão</button>
+      </div>
+      <div class="tree-detail-grid">
+        <!-- Galeria demonstrativa; as URLs serão substituídas pelas fotos recebidas da API. -->
+        <section class="tree-gallery" aria-label="Fotos da árvore">
+          <div class="tree-gallery-main"><img id="treeMainPhoto" alt="Foto da árvore"><span class="tree-photo-count" id="treePhotoCount"></span><button id="previousTreePhoto" class="tree-gallery-arrow previous" type="button" aria-label="Foto anterior"><i class="bi bi-chevron-left"></i></button><button id="nextTreePhoto" class="tree-gallery-arrow next" type="button" aria-label="Próxima foto"><i class="bi bi-chevron-right"></i></button></div>
+          <div class="tree-photo-thumbnails" id="treePhotoThumbnails"></div>
+        </section>
+        <!-- A ficha visual reúne os campos descritivos e as datas de manutenção. -->
+        <section class="tree-info-card"><h3>Informações gerais</h3><dl class="tree-info-list" id="treeInfoList"></dl></section>
+      </div>
+      <!-- Abas demonstrativas de histórico, ocorrências, ordens de serviço e documentos. -->
+      <section class="tree-related-section">
+        <div class="tree-tabs" role="tablist" aria-label="Registros da árvore">
+          <button class="tree-tab active" type="button" role="tab" aria-selected="true" data-tree-tab="history">Histórico</button><button class="tree-tab" type="button" role="tab" aria-selected="false" data-tree-tab="occurrences">Ocorrências</button><button class="tree-tab" type="button" role="tab" aria-selected="false" data-tree-tab="orders">Ordens de serviço</button><button class="tree-tab" type="button" role="tab" aria-selected="false" data-tree-tab="documents">Documentos</button>
+        </div>
+        <div class="tree-related-content" id="treeRelatedContent" role="tabpanel"></div>
+      </section>
+    </section>
+  </div>
+
+  <!-- Cadastro: os campos formam o payload futuro de criação da árvore. -->
+  <div class="tree-modal-backdrop" id="createTreeModal" role="dialog" aria-modal="true" aria-labelledby="createTreeTitle" hidden>
+    <section class="tree-modal tree-form-modal">
+      <button class="tree-modal-close" data-close-modal type="button" aria-label="Fechar cadastro"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+      <div class="tree-form-heading"><span class="tree-form-icon"><i class="bi bi-tree-fill" aria-hidden="true"></i></span><div><h2 id="createTreeTitle">Cadastrar nova árvore</h2><p>Preencha os dados para adicionar uma árvore ao município.</p></div></div>
+      <form id="createTreeForm" class="tree-form-grid">
+        <label>Nome popular<input name="name" required placeholder="Ex.: Ipê-amarelo"></label><label>Nome científico<input name="scientificName" required placeholder="Ex.: Handroanthus albus"></label>
+        <label class="form-field-wide">Localização<input name="location" required placeholder="Rua, número ou referência"></label><label>Bairro<input name="neighborhood" required placeholder="Nome do bairro"></label><label>Idade estimada<input name="age" required placeholder="Ex.: 20 anos"></label>
+        <label>Altura (m)<input name="height" type="number" min="0" step="0.1" required placeholder="Ex.: 8"></label><label>Diâmetro do tronco (cm)<input name="diameter" type="number" min="0" step="0.1" required placeholder="Ex.: 35"></label><label>Estado da árvore<select name="state" required><option value="">Selecione</option><option>Saudável</option><option>Regular</option><option>Ruim</option><option>Crítico</option></select></label><label>Nível de risco<select name="risk" required><option value="">Selecione</option><option>Baixo</option><option>Médio</option><option>Alto</option><option>Crítico</option></select></label>
+        <div class="tree-form-actions"><button class="tree-button tree-button-secondary" data-close-modal type="button">Cancelar</button><button class="tree-button tree-button-primary" type="submit"><i class="bi bi-check2" aria-hidden="true"></i> Salvar árvore</button></div>
+      </form>
+    </section>
+  </div>
+
+  <!-- Edição de foto, estado e dimensões; a intervenção só fecha após salvar. -->
+  <div class="tree-modal-backdrop" id="editTreeModal" role="dialog" aria-modal="true" aria-labelledby="editTreeTitle" hidden>
+    <section class="tree-modal tree-form-modal">
+      <button class="tree-modal-close" id="closeEditModal" type="button" aria-label="Fechar edição"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+      <div class="tree-form-heading" id="editFormHeading"><span class="tree-form-icon"><i class="bi bi-pencil-square" aria-hidden="true"></i></span><div><h2 id="editTreeTitle">Editar árvore</h2><p>Atualize a foto, o estado ou o tamanho da árvore.</p></div></div>
+      <form id="editTreeForm" class="tree-form-grid">
+        <label class="form-field-wide">Adicionar ou trocar foto<input name="photo" type="file" accept="image/*"><small>Selecione uma imagem do dispositivo.</small></label><label>Estado da árvore<select name="state" required><option>Saudável</option><option>Regular</option><option>Ruim</option><option>Crítico</option></select></label><label>Altura (m)<input name="height" type="number" min="0" step="0.1" required></label><label>Diâmetro do tronco (cm)<input name="diameter" type="number" min="0" step="0.1" required></label>
+        <div class="tree-form-actions tree-edit-actions"><button class="tree-button tree-button-primary" type="submit">Salvar alterações</button></div>
+      </form>
+      <!-- Se aberto, este formulário precisa ser salvo antes que a edição possa fechar. -->
+      <form id="interventionForm" class="intervention-form" hidden>
+        <div class="intervention-heading"><h3>Nova intervenção</h3><span>Todos os campos são obrigatórios</span></div>
+        <div class="tree-form-grid"><label>Data<input name="date" type="date" required></label><label>Tipo<select name="type" required><option value="">Selecione o tipo</option><option value="Vistoria">Vistoria</option><option value="Poda">Poda</option><option value="Ocorrência">Ocorrência</option><option value="Outros">Outros</option></select></label><label class="form-field-wide">Descrição<textarea name="description" rows="3" required placeholder="Descreva o serviço realizado"></textarea></label><label class="form-field-wide">Responsável<input name="responsible" required placeholder="Nome da pessoa ou equipe"></label></div>
+        <div class="tree-form-actions"><button class="tree-button tree-button-primary" type="submit"><i class="bi bi-check2" aria-hidden="true"></i> Salvar intervenção</button></div>
+        <p class="intervention-close-note" id="interventionCloseNote" aria-live="polite">Salve a intervenção para poder fechar esta janela.</p>
+      </form>
+    </section>
+  </div>
+
+  <!-- Avisos curtos de sucesso, erro ou orientação após as ações. -->
+  <div class="trees-toast" id="treesToast" role="status" aria-live="polite" hidden><i class="bi bi-check-circle-fill" aria-hidden="true"></i><span></span></div>
+
+  <!-- O sidebar aplica a validação de acesso antes de carregar a lógica desta página. -->
+  <script src="sidebar-profissional.js"></script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <!-- Define idioma e escala responsiva da página inicial profissional. -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arboriza | Inicial profissional</title>
+
+  <!-- Os ícones e estilos são independentes dos arquivos do Perfil_Publico. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="styles-profissional.css" data-professional-sidebar-styles="true">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- O sidebar valida login e setor, insere o menu e carrega inicial.js com acesso autorizado. -->
+    <div id="sidebar-profissional" data-script="inicial.js"></div>
+
+    <main class="main professional-main">
+      <!-- Topbar com município do cadastro, saudação da pessoa logada e saída da sessão. -->
+      <header class="professional-topbar">
+        <div class="professional-location">
+          <span class="professional-eyebrow">MUNICÍPIO DO CADASTRO</span>
+          <div class="professional-location-value">
+            <i class="bi bi-geo-alt" aria-hidden="true"></i>
+            <span id="municipioProfissional">Carregando município...</span>
+          </div>
+        </div>
+
+        <div class="professional-account">
+          <p class="professional-welcome">Bem-vindo(a), <strong id="nomeProfissional">...</strong></p>
+          <button class="professional-logout" id="btnLogout" type="button">
+            <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+            <span>Sair</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="professional-content" aria-labelledby="pageTitle">
+        <div class="professional-page-heading">
+          <div>
+            <span class="professional-eyebrow">PAINEL DE GESTÃO</span>
+            <h1 id="pageTitle">Olá, <span id="nomeProfissionalTitulo">...</span></h1>
+            <p>Aqui está um resumo da situação da arborização urbana de <strong id="municipioResumo">...</strong></p>
+          </div>
+          <div class="dashboard-updated" id="dashboardUpdated">Dados demonstrativos</div>
+        </div>
+
+        <!-- O alerta recebe o total de árvores em risco alto vindo do resumo municipal. -->
+        <section class="risk-alert" id="riskAlert" role="status" aria-live="polite">
+          <div class="risk-alert-icon"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i></div>
+          <div>
+            <h2 id="riskAlertTitle">Verificando riscos altos</h2>
+            <p id="riskAlertMessage">Carregando dados do município...</p>
+          </div>
+          <i class="bi bi-arrow-up-right risk-alert-arrow" aria-hidden="true"></i>
+        </section>
+
+        <!-- Indicadores municipais preenchidos com valores de demonstração pelo inicial.js. -->
+        <div class="dashboard-section-heading">
+          <div>
+            <h2>Visão geral</h2>
+            <p>Indicadores de árvores, atendimentos e serviços municipais.</p>
+          </div>
+        </div>
+
+        <section class="dashboard-grid" aria-label="Indicadores municipais">
+          <article class="dashboard-card dashboard-card-primary">
+            <div class="dashboard-card-top">
+              <span class="dashboard-icon"><i class="bi bi-tree-fill" aria-hidden="true"></i></span>
+              <span class="dashboard-card-label">Árvores cadastradas</span>
+            </div>
+            <strong class="dashboard-value" id="totalArvores">—</strong>
+            <span class="dashboard-card-note">no município</span>
+          </article>
+
+          <article class="dashboard-card dashboard-card-danger">
+            <div class="dashboard-card-top">
+              <span class="dashboard-icon"><i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i></span>
+              <span class="dashboard-card-label">Risco alto</span>
+            </div>
+            <strong class="dashboard-value" id="riscoAlto">—</strong>
+            <span class="dashboard-card-note">atenção imediata</span>
+          </article>
+
+          <article class="dashboard-card dashboard-card-warning">
+            <div class="dashboard-card-top">
+              <span class="dashboard-icon"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i></span>
+              <span class="dashboard-card-label">Risco médio</span>
+            </div>
+            <strong class="dashboard-value" id="riscoMedio">—</strong>
+            <span class="dashboard-card-note">árvores em acompanhamento</span>
+          </article>
+
+          <article class="dashboard-card dashboard-card-success">
+            <div class="dashboard-card-top">
+              <span class="dashboard-icon"><i class="bi bi-check-circle-fill" aria-hidden="true"></i></span>
+              <span class="dashboard-card-label">Risco baixo</span>
+            </div>
+            <strong class="dashboard-value" id="riscoBaixo">—</strong>
+            <span class="dashboard-card-note">árvores estáveis</span>
+          </article>
+
+          <article class="dashboard-card">
+            <div class="dashboard-card-top">
+              <span class="dashboard-icon"><i class="bi bi-scissors" aria-hidden="true"></i></span>
+              <span class="dashboard-card-label">Podas pendentes</span>
+            </div>
+            <strong class="dashboard-value" id="podasPendentes">—</strong>
+            <span class="dashboard-card-note">aguardando atendimento</span>
+          </article>
+
+          <article class="dashboard-card">
+            <div class="dashboard-card-top">
+              <span class="dashboard-icon"><i class="bi bi-clipboard2-check" aria-hidden="true"></i></span>
+              <span class="dashboard-card-label">Vistorias pendentes</span>
+            </div>
+            <strong class="dashboard-value" id="vistoriasPendentes">—</strong>
+            <span class="dashboard-card-note">aguardando realização</span>
+          </article>
+
+          <article class="dashboard-card">
+            <div class="dashboard-card-top">
+              <span class="dashboard-icon"><i class="bi bi-inbox-fill" aria-hidden="true"></i></span>
+              <span class="dashboard-card-label">Novas ocorrências</span>
+            </div>
+            <strong class="dashboard-value" id="novasOcorrencias">—</strong>
+            <span class="dashboard-card-note">abertas recentemente</span>
+          </article>
+
+          <article class="dashboard-card">
+            <div class="dashboard-card-top">
+              <span class="dashboard-icon"><i class="bi bi-wrench-adjustable-circle-fill" aria-hidden="true"></i></span>
+              <span class="dashboard-card-label">Ordens em andamento</span>
+            </div>
+            <strong class="dashboard-value" id="ordensAndamento">—</strong>
+            <span class="dashboard-card-note">serviços em execução</span>
+          </article>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <!-- O sidebar injeta inicial.js depois de confirmar que login e setor são válidos. -->
+  <script src="sidebar-profissional.js"></script>
+</body>
+</html>
