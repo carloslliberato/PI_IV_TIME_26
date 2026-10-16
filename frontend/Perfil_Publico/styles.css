@@ -422,6 +422,21 @@ body{
 .tree-detail-risk.high,.tree-detail-risk.critical{color:#bb3f31!important}
 .tree-details-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .tree-details-gallery img{width:100%;height:180px;object-fit:cover;border-radius:11px;background:#eef3f0}
+.tree-history-caption{margin:-5px 0 15px;color:#718078;font-size:13px}
+.tree-history-list{list-style:none;margin:0;padding:0 0 0 7px}
+.tree-history-item{position:relative;display:flex;gap:12px;min-height:68px;padding:0 0 15px 15px}
+.tree-history-item:not(:last-child)::before{position:absolute;top:11px;bottom:-1px;left:4px;width:2px;background:#d7e4d8;content:""}
+.tree-history-marker{position:relative;z-index:1;flex:0 0 11px;width:11px;height:11px;margin-top:3px;border:2px solid #fff;border-radius:50%;background:#4b8d35;box-shadow:0 0 0 1px #4b8d35}
+.tree-history-marker.occurrence{background:#d66b3d;box-shadow:0 0 0 1px #d66b3d}
+.tree-history-marker.maintenance{background:#37856a;box-shadow:0 0 0 1px #37856a}
+.tree-history-content{min-width:0;flex:1;padding:0 0 3px}
+.tree-history-meta{display:flex;align-items:center;gap:9px;margin-bottom:4px}
+.tree-history-meta time{color:#4b7d30;font-size:12px;font-weight:800}
+.tree-history-type{padding:3px 8px;border-radius:999px;background:#edf5e9;color:#477b2e;font-size:10px;font-weight:750}
+.tree-history-type.occurrence{background:#fff0e9;color:#aa512f}
+.tree-history-type.maintenance{background:#e9f4ef;color:#2f755c}
+.tree-history-content strong{display:block;color:#344239;font-size:14px}
+.tree-history-content p{margin:3px 0 0;color:#718078;font-size:12px;line-height:1.45}
 @media(max-width:575px){
   .tree-details-identity{grid-template-columns:1fr}
   .tree-details-gallery img{height:125px}

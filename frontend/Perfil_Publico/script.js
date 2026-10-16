@@ -353,11 +353,60 @@ function getTreeDetailsData(tree) {
   };
 }
 
+// Histórico fictício para a demonstração, separado por ID para cada árvore ter
+// uma linha do tempo própria. Os tipos possíveis incluem vistoria, manutenção e ocorrência.
+function getTreeHistoryData(tree) {
+  // Integração com backend: substituir o retorno abaixo por uma consulta como
+  // GET /api/arvores/${tree.id}/historico (ou rota equivalente do projeto).
+  // A resposta do banco deve trazer data, tipo, título e descrição de cada evento.
+  const demoHistoryByTreeId = {
+    "11110": [
+      { data: "12/06/2026", tipo: "Vistoria", titulo: "Vistoria realizada", descricao: "Avaliação visual da copa e do tronco concluída." },
+      { data: "20/04/2026", tipo: "Manutenção", titulo: "Poda preventiva", descricao: "Remoção de galhos secos e adequação da copa." },
+      { data: "18/02/2026", tipo: "Ocorrência", titulo: "Ocorrência registrada", descricao: "Munícipe relatou galho próximo à calçada; equipe orientada." },
+      { data: "05/11/2025", tipo: "Vistoria", titulo: "Vistoria anterior", descricao: "Árvore mantida em acompanhamento preventivo." }
+    ],
+    "10234": [
+      { data: "08/07/2026", tipo: "Vistoria", titulo: "Vistoria realizada", descricao: "Condição geral considerada estável." },
+      { data: "16/05/2026", tipo: "Ocorrência", titulo: "Ocorrência registrada", descricao: "Solicitação de avaliação de raiz junto ao passeio." },
+      { data: "10/12/2025", tipo: "Manutenção", titulo: "Manutenção preventiva", descricao: "Inspeção e limpeza do entorno realizadas." }
+    ],
+    "10456": [
+      { data: "25/08/2026", tipo: "Ocorrência", titulo: "Ocorrência registrada", descricao: "Relato de galhos baixos sobre a calçada." },
+      { data: "28/06/2026", tipo: "Manutenção", titulo: "Poda de condução", descricao: "Poda leve para liberar a passagem de pedestres." },
+      { data: "14/01/2026", tipo: "Vistoria", titulo: "Vistoria realizada", descricao: "Acompanhamento do desenvolvimento da copa." }
+    ],
+    "10876": [
+      { data: "30/09/2026", tipo: "Vistoria", titulo: "Vistoria prioritária", descricao: "Equipe avaliou inclinação e estabilidade do exemplar." },
+      { data: "11/07/2026", tipo: "Ocorrência", titulo: "Ocorrência registrada", descricao: "Morador relatou queda de pequenos galhos." },
+      { data: "02/03/2026", tipo: "Manutenção", titulo: "Manejo preventivo", descricao: "Área isolada para avaliação técnica." }
+    ],
+    "10901": [
+      { data: "19/08/2026", tipo: "Manutenção", titulo: "Poda de limpeza", descricao: "Retirada de ramos secos conforme planejamento." },
+      { data: "06/05/2026", tipo: "Vistoria", titulo: "Vistoria realizada", descricao: "Condição fitossanitária considerada boa." },
+      { data: "22/11/2025", tipo: "Ocorrência", titulo: "Ocorrência registrada", descricao: "Pedido de inspeção preventiva atendido." }
+    ],
+    "11220": [
+      { data: "02/09/2026", tipo: "Vistoria", titulo: "Vistoria realizada", descricao: "Exemplar avaliado após período de floração." },
+      { data: "17/06/2026", tipo: "Ocorrência", titulo: "Ocorrência registrada", descricao: "Relato de interferência de galhos na iluminação." },
+      { data: "09/02/2026", tipo: "Manutenção", titulo: "Poda preventiva", descricao: "Poda de adequação realizada pela equipe municipal." }
+    ]
+  };
+
+  // Se surgir um novo ID de demonstração, exibe um histórico ilustrativo padrão.
+  return demoHistoryByTreeId[tree.id] || [
+    { data: "12/06/2026", tipo: "Vistoria", titulo: "Vistoria realizada", descricao: `Avaliação demonstrativa da árvore ${tree.nome}.` },
+    { data: "20/04/2026", tipo: "Manutenção", titulo: "Manutenção preventiva", descricao: "Serviço demonstrativo registrado para visualização." },
+    { data: "18/02/2026", tipo: "Ocorrência", titulo: "Ocorrência registrada", descricao: "Registro demonstrativo aguardando integração com o banco." }
+  ];
+}
+
 // Abre a ficha da árvore escolhida no mapa ou na lista.
 // Integração com backend: buscar aqui pelo ID (ex.: GET /api/arvores/{id}) e
 // mapear a resposta do banco para os campos usados abaixo; hoje usamos dados fictícios.
 function showTreeDetails(tree) {
   const details = getTreeDetailsData(tree);
+  const history = getTreeHistoryData(tree);
   const modalElement = document.getElementById("treeDetailsModal");
   const body = document.getElementById("treeDetailsBody");
 
@@ -391,6 +440,23 @@ function showTreeDetails(tree) {
         <img src="${escapeTreeDetail(photo)}" alt="Foto ${index + 1} da árvore ${escapeTreeDetail(details.nomePopular)}">
       `).join("")}
     </div>
+    <h3 class="tree-details-section-title">Histórico da árvore</h3>
+    <p class="tree-history-caption">Vistorias, ocorrências e serviços de manutenção · registros fictícios</p>
+    <ol class="tree-history-list" aria-label="Histórico de vistorias, ocorrências e manutenções">
+      ${history.map(event => `
+        <li class="tree-history-item">
+          <span class="tree-history-marker ${event.tipo === "Ocorrência" ? "occurrence" : event.tipo === "Manutenção" ? "maintenance" : "inspection"}" aria-hidden="true"></span>
+          <div class="tree-history-content">
+            <div class="tree-history-meta">
+              <time>${escapeTreeDetail(event.data)}</time>
+              <span class="tree-history-type ${event.tipo === "Ocorrência" ? "occurrence" : event.tipo === "Manutenção" ? "maintenance" : "inspection"}">${escapeTreeDetail(event.tipo)}</span>
+            </div>
+            <strong>${escapeTreeDetail(event.titulo)}</strong>
+            <p>${escapeTreeDetail(event.descricao)}</p>
+          </div>
+        </li>
+      `).join("")}
+    </ol>
   `;
 
   // Bootstrap controla abertura, animação, foco e fechamento pelo botão X ou Escape.
