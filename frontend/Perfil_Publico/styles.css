@@ -406,6 +406,28 @@ body{
 .tree-pin.high{background:#d94836}
 .tree-pin.critical{background:#8d2018}
 
+/* Ficha detalhada da árvore aberta a partir do marcador do mapa. */
+.tree-details-modal{overflow:hidden}
+.tree-details-id{margin-bottom:5px;color:#718078;font-size:12px;font-weight:650}
+.tree-details-identity{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:15px;border-radius:12px;background:#f1f7f3}
+.tree-details-identity span,.tree-detail-field span{display:block;margin-bottom:5px;color:#718078;font-size:12px}
+.tree-details-identity strong{display:block;color:#26342d;font-size:15px}
+.tree-details-section-title{margin:22px 0 11px;color:#26342d;font-size:15px;font-weight:800}
+.tree-details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tree-detail-field{min-width:0;padding:12px;border:1px solid #e7eeea;border-radius:10px;background:#fff}
+.tree-detail-field strong{display:block;overflow-wrap:anywhere;color:#303d36;font-size:13px;font-weight:650;line-height:1.45}
+.tree-detail-field-wide{grid-column:1/-1}
+.tree-detail-risk{color:#328a3c!important}
+.tree-detail-risk.medium{color:#ad7a00!important}
+.tree-detail-risk.high,.tree-detail-risk.critical{color:#bb3f31!important}
+.tree-details-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tree-details-gallery img{width:100%;height:180px;object-fit:cover;border-radius:11px;background:#eef3f0}
+@media(max-width:575px){
+  .tree-details-identity{grid-template-columns:1fr}
+  .tree-details-gallery img{height:125px}
+  .tree-details-modal .modal-body{padding:17px}
+}
+
 .modal-content{border-radius:15px}
 .modal-header{padding:19px 22px;border-bottom:1px solid var(--line)}
 .modal-body{padding:22px}

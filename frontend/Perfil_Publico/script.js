@@ -325,13 +325,74 @@ function updateHeaderForMunicipality(name) {
   }, 2500);
 }
 
+// Escapa os valores antes de montar o HTML da ficha. Ao integrar a API, mantenha
+// essa proteção: os dados recebidos do servidor também devem ser tratados como texto.
+function escapeTreeDetail(value) {
+  return String(value ?? "—").replace(/[&<>"']/g, character => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[character]);
+}
+
+// Dados de demonstração para completar os registros locais enquanto o backend não
+// disponibiliza a ficha. Substitua esta função pelo objeto retornado pela API.
+function getTreeDetailsData(tree) {
+  return {
+    nomePopular: tree.nome,
+    nomeCientifico: tree.especie,
+    especie: "Angiosperma — espécie arbórea urbana (dado fictício)",
+    localizacao: `${tree.endereco}, ${tree.bairro}, Campinas/SP`,
+    idade: "Aproximadamente 24 anos (fictício)",
+    altura: "12,5 m (fictício)",
+    diametro: "58 cm (fictício)",
+    fotos: [tree.imagem, "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=900&q=80"],
+    estado: "Saudável — avaliação demonstrativa",
+    risco: tree.risco,
+    ultimaVistoria: "12/08/2025 (fictícia)",
+    ultimaPoda: "03/03/2025 (fictícia)",
+    proximaManutencao: "15/12/2026 — vistoria preventiva (fictícia)"
+  };
+}
+
+// Abre a ficha da árvore escolhida no mapa ou na lista.
+// Integração com backend: buscar aqui pelo ID (ex.: GET /api/arvores/{id}) e
+// mapear a resposta do banco para os campos usados abaixo; hoje usamos dados fictícios.
 function showTreeDetails(tree) {
-  alert(
-    `Árvore ${tree.id}\n\n` +
-    `${tree.nome}\n` +
-    `${tree.especie}\n` +
-    `Bairro: ${tree.bairro}\n` +
-    `Risco: ${tree.risco}\n\n` +
-    `Nesta etapa, o botão pode abrir futuramente a ficha completa da árvore.`
-  );
+  const details = getTreeDetailsData(tree);
+  const modalElement = document.getElementById("treeDetailsModal");
+  const body = document.getElementById("treeDetailsBody");
+
+  // Preenche título e identificador com a árvore específica selecionada pelo usuário.
+  document.getElementById("treeDetailsId").textContent = `ID ${tree.id} · Dados demonstrativos`;
+  document.getElementById("treeDetailsTitle").textContent = `Ficha da árvore — ${details.nomePopular}`;
+
+  // Renderiza a galeria e os campos da ficha. Estes nomes correspondem às informações
+  // que deverão ser entregues pelo backend/banco de dados quando a integração existir.
+  body.innerHTML = `
+    <section class="tree-details-identity" aria-label="Identificação da árvore">
+      <div><span>Nome popular</span><strong>${escapeTreeDetail(details.nomePopular)}</strong></div>
+      <div><span>Nome científico</span><strong><em>${escapeTreeDetail(details.nomeCientifico)}</em></strong></div>
+    </section>
+    <h3 class="tree-details-section-title">Localização e características</h3>
+    <div class="tree-details-grid">
+      <div class="tree-detail-field"><span>Espécie</span><strong>${escapeTreeDetail(details.especie)}</strong></div>
+      <div class="tree-detail-field tree-detail-field-wide"><span>Localização e bairro</span><strong>${escapeTreeDetail(details.localizacao)}</strong></div>
+      <div class="tree-detail-field"><span>Idade estimada</span><strong>${escapeTreeDetail(details.idade)}</strong></div>
+      <div class="tree-detail-field"><span>Altura</span><strong>${escapeTreeDetail(details.altura)}</strong></div>
+      <div class="tree-detail-field"><span>Diâmetro</span><strong>${escapeTreeDetail(details.diametro)}</strong></div>
+      <div class="tree-detail-field"><span>Estado</span><strong>${escapeTreeDetail(details.estado)}</strong></div>
+      <div class="tree-detail-field"><span>Nível de risco</span><strong class="tree-detail-risk ${riskClass(details.risco)}">${escapeTreeDetail(details.risco)}</strong></div>
+      <div class="tree-detail-field"><span>Última vistoria</span><strong>${escapeTreeDetail(details.ultimaVistoria)}</strong></div>
+      <div class="tree-detail-field"><span>Última poda</span><strong>${escapeTreeDetail(details.ultimaPoda)}</strong></div>
+      <div class="tree-detail-field tree-detail-field-wide"><span>Próxima manutenção</span><strong>${escapeTreeDetail(details.proximaManutencao)}</strong></div>
+    </div>
+    <h3 class="tree-details-section-title">Fotos</h3>
+    <div class="tree-details-gallery">
+      ${details.fotos.map((photo, index) => `
+        <img src="${escapeTreeDetail(photo)}" alt="Foto ${index + 1} da árvore ${escapeTreeDetail(details.nomePopular)}">
+      `).join("")}
+    </div>
+  `;
+
+  // Bootstrap controla abertura, animação, foco e fechamento pelo botão X ou Escape.
+  bootstrap.Modal.getOrCreateInstance(modalElement).show();
 }

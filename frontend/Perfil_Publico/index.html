@@ -172,6 +172,25 @@
   </div>
 
   <!-- Formulários demonstrativos do portal público -->
+  <!-- Ficha completa da árvore: o JavaScript preenche este modal com o registro selecionado. -->
+  <div class="modal fade" id="treeDetailsModal" tabindex="-1" aria-labelledby="treeDetailsTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content tree-details-modal">
+        <div class="modal-header">
+          <div>
+            <div class="tree-details-id" id="treeDetailsId"></div>
+            <h2 class="modal-title fs-4" id="treeDetailsTitle">Ficha da árvore</h2>
+          </div>
+          <!-- O botão X fecha a ficha usando o comportamento padrão do Bootstrap. -->
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar ficha da árvore"></button>
+        </div>
+        <div class="modal-body" id="treeDetailsBody">
+          <!-- Conteúdo preenchido por showTreeDetails() para a árvore clicada. -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="publicActionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0">
