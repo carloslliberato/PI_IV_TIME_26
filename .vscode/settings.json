@@ -1,3 +1,4 @@
 {
-    "java.jdt.ls.vmargs": "-Xmx3000m -XX:+UseParallelGC"
+    "java.jdt.ls.vmargs": "-Xmx3000m -XX:+UseParallelGC",
+    "java.configuration.updateBuildConfiguration": "interactive"
 }

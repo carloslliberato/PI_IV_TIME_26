@@ -37,5 +37,7 @@ public class Main {
             System.err.println("Não foi possível iniciar a conexão.");
         }
 
+        repository.ConexaoMongo.getDatabase();
+
     }
 }

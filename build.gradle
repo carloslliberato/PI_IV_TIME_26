@@ -21,8 +21,8 @@ subprojects {
         }
     }
 
-    tasks.withType(JavaCompile) {
-        options.encoding = 'UTF-8'
+    tasks.withType(JavaExec) {
+        jvmArgs '-Dfile.encoding=UTF-8'
     }
 }
 
@@ -68,7 +68,7 @@ tasks.register('rodarTudo') {
     dependsOn ':servidor:run', ':backend:run'
 
     doFirst {
-        // Abre o index.html do Perfil Público automaticamente no navegador padrão
+        // Abre o index.html automaticamente no navegador padrão do Windows
         def indexFile = file('frontend/Perfil_Publico/index.html')
         if (indexFile.exists() && java.awt.Desktop.isDesktopSupported()) {
             java.awt.Desktop.getDesktop().browse(indexFile.toURI())
