@@ -1,4 +1,45 @@
 // Mantém descrições e agrupamentos disponíveis para cada assunto do painel.
+// Lista de equipes de demonstração; na integração, será carregada pelo município da sessão.
+// API/BD: cada equipe precisa fornecer id e nome para preencher o filtro.
+const reportTeamOptions = [
+  { id: "EQ-001", name: "Equipe Norte" },
+  { id: "EQ-002", name: "Equipe Central" },
+  { id: "EQ-003", name: "Equipe Sul" },
+  { id: "EQ-004", name: "Equipe de poda" }
+];
+
+// Contagens fictícias de ordens atribuídas às equipes, agrupadas por período.
+// API/BD: para cada período, retornar total geral e contagem por equipe_id.
+const teamOrderPeriodData = {
+  month: {
+    all: [{ group: "Janeiro", count: 4 }, { group: "Fevereiro", count: 3 }, { group: "Março", count: 4 }, { group: "Abril", count: 2 }, { group: "Maio", count: 3 }, { group: "Junho", count: 2 }, { group: "Julho", count: 4 }, { group: "Agosto", count: 3 }, { group: "Setembro", count: 2 }, { group: "Outubro", count: 2 }, { group: "Novembro", count: 1 }, { group: "Dezembro", count: 2 }],
+    byTeam: {
+      "EQ-001": [{ group: "Janeiro", count: 1 }, { group: "Fevereiro", count: 1 }, { group: "Março", count: 1 }, { group: "Abril", count: 1 }, { group: "Maio", count: 1 }, { group: "Junho", count: 1 }, { group: "Julho", count: 1 }, { group: "Agosto", count: 1 }, { group: "Setembro", count: 1 }, { group: "Outubro", count: 0 }, { group: "Novembro", count: 0 }, { group: "Dezembro", count: 0 }],
+      "EQ-002": [{ group: "Janeiro", count: 1 }, { group: "Fevereiro", count: 1 }, { group: "Março", count: 1 }, { group: "Abril", count: 0 }, { group: "Maio", count: 1 }, { group: "Junho", count: 0 }, { group: "Julho", count: 1 }, { group: "Agosto", count: 1 }, { group: "Setembro", count: 0 }, { group: "Outubro", count: 1 }, { group: "Novembro", count: 0 }, { group: "Dezembro", count: 1 }],
+      "EQ-003": [{ group: "Janeiro", count: 1 }, { group: "Fevereiro", count: 1 }, { group: "Março", count: 1 }, { group: "Abril", count: 0 }, { group: "Maio", count: 1 }, { group: "Junho", count: 1 }, { group: "Julho", count: 1 }, { group: "Agosto", count: 0 }, { group: "Setembro", count: 1 }, { group: "Outubro", count: 0 }, { group: "Novembro", count: 0 }, { group: "Dezembro", count: 0 }],
+      "EQ-004": [{ group: "Janeiro", count: 1 }, { group: "Fevereiro", count: 0 }, { group: "Março", count: 1 }, { group: "Abril", count: 1 }, { group: "Maio", count: 0 }, { group: "Junho", count: 0 }, { group: "Julho", count: 1 }, { group: "Agosto", count: 1 }, { group: "Setembro", count: 0 }, { group: "Outubro", count: 1 }, { group: "Novembro", count: 1 }, { group: "Dezembro", count: 1 }]
+    }
+  },
+  semester: {
+    all: [{ group: "1º semestre", count: 18 }, { group: "2º semestre", count: 14 }],
+    byTeam: {
+      "EQ-001": [{ group: "1º semestre", count: 6 }, { group: "2º semestre", count: 3 }],
+      "EQ-002": [{ group: "1º semestre", count: 4 }, { group: "2º semestre", count: 4 }],
+      "EQ-003": [{ group: "1º semestre", count: 5 }, { group: "2º semestre", count: 2 }],
+      "EQ-004": [{ group: "1º semestre", count: 3 }, { group: "2º semestre", count: 5 }]
+    }
+  },
+  year: {
+    all: [{ group: "2023", count: 48 }, { group: "2024", count: 76 }, { group: "2025", count: 91 }, { group: "2026", count: 32 }],
+    byTeam: {
+      "EQ-001": [{ group: "2023", count: 12 }, { group: "2024", count: 18 }, { group: "2025", count: 25 }, { group: "2026", count: 9 }],
+      "EQ-002": [{ group: "2023", count: 15 }, { group: "2024", count: 24 }, { group: "2025", count: 28 }, { group: "2026", count: 8 }],
+      "EQ-003": [{ group: "2023", count: 10 }, { group: "2024", count: 16 }, { group: "2025", count: 21 }, { group: "2026", count: 7 }],
+      "EQ-004": [{ group: "2023", count: 11 }, { group: "2024", count: 18 }, { group: "2025", count: 17 }, { group: "2026", count: 8 }]
+    }
+  }
+};
+
 const reportCatalog = {
   trees: {
     label: "Árvores",
@@ -67,14 +108,14 @@ const reportCatalog = {
         title: "Ordens de serviço por mês",
         description: "Ordens de serviço abertas em cada mês do ano atual.",
         // DADOS FICTÍCIOS. API/BD: retornar mês e contagem; usar parâmetro ano para selecionar o período.
-        values: [{ group: "Janeiro", count: 8 }, { group: "Fevereiro", count: 6 }, { group: "Março", count: 9 }, { group: "Abril", count: 7 }, { group: "Maio", count: 10 }, { group: "Junho", count: 8 }, { group: "Julho", count: 11 }, { group: "Agosto", count: 9 }, { group: "Setembro", count: 8 }, { group: "Outubro", count: 7 }, { group: "Novembro", count: 6 }, { group: "Dezembro", count: 5 }]
+        values: [{ group: "Janeiro", count: 4 }, { group: "Fevereiro", count: 3 }, { group: "Março", count: 4 }, { group: "Abril", count: 2 }, { group: "Maio", count: 3 }, { group: "Junho", count: 2 }, { group: "Julho", count: 4 }, { group: "Agosto", count: 3 }, { group: "Setembro", count: 2 }, { group: "Outubro", count: 2 }, { group: "Novembro", count: 1 }, { group: "Dezembro", count: 2 }]
       },
       semester: {
         label: "Semestre",
         title: "Ordens de serviço por semestre",
         description: "Comparação entre os dois semestres do ano atual.",
         // DADOS FICTÍCIOS. API/BD: agrupar data de abertura em 1º ou 2º semestre e contar ordens.
-        values: [{ group: "1º semestre", count: 48 }, { group: "2º semestre", count: 41 }]
+        values: [{ group: "1º semestre", count: 18 }, { group: "2º semestre", count: 14 }]
       },
       region: {
         label: "Região",
@@ -82,6 +123,66 @@ const reportCatalog = {
         description: "Distribuição das ordens de serviço entre as regiões municipais.",
         // DADOS FICTÍCIOS. API/BD: retornar região da ordem (ou região da equipe designada) e contagem.
         values: [{ group: "Região Central", count: 61 }, { group: "Região Norte", count: 54 }, { group: "Região Sul", count: 49 }, { group: "Região Leste", count: 45 }, { group: "Região Oeste", count: 38 }]
+      },
+      team: {
+        label: "Equipe",
+        title: "Ordens de serviço por equipe",
+        description: "Quantidade de ordens de serviço direcionadas a cada equipe.",
+        // DADOS FICTÍCIOS. API/BD: retornar equipe responsável (id e nome) e total de ordens vinculadas.
+        values: [{ group: "Equipe Norte", count: 64 }, { group: "Equipe Central", count: 75 }, { group: "Equipe Sul", count: 54 }, { group: "Equipe de poda", count: 54 }]
+      }
+    }
+  },
+  teams: {
+    label: "Equipes",
+    groups: {
+      status: {
+        label: "Status",
+        title: "Equipes por status",
+        description: "Quantidade de equipes disponíveis e indisponíveis no município.",
+        // DADOS FICTÍCIOS. API/BD: retornar status da equipe e quantidade por status.
+        values: [{ group: "Disponível", count: 6 }, { group: "Indisponível", count: 4 }]
+      },
+      region: {
+        label: "Região de atuação",
+        title: "Equipes por região de atuação",
+        description: "Distribuição das equipes cadastradas pelas regiões de atendimento.",
+        // DADOS FICTÍCIOS. API/BD: retornar região de atuação e quantidade de equipes por região.
+        values: [{ group: "Região Central", count: 3 }, { group: "Região Norte", count: 2 }, { group: "Região Sul", count: 2 }, { group: "Região Leste", count: 2 }, { group: "Região Oeste", count: 1 }]
+      },
+      workload: {
+        label: "Ordens por equipe",
+        title: "Ordens de serviço por equipe",
+        description: "Quantidade de ordens atribuídas a cada equipe cadastrada.",
+        // DADOS FICTÍCIOS. API/BD: agrupar ordens por equipe designada e retornar id, nome e total de ordens.
+        values: [{ group: "Equipe Norte", count: 68 }, { group: "Equipe Central", count: 75 }, { group: "Equipe Sul", count: 54 }, { group: "Equipe de poda", count: 50 }]
+      },
+      ordersMonth: {
+        label: "Ordens por mês",
+        title: "Ordens das equipes por mês",
+        description: "Ordens direcionadas às equipes em cada mês do ano atual.",
+        totalLabel: "ordens de serviço",
+        // DADOS FICTÍCIOS. API/BD: contar ordens com equipe designada por mês de abertura e ano selecionado.
+        values: teamOrderPeriodData.month.all,
+        teamValues: teamOrderPeriodData.month.byTeam
+      },
+      ordersSemester: {
+        label: "Ordens por semestre",
+        title: "Ordens das equipes por semestre",
+        description: "Ordens direcionadas às equipes em cada semestre do ano atual.",
+        totalLabel: "ordens de serviço",
+        // DADOS FICTÍCIOS. API/BD: contar ordens com equipe designada por semestre do ano selecionado.
+        values: teamOrderPeriodData.semester.all,
+        teamValues: teamOrderPeriodData.semester.byTeam
+      },
+      ordersYear: {
+        label: "Ordens por ano",
+        title: "Ordens das equipes por ano",
+        description: "Ordens direcionadas às equipes em cada ano.",
+        totalLabel: "ordens de serviço",
+        // DADOS FICTÍCIOS. API/BD: contar ordens com equipe designada por ano de abertura.
+        values: teamOrderPeriodData.year.all,
+        teamValues: teamOrderPeriodData.year.byTeam
       }
     }
   }
@@ -89,8 +190,10 @@ const reportCatalog = {
 
 // Guarda referências aos controles e áreas que serão atualizados pelo relatório ativo.
 const reportElements = {
-  subject: document.getElementById("reportSubject"),
-  grouping: document.getElementById("reportGrouping"),
+  subjectTabs: document.querySelectorAll("[data-report-subject]"),
+  groupingTabs: document.getElementById("reportGroupingTabs"),
+  teamFilter: document.getElementById("reportTeamFilter"),
+  teamSelect: document.getElementById("reportTeamSelect"),
   title: document.getElementById("reportTitle"),
   description: document.getElementById("reportDescription"),
   total: document.getElementById("reportTotal"),
@@ -101,6 +204,8 @@ const reportElements = {
   exportButton: document.getElementById("exportReport"),
   municipality: document.getElementById("reportsMunicipality")
 };
+let activeReportSubject = "trees";
+let activeReportGrouping = "neighborhood";
 
 // Converte textos inseridos na tabela e no gráfico em conteúdo HTML seguro.
 function escapeReportText(value) {
@@ -111,24 +216,51 @@ function escapeReportText(value) {
 
 // Atualiza as opções de agrupamento conforme árvores, ocorrências ou ordens são escolhidas.
 function updateGroupingOptions() {
-  const subject = reportCatalog[reportElements.subject.value];
-  reportElements.grouping.innerHTML = Object.entries(subject.groups)
-    .map(([key, group]) => `<option value="${key}">${escapeReportText(group.label)}</option>`)
+  const subject = reportCatalog[activeReportSubject];
+  activeReportGrouping = Object.keys(subject.groups)[0];
+  reportElements.groupingTabs.innerHTML = Object.entries(subject.groups)
+    .map(([key, group], index) => `<button class="report-tab${index === 0 ? " is-active" : ""}" type="button" role="tab" aria-selected="${index === 0}" data-report-grouping="${key}">${escapeReportText(group.label)}</button>`)
     .join("");
+}
+
+// Marca visualmente e para tecnologias assistivas o assunto do relatÃ³rio selecionado.
+function updateActiveSubjectTab() {
+  reportElements.subjectTabs.forEach(tab => {
+    const isActive = tab.dataset.reportSubject === activeReportSubject;
+    tab.classList.toggle("is-active", isActive);
+    tab.setAttribute("aria-selected", String(isActive));
+  });
+}
+
+// Exibe o filtro de equipe somente nos relatórios temporais dentro da aba Equipes.
+function isTeamPeriodReport() {
+  return activeReportSubject === "teams"
+    && ["ordersMonth", "ordersSemester", "ordersYear"].includes(activeReportGrouping);
+}
+
+// Devolve todas as ordens ou somente as ordens da equipe selecionada.
+function getSelectedReportValues() {
+  const selectedGroup = reportCatalog[activeReportSubject].groups[activeReportGrouping];
+  if (isTeamPeriodReport() && reportElements.teamSelect.value) {
+    return selectedGroup.teamValues[reportElements.teamSelect.value] || [];
+  }
+  return selectedGroup.values;
 }
 
 // Renderiza os totais, as barras proporcionais e a tabela do agrupamento ativo.
 function renderSelectedReport() {
-  const subject = reportCatalog[reportElements.subject.value];
-  const selectedGroup = subject.groups[reportElements.grouping.value];
-  const values = selectedGroup.values;
+  const subject = reportCatalog[activeReportSubject];
+  const selectedGroup = subject.groups[activeReportGrouping];
+  const showTeamFilter = isTeamPeriodReport();
+  reportElements.teamFilter.hidden = !showTeamFilter;
+  const values = getSelectedReportValues();
   const total = values.reduce((sum, row) => sum + row.count, 0);
   const maximum = Math.max(...values.map(row => row.count), 1);
 
   reportElements.title.textContent = selectedGroup.title;
   reportElements.description.textContent = selectedGroup.description;
   reportElements.total.textContent = total.toLocaleString("pt-BR");
-  reportElements.totalLabel.textContent = subject.label.toLocaleLowerCase();
+  reportElements.totalLabel.textContent = selectedGroup.totalLabel || subject.label.toLocaleLowerCase();
   reportElements.groupColumn.textContent = selectedGroup.label;
 
   // Cria as barras usando percentual relativo ao maior grupo, com rótulo acessível.
@@ -151,13 +283,14 @@ function renderSelectedReport() {
 
 // Exporta os dados do agrupamento visível como um arquivo CSV compatível com planilhas.
 function exportSelectedReport() {
-  const subject = reportCatalog[reportElements.subject.value];
-  const selectedGroup = subject.groups[reportElements.grouping.value];
-  const total = selectedGroup.values.reduce((sum, row) => sum + row.count, 0);
+  const subject = reportCatalog[activeReportSubject];
+  const selectedGroup = subject.groups[activeReportGrouping];
+  const values = getSelectedReportValues();
+  const total = values.reduce((sum, row) => sum + row.count, 0);
   const csvRows = [[selectedGroup.label, "Quantidade", "Participação"]];
 
   // Usa os mesmos itens da visualização para que arquivo e tela permaneçam consistentes.
-  selectedGroup.values.forEach(row => {
+  values.forEach(row => {
     const share = total ? ((row.count / total) * 100).toFixed(1).replace(".", ",") : "0,0";
     csvRows.push([row.group, row.count, `${share}%`]);
   });
@@ -167,7 +300,8 @@ function exportSelectedReport() {
   const downloadUrl = URL.createObjectURL(file);
   const downloadLink = document.createElement("a");
   downloadLink.href = downloadUrl;
-  downloadLink.download = `${reportElements.subject.value}-${reportElements.grouping.value}.csv`;
+  const teamSuffix = reportElements.teamSelect.value ? `-${reportElements.teamSelect.value}` : "";
+  downloadLink.download = `${activeReportSubject}-${activeReportGrouping}${teamSuffix}.csv`;
   downloadLink.click();
   URL.revokeObjectURL(downloadUrl);
 }
@@ -176,15 +310,35 @@ function exportSelectedReport() {
 function initializeReportsPage() {
   // DADOS FICTÍCIOS. API/BD: obter município e setor do usuário autenticado (ex.: GET /api/me).
   reportElements.municipality.textContent = localStorage.getItem("municipio") || "Campinas - SP";
+  // Preenche o filtro de equipe com IDs e nomes; futuramente estes virão do cadastro municipal.
+  reportElements.teamSelect.insertAdjacentHTML("beforeend", reportTeamOptions
+    .map(team => `<option value="${escapeReportText(team.id)}">${escapeReportText(team.name)}</option>`)
+    .join(""));
+  updateActiveSubjectTab();
   updateGroupingOptions();
   renderSelectedReport();
 
   // Muda agrupamentos disponíveis ao trocar de assunto e atualiza ao mudar o agrupamento.
-  reportElements.subject.addEventListener("change", () => {
+  reportElements.subjectTabs.forEach(tab => tab.addEventListener("click", () => {
+    activeReportSubject = tab.dataset.reportSubject;
+    updateActiveSubjectTab();
     updateGroupingOptions();
     renderSelectedReport();
+  }));
+
+  // Atualiza o sublinhado do agrupamento e renderiza os valores correspondentes.
+  reportElements.groupingTabs.addEventListener("click", event => {
+    const tab = event.target.closest("[data-report-grouping]");
+    if (!tab) return;
+    activeReportGrouping = tab.dataset.reportGrouping;
+    reportElements.groupingTabs.querySelectorAll("[data-report-grouping]").forEach(groupTab => {
+      const isActive = groupTab === tab;
+      groupTab.classList.toggle("is-active", isActive);
+      groupTab.setAttribute("aria-selected", String(isActive));
+    });
+    renderSelectedReport();
   });
-  reportElements.grouping.addEventListener("change", renderSelectedReport);
+  reportElements.teamSelect.addEventListener("change", renderSelectedReport);
   reportElements.exportButton.addEventListener("click", exportSelectedReport);
 
   // INTEGRAÇÃO FUTURA: substituir reportCatalog pelos resultados agrupados da API municipal.
