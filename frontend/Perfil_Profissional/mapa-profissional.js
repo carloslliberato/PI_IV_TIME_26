@@ -265,6 +265,8 @@ function focusProfessionalMapRecord(type, recordId) {
 
 function activateProfessionalMapLayer(layer) {
   activeMapDataLayer = layer;
+  // Risco é relevante para árvores; ao exibir ordens, a legenda sai da camada visível.
+  document.getElementById("professionalRiskLegend").hidden = layer === "serviceOrders";
   professionalMap.removeLayer(treeMarkerLayer);
   professionalMap.removeLayer(occurrenceMarkerLayer);
   professionalMap.removeLayer(serviceOrderMarkerLayer);
