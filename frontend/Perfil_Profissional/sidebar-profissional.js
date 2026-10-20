@@ -49,7 +49,7 @@
     { texto: "Ordens de serviço", icone: "bi-tools", caminho: "ordens-servico.html" },
     { texto: "Árvores", icone: "bi-tree", caminho: "arvores.html" },
     { texto: "Equipes", icone: "bi-people", caminho: "equipes.html" },
-    { texto: "Relatórios", icone: "bi-file-earmark-bar-graph", caminho: "relatorios.html" }
+    { texto: "Relatórios", icone: "bi-file-earmark-bar-graph", caminho: "relatorio.html" }
   ];
 
   // Mantém a marca, os ícones, a fonte e o rodapé iguais aos do sidebar público.
