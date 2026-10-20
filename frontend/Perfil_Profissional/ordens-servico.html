@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <!-- Define o idioma, a escala responsiva e o título da tela de ordens de serviço. -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arboriza | Ordens de serviço</title>
+
+  <!-- Carrega os ícones, o estilo compartilhado e a folha própria desta tela. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="styles-profissional.css" data-professional-sidebar-styles="true">
+  <link rel="stylesheet" href="ordens-servico.css">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- O sidebar valida login e setor, destaca Ordens de serviço e carrega o script da página. -->
+    <div id="sidebar-profissional" data-script="ordens-servico.js"></div>
+
+    <main class="main professional-main">
+      <!-- Apresenta a finalidade da tela e o município relacionado aos registros. -->
+      <section class="professional-content service-orders-page" aria-labelledby="serviceOrdersPageTitle">
+        <header class="service-orders-heading">
+          <div>
+            <span class="professional-eyebrow">GESTÃO MUNICIPAL</span>
+            <h1 id="serviceOrdersPageTitle">Ordens de serviço</h1>
+            <p>Consulte os serviços destinados às equipes do município.</p>
+          </div>
+          <span class="service-orders-municipality"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i><span id="serviceOrdersMunicipality">Campinas - SP</span></span>
+        </header>
+
+        <!-- Permite pesquisar por diferentes campos, ordenar por data e filtrar pelo status. -->
+        <section class="service-orders-toolbar" aria-label="Filtros de ordens de serviço">
+          <label class="service-orders-search" for="serviceOrdersSearch">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <span class="visually-hidden">Buscar ordem de serviço</span>
+            <input id="serviceOrdersSearch" type="search" placeholder="Buscar por ID, bairro, ocorrência ou equipe..." autocomplete="off">
+          </label>
+          <label class="service-orders-select" for="serviceOrdersSort">
+            <i class="bi bi-sort-down" aria-hidden="true"></i>
+            <span class="visually-hidden">Ordenar ordens de serviço</span>
+            <select id="serviceOrdersSort">
+              <option value="recent">Mais recentes</option>
+              <option value="oldest">Mais antigas</option>
+            </select>
+          </label>
+          <label class="service-orders-select" for="serviceOrdersStatusFilter">
+            <i class="bi bi-funnel" aria-hidden="true"></i>
+            <span class="visually-hidden">Filtrar pelo status</span>
+            <select id="serviceOrdersStatusFilter">
+              <option value="all">Todos os status</option>
+              <option value="Em andamento">Em andamento</option>
+              <option value="Aguardando equipe">Aguardando equipe</option>
+              <option value="Pendente">Pendente</option>
+              <option value="Concluída">Concluída</option>
+            </select>
+          </label>
+        </section>
+
+        <!-- A tabela resume os registros e oferece acesso aos detalhes pelo ID da ordem. -->
+        <section class="service-orders-card" aria-labelledby="serviceOrdersTableTitle">
+          <header class="service-orders-card-heading">
+            <div>
+              <h2 id="serviceOrdersTableTitle">Ordens registradas</h2>
+              <p id="serviceOrdersResultCount" aria-live="polite">Carregando ordens...</p>
+            </div>
+            <span class="service-orders-data-note"><i class="bi bi-info-circle" aria-hidden="true"></i> Dados demonstrativos</span>
+          </header>
+          <div class="service-orders-table-wrap">
+            <table class="service-orders-table">
+              <thead>
+                <tr>
+                  <th scope="col">ID da ordem</th>
+                  <th scope="col">Tipo de ocorrência</th>
+                  <th scope="col">Equipe designada</th>
+                  <th scope="col">Status da ordem de serviço</th>
+                </tr>
+              </thead>
+              <tbody id="serviceOrdersTableBody"></tbody>
+            </table>
+            <div class="service-orders-empty" id="serviceOrdersEmpty" hidden>
+              <i class="bi bi-inbox" aria-hidden="true"></i>
+              <strong>Nenhuma ordem encontrada</strong>
+              <span>Ajuste a busca ou o filtro de status.</span>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <!-- O modal exibe dados completos e, quando disponível, o relatório final da equipe. -->
+  <div class="service-order-modal-backdrop" id="serviceOrderModal" role="dialog" aria-modal="true" aria-labelledby="serviceOrderModalTitle" hidden>
+    <section class="service-order-modal-card">
+      <button class="service-order-modal-close" id="closeServiceOrderModal" type="button" aria-label="Fechar detalhes da ordem"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+      <div id="serviceOrderModalContent"></div>
+    </section>
+  </div>
+
+  <!-- O sidebar verifica login e setor antes de carregar o JavaScript desta tela. -->
+  <script src="sidebar-profissional.js"></script>
+</body>
+</html>

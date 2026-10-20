@@ -18,7 +18,10 @@ const professionalMapDemo = {
     { id: "11220", nome: "Quaresmeira", especie: "Tibouchina granulosa", bairro: "Ponte Preta", endereco: "Av. das Amoreiras, 121", lat: -22.9192, lng: -47.0738, risco: "Moderado" }
   ],
   occurrences: [
-    { id: "OC-2048", latitude: -22.8860, longitude: -47.0682, descricao: "Galho quebrado após chuva forte.", bairro: "Jardim Chapadão" }
+    { id: "OC-2048", latitude: -22.8860, longitude: -47.0682, descricao: "Galho quebrado após chuva forte.", bairro: "Jardim Chapadão", status: "Em andamento" }
+  ],
+  serviceOrders: [
+    { id: "OS-2026-041", latitude: -22.9104, longitude: -47.0525, titulo: "Poda preventiva", descricao: "Poda de galhos próximos à rede elétrica.", bairro: "Cambuí", status: "Em andamento" }
   ]
 };
 
@@ -26,19 +29,23 @@ const professionalMapDemo = {
 let professionalMap;
 let treeMarkerLayer;
 let occurrenceMarkerLayer;
+let serviceOrderMarkerLayer;
 let professionalMarkersById = new Map();
-let riskMarkersVisible = true;
+let professionalOccurrenceMarkersById = new Map();
+let professionalServiceOrderMarkersById = new Map();
+let activeMapDataLayer = "trees";
 
 // Carrega a tela depois que o sidebar profissional autorizou o acesso e inseriu seus estilos.
 function initializeProfessionalMap() {
   document.getElementById("mapScopeName").textContent = professionalMapDemo.municipality.nome;
+  updateProfessionalMapListHeading();
 
   // Futura origem do município: GET do perfil/cadastro profissional.
   // Futuras árvores: resposta filtrada pelo ID do município do profissional.
   // No momento, os exemplos abaixo já pertencem exclusivamente a Campinas - SP.
   if (!initializeLeafletMap()) return;
 
-  renderProfessionalTreeList(professionalMapDemo.trees);
+  renderProfessionalActiveList();
   setupProfessionalMapEvents();
 }
 
@@ -83,6 +90,7 @@ function initializeLeafletMap() {
   L.control.zoom({ position: "topleft" }).addTo(professionalMap);
   treeMarkerLayer = L.layerGroup().addTo(professionalMap);
   occurrenceMarkerLayer = L.layerGroup();
+  serviceOrderMarkerLayer = L.layerGroup();
   renderProfessionalTreeMarkers(professionalMapDemo.trees);
   return true;
 }
@@ -126,8 +134,6 @@ function renderProfessionalTreeMarkers(treeRecords) {
     const marker = L.marker([tree.lat, tree.lng], {
       icon: createProfessionalTreeIcon(tree.risco)
     });
-    marker.setOpacity(riskMarkersVisible ? 1 : .18);
-
     marker.bindPopup(`
       <div class="professional-tree-popup">
         <div class="professional-tree-popup-id">ID: ${escapeProfessionalMapText(tree.id)}</div>
@@ -189,6 +195,103 @@ function renderProfessionalTreeList(treeRecords) {
   });
 }
 
+function updateProfessionalMapListHeading() {
+  const labels = {
+    trees: { title: "Árvores cadastradas", search: "Buscar árvore", placeholder: "Nome, espécie, bairro ou ID...", all: "Ver todas" },
+    occurrences: { title: "Ocorrências", search: "Buscar ocorrência", placeholder: "Descrição, bairro ou ID...", all: "Ver todas" },
+    serviceOrders: { title: "Ordens de serviço", search: "Buscar ordem de serviço", placeholder: "Serviço, bairro ou ID...", all: "Ver todas" }
+  };
+  const selected = labels[activeMapDataLayer];
+  document.getElementById("mapListTitle").textContent = selected.title;
+  document.getElementById("mapListSearchLabel").textContent = selected.search;
+  document.getElementById("treeSearch").placeholder = selected.placeholder;
+  document.getElementById("showAllTrees").textContent = selected.all;
+}
+
+function renderProfessionalActiveList() {
+  updateProfessionalMapListHeading();
+  const query = document.getElementById("treeSearch").value.trim().toLocaleLowerCase("pt-BR");
+  if (activeMapDataLayer === "trees") {
+    const matches = professionalMapDemo.trees.filter(tree =>
+      [tree.nome, tree.especie, tree.id, tree.bairro, tree.endereco]
+        .some(value => value.toLocaleLowerCase("pt-BR").includes(query))
+    );
+    renderProfessionalTreeList(matches);
+    renderProfessionalTreeMarkers(matches);
+    return;
+  }
+
+  const records = activeMapDataLayer === "occurrences" ? professionalMapDemo.occurrences : professionalMapDemo.serviceOrders;
+  const matches = records.filter(record =>
+    [record.id, record.descricao, record.titulo, record.bairro, record.status]
+      .some(value => String(value ?? "").toLocaleLowerCase("pt-BR").includes(query))
+  );
+  const isOccurrence = activeMapDataLayer === "occurrences";
+  const icon = isOccurrence ? "bi-exclamation-triangle-fill" : "bi-clipboard2-check-fill";
+  const emptyText = isOccurrence ? "Não há ocorrências que correspondam à busca." : "Não há ordens de serviço que correspondam à busca.";
+  const listElement = document.getElementById("professionalTreeList");
+  if (!matches.length) {
+    listElement.innerHTML = `<div class="professional-tree-empty">${emptyText}</div>`;
+    return;
+  }
+  listElement.innerHTML = matches.map(record => `
+    <article class="professional-tree-card" data-map-record-type="${isOccurrence ? "occurrences" : "serviceOrders"}" data-map-record-id="${escapeProfessionalMapText(record.id)}" tabindex="0" role="button" aria-label="Centralizar mapa em ${escapeProfessionalMapText(record.id)}">
+      <span class="professional-tree-card-icon"><i class="bi ${icon}" aria-hidden="true"></i></span>
+      <div class="professional-tree-card-copy">
+        <div class="professional-tree-card-title-row"><h3>${escapeProfessionalMapText(isOccurrence ? `Ocorrência ${record.id}` : record.titulo)}</h3><span class="professional-record-status">${escapeProfessionalMapText(record.status)}</span></div>
+        <div class="professional-tree-card-species">${escapeProfessionalMapText(record.descricao)}</div>
+        <div class="professional-tree-card-address">${escapeProfessionalMapText(record.id)} · ${escapeProfessionalMapText(record.bairro)}</div>
+      </div>
+    </article>
+  `).join("");
+  listElement.querySelectorAll("[data-map-record-type]").forEach(card => {
+    const focusRecord = () => focusProfessionalMapRecord(card.dataset.mapRecordType, card.dataset.mapRecordId);
+    card.addEventListener("click", focusRecord);
+    card.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); focusRecord(); }
+    });
+  });
+}
+
+function focusProfessionalMapRecord(type, recordId) {
+  if (type === "trees") return focusProfessionalTree(recordId);
+  const markerMap = type === "occurrences" ? professionalOccurrenceMarkersById : professionalServiceOrderMarkersById;
+  const marker = markerMap.get(recordId);
+  if (!marker) return;
+  const point = marker.getLatLng();
+  professionalMap.flyTo([point.lat, point.lng], 16, { duration: .7 });
+  marker.openPopup();
+}
+
+function activateProfessionalMapLayer(layer) {
+  activeMapDataLayer = layer;
+  professionalMap.removeLayer(treeMarkerLayer);
+  professionalMap.removeLayer(occurrenceMarkerLayer);
+  professionalMap.removeLayer(serviceOrderMarkerLayer);
+
+  if (layer === "trees") professionalMap.addLayer(treeMarkerLayer);
+  if (layer === "occurrences") {
+    addProfessionalOccurrenceExamples();
+    professionalMap.addLayer(occurrenceMarkerLayer);
+  }
+  if (layer === "serviceOrders") {
+    addProfessionalServiceOrderExamples();
+    professionalMap.addLayer(serviceOrderMarkerLayer);
+  }
+  document.getElementById("treeSearch").value = "";
+  renderProfessionalActiveList();
+  const messages = { trees: "Camada de árvores cadastradas ativada.", occurrences: "Camada de ocorrências ativada.", serviceOrders: "Camada de ordens de serviço ativada." };
+  updateProfessionalMapToast(messages[layer]);
+}
+
+function fitProfessionalMapToActiveRecords() {
+  const records = activeMapDataLayer === "trees"
+    ? professionalMapDemo.trees
+    : activeMapDataLayer === "occurrences" ? professionalMapDemo.occurrences : professionalMapDemo.serviceOrders;
+  const bounds = records.map(record => [record.lat ?? record.latitude, record.lng ?? record.longitude]);
+  if (bounds.length) professionalMap.fitBounds(bounds, { padding: [42, 42], maxZoom: 16 });
+}
+
 // Aproxima o mapa da árvore escolhida e abre o pop-up daquele marcador.
 function focusProfessionalTree(treeId) {
   const tree = professionalMapDemo.trees.find(record => record.id === treeId);
@@ -202,10 +305,11 @@ function focusProfessionalTree(treeId) {
 // Cria os marcadores fictícios de ocorrências dentro do município demonstrativo.
 function addProfessionalOccurrenceExamples() {
   if (occurrenceMarkerLayer.getLayers().length) return;
+  professionalOccurrenceMarkersById.clear();
 
   // Futuramente, preencher essa camada com ocorrências filtradas pelo município do profissional.
   professionalMapDemo.occurrences.forEach(occurrence => {
-    L.circleMarker([occurrence.latitude, occurrence.longitude], {
+    const marker = L.circleMarker([occurrence.latitude, occurrence.longitude], {
       radius: 8,
       color: "#8c2c22",
       weight: 2,
@@ -214,55 +318,47 @@ function addProfessionalOccurrenceExamples() {
     }).bindPopup(`
       <strong>Ocorrência ${escapeProfessionalMapText(occurrence.id)}</strong><br>
       ${escapeProfessionalMapText(occurrence.descricao)}<br>
-      ${escapeProfessionalMapText(occurrence.bairro)}
+      ${escapeProfessionalMapText(occurrence.bairro)}<br>
+      Status: ${escapeProfessionalMapText(occurrence.status)}
     `).addTo(occurrenceMarkerLayer);
+    professionalOccurrenceMarkersById.set(occurrence.id, marker);
+  });
+}
+
+// Cria os marcadores demonstrativos das ordens de serviço.
+function addProfessionalServiceOrderExamples() {
+  if (serviceOrderMarkerLayer.getLayers().length) return;
+  professionalServiceOrderMarkersById.clear();
+  professionalMapDemo.serviceOrders.forEach(order => {
+    const marker = L.circleMarker([order.latitude, order.longitude], {
+      radius: 8,
+      color: "#185f8e",
+      weight: 2,
+      fillColor: "#398ec2",
+      fillOpacity: .82
+    }).bindPopup(`
+      <strong>Ordem de serviço ${escapeProfessionalMapText(order.id)}</strong><br>
+      ${escapeProfessionalMapText(order.titulo)}<br>
+      ${escapeProfessionalMapText(order.descricao)}<br>
+      ${escapeProfessionalMapText(order.bairro)}<br>
+      Status: ${escapeProfessionalMapText(order.status)}
+    `).addTo(serviceOrderMarkerLayer);
+    professionalServiceOrderMarkersById.set(order.id, marker);
   });
 }
 
 // Liga a busca, o estado das camadas, o recolhimento da legenda e a ação “Ver todas”.
 function setupProfessionalMapEvents() {
-  document.getElementById("treeSearch").addEventListener("input", event => {
-    const searchTerm = event.target.value.trim().toLocaleLowerCase("pt-BR");
-    const matchingTrees = professionalMapDemo.trees.filter(tree =>
-      [tree.nome, tree.especie, tree.id, tree.bairro, tree.endereco]
-        .some(value => value.toLocaleLowerCase("pt-BR").includes(searchTerm))
-    );
-    renderProfessionalTreeList(matchingTrees);
-    renderProfessionalTreeMarkers(matchingTrees);
-
-    if (matchingTrees.length === 1) {
-      professionalMap.flyTo([matchingTrees[0].lat, matchingTrees[0].lng], 16, { duration: .7 });
-    }
-  });
+  document.getElementById("treeSearch").addEventListener("input", () => renderProfessionalActiveList());
 
   document.getElementById("showAllTrees").addEventListener("click", () => {
     document.getElementById("treeSearch").value = "";
-    renderProfessionalTreeList(professionalMapDemo.trees);
-    renderProfessionalTreeMarkers(professionalMapDemo.trees);
-    const treeBounds = professionalMapDemo.trees.map(tree => [tree.lat, tree.lng]);
-    professionalMap.fitBounds(treeBounds, { padding: [42, 42] });
+    renderProfessionalActiveList();
+    fitProfessionalMapToActiveRecords();
   });
 
-  document.getElementById("treesMapLayer").addEventListener("change", event => {
-    if (event.target.checked) professionalMap.addLayer(treeMarkerLayer);
-    else professionalMap.removeLayer(treeMarkerLayer);
-  });
-
-  document.getElementById("riskMapLayer").addEventListener("change", event => {
-    riskMarkersVisible = event.target.checked;
-    treeMarkerLayer.eachLayer(marker => marker.setOpacity(riskMarkersVisible ? 1 : .18));
-  });
-
-  document.getElementById("occurrencesMapLayer").addEventListener("change", event => {
-    if (event.target.checked) {
-      addProfessionalOccurrenceExamples();
-      occurrenceMarkerLayer.addTo(professionalMap);
-      updateProfessionalMapToast("Camada de ocorrências ativada.");
-    } else {
-      professionalMap.removeLayer(occurrenceMarkerLayer);
-      occurrenceMarkerLayer.clearLayers();
-      updateProfessionalMapToast("Camada de ocorrências desativada.");
-    }
+  document.querySelectorAll("[name='mapDataLayer']").forEach(input => {
+    input.addEventListener("change", event => activateProfessionalMapLayer(event.currentTarget.dataset.mapLayer));
   });
 
   document.getElementById("toggleMapLayers").addEventListener("click", event => {

@@ -19,6 +19,10 @@ public class ServidorHttp {
          */
         HttpServer servidor = HttpServer.create(endereco, 0);
 
+        // A rota de cadastro de funcionário recebe POSTs antes do handler genérico de arquivos.
+        // FUTURO BACK-END: substituir o armazenamento de demonstração do handler por repository/DAO e banco.
+        servidor.createContext("/api/equipes/", new FuncionarioEquipeApiHandler());
+
         // caminho do contexto
         servidor.createContext("/", new ArquivosEstaticosHandler());
         servidor.start();

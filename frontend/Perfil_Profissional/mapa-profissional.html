@@ -30,10 +30,10 @@
 
         <div class="professional-map-workspace">
           <!-- Área geográfica com marcadores e controles de camadas. -->
-          <section class="professional-map-panel" aria-label="Mapa de árvores e ocorrências">
+          <section class="professional-map-panel" aria-label="Mapa de árvores, ocorrências e ordens de serviço">
             <div id="professionalMap" role="application" aria-label="Mapa interativo do município"></div>
 
-            <!-- Alterna marcadores, ocorrências e destaque visual dos níveis de risco. -->
+            <!-- Alterna árvores, ocorrências, ordens de serviço e o destaque visual do risco. -->
             <section class="professional-map-layers" aria-label="Camadas do mapa">
               <div class="professional-map-layers-heading">
                 <strong>Camadas</strong>
@@ -43,19 +43,19 @@
               </div>
               <div id="mapLayerBody">
                 <label class="professional-layer-row">
-                  <input type="checkbox" checked id="treesMapLayer">
+                  <input type="radio" name="mapDataLayer" checked id="treesMapLayer" data-map-layer="trees">
                   <span class="professional-check-custom" aria-hidden="true"></span>
                   <span>Árvores cadastradas</span>
                 </label>
                 <label class="professional-layer-row">
-                  <input type="checkbox" id="occurrencesMapLayer">
+                  <input type="radio" name="mapDataLayer" id="occurrencesMapLayer" data-map-layer="occurrences">
                   <span class="professional-check-custom" aria-hidden="true"></span>
                   <span>Ocorrências</span>
                 </label>
                 <label class="professional-layer-row">
-                  <input type="checkbox" checked id="riskMapLayer">
+                  <input type="radio" name="mapDataLayer" id="serviceOrdersMapLayer" data-map-layer="serviceOrders">
                   <span class="professional-check-custom" aria-hidden="true"></span>
-                  <span>Risco</span>
+                  <span>Ordens de serviço</span>
                 </label>
                 <hr>
                 <div class="professional-legend-title">Legenda (nível de risco)</div>
@@ -69,7 +69,7 @@
             <!-- Mensagem breve atualizada após ações no mapa. -->
             <div class="professional-map-toast" id="professionalMapToast" role="status" aria-live="polite">
               <i class="bi bi-info-circle" aria-hidden="true"></i>
-              <span>Clique em um marcador para consultar os dados da árvore.</span>
+              <span>Clique em um marcador para consultar os dados do registro.</span>
             </div>
           </section>
 
@@ -83,14 +83,14 @@
               </div>
             </section>
 
-            <label class="professional-map-search-label" for="treeSearch">Buscar árvore</label>
+            <label class="professional-map-search-label" id="mapListSearchLabel" for="treeSearch">Buscar árvore</label>
             <div class="professional-map-search">
               <i class="bi bi-search" aria-hidden="true"></i>
               <input id="treeSearch" type="search" placeholder="Nome, espécie, bairro ou ID..." autocomplete="off">
             </div>
 
             <div class="professional-map-list-heading">
-              <h2>Árvores em destaque</h2>
+              <h2 id="mapListTitle">Árvores cadastradas</h2>
               <button class="professional-map-text-button" id="showAllTrees" type="button">Ver todas</button>
             </div>
             <div class="professional-tree-list" id="professionalTreeList" aria-live="polite"></div>

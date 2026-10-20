@@ -158,6 +158,15 @@
   font-weight: 800;
 }
 
+.professional-layer-row input[type="radio"] + .professional-check-custom { border-radius: 50%; }
+.professional-layer-row input[type="radio"]:checked + .professional-check-custom::after {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff;
+  content: "";
+}
+
 .professional-layer-row input:focus-visible + .professional-check-custom {
   outline: 3px solid rgba(29, 118, 81, .25);
   outline-offset: 2px;
@@ -396,6 +405,17 @@
 
 .professional-tree-card-species { margin-top: 3px; font-style: italic; }
 .professional-tree-card-address { margin-top: 5px; }
+
+.professional-record-status {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #e8f1fb;
+  color: #326b9d;
+  font-size: 9px;
+  font-weight: 800;
+  white-space: nowrap;
+}
 
 .professional-risk-badge {
   flex: 0 0 auto;

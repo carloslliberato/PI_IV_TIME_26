@@ -45,10 +45,10 @@
   const itensMenu = [
     { texto: "Inicial", icone: "bi-house-door", caminho: "inicial.html" },
     { texto: "Mapa", icone: "bi-map", caminho: "mapa-profissional.html" },
-    { texto: "Árvores", icone: "bi-tree", caminho: "arvores.html" },
     { texto: "Ocorrências", icone: "bi-exclamation-triangle", caminho: "ocorrencias.html" },
-    { texto: "Vistorias", icone: "bi-clipboard2-check", caminho: "vistorias.html" },
-    { texto: "Manutenções", icone: "bi-tools", caminho: "manutencoes.html" },
+    { texto: "Ordens de serviço", icone: "bi-tools", caminho: "ordens-servico.html" },
+    { texto: "Árvores", icone: "bi-tree", caminho: "arvores.html" },
+    { texto: "Equipes", icone: "bi-people", caminho: "equipes.html" },
     { texto: "Relatórios", icone: "bi-file-earmark-bar-graph", caminho: "relatorios.html" }
   ];
 

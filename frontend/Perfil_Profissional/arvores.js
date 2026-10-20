@@ -17,7 +17,7 @@
   const listBody = el("treesTableBody");
   let selectedTreeId = null;
   let selectedPhotoIndex = 0;
-  let activeTab = "history";
+  let activeTab = "occurrences";
   let interventionMustSave = false;
   let toastTimer;
 
@@ -35,6 +35,16 @@
     return "low";
   }
 
+  // Padroniza os estados das ocorrências exibidos na tabela de árvores.
+  function occurrenceStatus(tree) {
+    const occurrence = tree.occurrences?.[0];
+    if (!occurrence) return { label: "Sem ocorrência", className: "none" };
+    const status = normalize(occurrence.status);
+    if (status.includes("conclu")) return { label: "Concluída", className: "completed" };
+    if (status.includes("parad") || status.includes("pausad") || status.includes("interrompid")) return { label: "Parada", className: "stopped" };
+    return { label: "Em andamento", className: "ongoing" };
+  }
+
   // Desenha as linhas da tabela usando os registros atuais e os filtros selecionados.
   // FUTURO API/BD: substituir a filtragem local por GET /api/arvores com busca, risco,
   // municipioId e paginação; o município deve vir do cadastro do profissional autenticado.
@@ -48,13 +58,16 @@
       const matchesFilter = !filter || matchesRisk || (filter === "manutencao" && tree.maintenance) || (filter === "floracao" && tree.flowering);
       return matchesSearch && matchesFilter;
     });
-    listBody.innerHTML = visibleTrees.map(tree => `<tr>
+    listBody.innerHTML = visibleTrees.map(tree => {
+      const occurrence = occurrenceStatus(tree);
+      return `<tr>
       <td><button class="tree-id-link" type="button" data-open-tree="${escapeHtml(tree.id)}" aria-label="Abrir ficha da árvore ${escapeHtml(tree.id)}">${escapeHtml(tree.id)}</button></td>
-      <td><strong>${escapeHtml(tree.name)}</strong><span class="tree-scientific-cell">${escapeHtml(tree.scientificName)}</span></td>
       <td>${escapeHtml(tree.neighborhood)}</td>
       <td><span class="tree-risk-badge ${riskClass(tree.risk)}"><i class="bi bi-tree-fill" aria-hidden="true"></i>${escapeHtml(tree.risk)}</span></td>
       <td>${escapeHtml(tree.lastVisit || tree.lastInspection)}</td>
-    </tr>`).join("");
+      <td><span class="tree-occurrence-badge ${occurrence.className}">${occurrence.label}</span></td>
+    </tr>`;
+    }).join("");
     el("treeResultCount").textContent = `${visibleTrees.length} ${visibleTrees.length === 1 ? "árvore encontrada" : "árvores encontradas"}`;
     el("treesEmpty").hidden = visibleTrees.length !== 0;
     document.querySelector(".trees-table-scroll").hidden = visibleTrees.length === 0;
@@ -107,33 +120,34 @@
     selectedTreeId = tree.id;
     selectedPhotoIndex = 0;
     el("treeDetailsTitle").textContent = tree.name;
-    el("treeScientificName").textContent = tree.scientificName;
-    el("treeSpeciesTag").textContent = tree.species || "Espécie não informada";
     const rows = [
       ["ID da árvore", tree.id, "bi-upc-scan"], ["Nome popular", tree.name, "bi-tree"], ["Nome científico", tree.scientificName, "bi-pencil"], ["Espécie", tree.species || "Não informada", "bi-flower1"], ["Localização", tree.location, "bi-geo-alt"], ["Bairro", tree.neighborhood, "bi-house"], ["Idade estimada", tree.age, "bi-hourglass-split"], ["Altura", `${tree.height} m`, "bi-arrows-vertical"], ["Diâmetro do tronco (DAP)", `${tree.diameter} cm`, "bi-circle"], ["Estado", tree.state, "bi-heart-pulse"], ["Nível de risco", tree.risk, "bi-exclamation-triangle"], ["Última vistoria", tree.lastInspection, "bi-clipboard2-check"], ["Última poda", tree.lastPruning, "bi-scissors"], ["Próxima manutenção", tree.nextMaintenance, "bi-calendar-event"]
     ];
     el("treeInfoList").innerHTML = rows.map(([label, value, icon]) => `<div class="tree-info-row"><dt><i class="bi ${icon}" aria-hidden="true"></i>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("");
     renderPhotos(tree);
     el("deleteTreePanel").hidden = true;
-    activeTab = "history";
+    activeTab = "occurrences";
     updateTabs(tree);
   }
 
   // Atualiza a foto principal, contador e miniaturas clicáveis da galeria.
   function renderPhotos(tree) {
     const photos = tree.photos?.length ? tree.photos : [];
+    const openButton = el("openTreePhotos");
+    openButton.disabled = !photos.length;
+    openButton.setAttribute("aria-label", photos.length ? `Abrir ${photos.length} ${photos.length === 1 ? "foto" : "fotos"} da árvore` : "Nenhuma foto cadastrada para esta árvore");
     if (!photos.length) {
       el("treeMainPhoto").removeAttribute("src");
       el("treeMainPhoto").alt = "Nenhuma foto cadastrada para esta árvore";
-      el("treePhotoCount").textContent = "Sem fotos";
-      el("treePhotoThumbnails").innerHTML = "";
+      el("treePhotoCount").textContent = "(0)";
+      el("treePhotoViewerCount").textContent = "";
       return;
     }
     selectedPhotoIndex = Math.min(selectedPhotoIndex, photos.length - 1);
     el("treeMainPhoto").src = photos[selectedPhotoIndex];
     el("treeMainPhoto").alt = `Foto ${selectedPhotoIndex + 1} de ${tree.name}`;
-    el("treePhotoCount").textContent = `${selectedPhotoIndex + 1}/${photos.length}`;
-    el("treePhotoThumbnails").innerHTML = photos.map((url, index) => `<button class="tree-photo-thumb ${index === selectedPhotoIndex ? "active" : ""}" data-photo-index="${index}" type="button" aria-label="Ver foto ${index + 1}"><img src="${escapeHtml(url)}" alt=""></button>`).join("");
+    el("treePhotoCount").textContent = `(${photos.length})`;
+    el("treePhotoViewerCount").textContent = `${selectedPhotoIndex + 1}/${photos.length}`;
   }
 
   // Desenha a tabela da aba ativa a partir dos dados relacionados à árvore.
@@ -274,7 +288,16 @@
   // Permite percorrer imagens e selecionar miniaturas da galeria.
   el("previousTreePhoto").addEventListener("click", () => { const tree = treeById(selectedTreeId); if (tree?.photos.length) { selectedPhotoIndex = (selectedPhotoIndex - 1 + tree.photos.length) % tree.photos.length; renderPhotos(tree); } });
   el("nextTreePhoto").addEventListener("click", () => { const tree = treeById(selectedTreeId); if (tree?.photos.length) { selectedPhotoIndex = (selectedPhotoIndex + 1) % tree.photos.length; renderPhotos(tree); } });
-  el("treePhotoThumbnails").addEventListener("click", event => { const button = event.target.closest("[data-photo-index]"); const tree = treeById(selectedTreeId); if (button && tree) { selectedPhotoIndex = Number(button.dataset.photoIndex); renderPhotos(tree); } });
+  el("openTreePhotos").addEventListener("click", () => {
+    const tree = treeById(selectedTreeId);
+    if (!tree?.photos.length) return;
+    renderPhotos(tree);
+    el("treePhotoViewer").hidden = false;
+    el("closeTreePhotoViewer").focus();
+  });
+  const closePhotoViewer = () => { el("treePhotoViewer").hidden = true; el("openTreePhotos").focus(); };
+  el("closeTreePhotoViewer").addEventListener("click", closePhotoViewer);
+  el("treePhotoViewer").addEventListener("click", event => { if (event.target === el("treePhotoViewer")) closePhotoViewer(); });
 
   // Alterna os registros associados à árvore sem sair da ficha.
   document.querySelectorAll("[data-tree-tab]").forEach(tab => tab.addEventListener("click", () => { activeTab = tab.dataset.treeTab; const tree = treeById(selectedTreeId); if (tree) updateTabs(tree); }));
@@ -285,6 +308,7 @@
   document.querySelectorAll(".tree-modal-backdrop").forEach(backdrop => backdrop.addEventListener("click", event => { if (event.target === backdrop) closeModal(backdrop); }));
   document.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;
+    if (!el("treePhotoViewer").hidden) { closePhotoViewer(); return; }
     const open = [el("editTreeModal"), el("createTreeModal"), el("treeDetailsModal")].find(modal => !modal.hidden);
     if (open) closeModal(open);
   });

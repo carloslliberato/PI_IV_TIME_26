@@ -11,21 +11,16 @@ const dashboardDemo = {
     riscoBaixo: 1141,
     podasPendentes: 14,
     vistoriasPendentes: 22,
-    novasOcorrencias: 9,
-    ordensAndamento: 6
+    totalOcorrencias: 9,
+    totalOrdens: 6
   }
 };
 
 // Mapeia cada indicador ao elemento e à mensagem a exibir quando o valor for zero.
 const metricasDashboard = [
   { chave: "totalArvores", elemento: "totalArvores", vazio: "Não existem árvores cadastradas neste município." },
-  { chave: "riscoAlto", elemento: "riscoAlto", vazio: "Não existem árvores em risco alto." },
-  { chave: "riscoMedio", elemento: "riscoMedio", vazio: "Não existem árvores em risco médio." },
-  { chave: "riscoBaixo", elemento: "riscoBaixo", vazio: "Não existem árvores em risco baixo." },
-  { chave: "podasPendentes", elemento: "podasPendentes", vazio: "Não existem podas pendentes." },
-  { chave: "vistoriasPendentes", elemento: "vistoriasPendentes", vazio: "Não existem vistorias pendentes." },
-  { chave: "novasOcorrencias", elemento: "novasOcorrencias", vazio: "Não existem novas ocorrências abertas." },
-  { chave: "ordensAndamento", elemento: "ordensAndamento", vazio: "Não existem ordens de serviço em andamento." }
+  { chave: "totalOcorrencias", elemento: "totalOcorrencias", vazio: "Não existem ocorrências neste município." },
+  { chave: "totalOrdens", elemento: "totalOrdens", vazio: "Não existem ordens de serviço neste município." }
 ];
 
 // Preenche a tela a partir dos dados locais de demonstração.
@@ -39,8 +34,6 @@ function carregarDashboardProfissional() {
     || dados.profissional.nome;
   document.getElementById("nomeProfissional").textContent = nomeSalvo;
   document.getElementById("municipioProfissional").textContent = dados.profissional.municipio;
-  document.getElementById("nomeProfissionalTitulo").textContent = nomeSalvo;
-  document.getElementById("municipioResumo").textContent = dados.profissional.municipio;
 
   // Para cada indicador, exibe a contagem ou a mensagem apropriada quando ela for zero.
   metricasDashboard.forEach(metrica => {

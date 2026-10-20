@@ -58,7 +58,7 @@
           </div>
           <div class="trees-table-scroll">
             <table class="trees-table">
-              <thead><tr><th scope="col">ID</th><th scope="col">Nome</th><th scope="col">Bairro</th><th scope="col">Nível de risco</th><th scope="col">Última visita</th></tr></thead>
+              <thead><tr><th scope="col">ID</th><th scope="col">Bairro</th><th scope="col">Nível de risco</th><th scope="col">Última visita</th><th scope="col">Status ocorrência</th></tr></thead>
               <tbody id="treesTableBody"></tbody>
             </table>
           </div>
@@ -75,7 +75,7 @@
     <section class="tree-modal tree-details-modal">
       <button class="tree-modal-close" data-close-modal type="button" aria-label="Fechar ficha"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
       <div class="tree-detail-topline">
-        <div><span class="tree-species-tag" id="treeSpeciesTag">Árvore nativa</span><h2 id="treeDetailsTitle"></h2><p id="treeScientificName"></p></div>
+        <div><h2 id="treeDetailsTitle"></h2></div>
         <div class="tree-detail-actions"><button class="tree-button tree-button-edit" id="startInterventionButton" type="button"><i class="bi bi-clipboard-plus" aria-hidden="true"></i> Registrar nova intervenção</button><button class="tree-button tree-button-edit" id="editTreeButton" type="button"><i class="bi bi-pencil" aria-hidden="true"></i> Editar árvore</button><button class="tree-button tree-button-delete" id="showDeleteTree" type="button"><i class="bi bi-trash3" aria-hidden="true"></i> Excluir árvore</button></div>
       </div>
       <!-- O motivo é coletado antes da confirmação explícita da exclusão. -->
@@ -85,22 +85,27 @@
         <button class="tree-button tree-button-delete" id="confirmDeleteTree" type="button">Confirmar exclusão</button>
       </div>
       <div class="tree-detail-grid">
-        <!-- Galeria demonstrativa; as URLs serão substituídas pelas fotos recebidas da API. -->
-        <section class="tree-gallery" aria-label="Fotos da árvore">
-          <div class="tree-gallery-main"><img id="treeMainPhoto" alt="Foto da árvore"><span class="tree-photo-count" id="treePhotoCount"></span><button id="previousTreePhoto" class="tree-gallery-arrow previous" type="button" aria-label="Foto anterior"><i class="bi bi-chevron-left"></i></button><button id="nextTreePhoto" class="tree-gallery-arrow next" type="button" aria-label="Próxima foto"><i class="bi bi-chevron-right"></i></button></div>
-          <div class="tree-photo-thumbnails" id="treePhotoThumbnails"></div>
+        <!-- Registros relacionados aparecem antes dos dados gerais. -->
+        <section class="tree-related-section">
+          <div class="tree-tabs" role="tablist" aria-label="Registros da árvore">
+            <button class="tree-tab active" type="button" role="tab" aria-selected="true" data-tree-tab="occurrences">Ocorrências</button><button class="tree-tab" type="button" role="tab" aria-selected="false" data-tree-tab="orders">Ordens de serviço</button><button class="tree-tab" type="button" role="tab" aria-selected="false" data-tree-tab="documents">Documentos</button><button class="tree-tab" type="button" role="tab" aria-selected="false" data-tree-tab="history">Histórico</button>
+          </div>
+          <div class="tree-related-content" id="treeRelatedContent" role="tabpanel"></div>
         </section>
-        <!-- A ficha visual reúne os campos descritivos e as datas de manutenção. -->
-        <section class="tree-info-card"><h3>Informações gerais</h3><dl class="tree-info-list" id="treeInfoList"></dl></section>
+        <!-- A ficha visual reúne os dados e as datas de manutenção. -->
+        <section class="tree-info-card"><h3>Informações gerais</h3><dl class="tree-info-list" id="treeInfoList"></dl>
+          <div class="tree-info-row tree-photos-row"><dt><i class="bi bi-images" aria-hidden="true"></i>Fotos</dt><dd><button id="openTreePhotos" class="tree-photos-button" type="button" aria-label="Abrir fotos da árvore"><span>Ver fotos</span><small id="treePhotoCount"></small></button></dd></div>
+        </section>
       </div>
-      <!-- Abas demonstrativas de histórico, ocorrências, ordens de serviço e documentos. -->
-      <section class="tree-related-section">
-        <div class="tree-tabs" role="tablist" aria-label="Registros da árvore">
-          <button class="tree-tab active" type="button" role="tab" aria-selected="true" data-tree-tab="history">Histórico</button><button class="tree-tab" type="button" role="tab" aria-selected="false" data-tree-tab="occurrences">Ocorrências</button><button class="tree-tab" type="button" role="tab" aria-selected="false" data-tree-tab="orders">Ordens de serviço</button><button class="tree-tab" type="button" role="tab" aria-selected="false" data-tree-tab="documents">Documentos</button>
-        </div>
-        <div class="tree-related-content" id="treeRelatedContent" role="tabpanel"></div>
-      </section>
     </section>
+  </div>
+
+  <div class="tree-photo-viewer" id="treePhotoViewer" role="dialog" aria-modal="true" aria-label="Fotos da árvore" hidden>
+    <button class="tree-photo-viewer-close" id="closeTreePhotoViewer" type="button" aria-label="Fechar fotos"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+    <button id="previousTreePhoto" class="tree-gallery-arrow previous" type="button" aria-label="Foto anterior"><i class="bi bi-chevron-left" aria-hidden="true"></i></button>
+    <img id="treeMainPhoto" alt="Foto da árvore">
+    <span class="tree-photo-viewer-count" id="treePhotoViewerCount"></span>
+    <button id="nextTreePhoto" class="tree-gallery-arrow next" type="button" aria-label="Próxima foto"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
   </div>
 
   <!-- Cadastro: os campos formam o payload futuro de criação da árvore. -->
