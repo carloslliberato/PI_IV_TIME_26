@@ -29,23 +29,27 @@
         </header>
 
         <!-- Permite escolher o assunto do relatório e como os registros serão agrupados. -->
-        <section class="reports-controls" aria-label="Configuração do relatório">
-          <label class="reports-field" for="reportSubject">
-            <span>Mostrar dados de</span>
-            <select id="reportSubject">
-              <option value="trees">Árvores</option>
-              <option value="occurrences">Ocorrências</option>
-              <option value="orders">Ordens de serviço</option>
-            </select>
-          </label>
-          <label class="reports-field" for="reportGrouping">
-            <span>Agrupar por</span>
-            <select id="reportGrouping"></select>
-          </label>
-          <button class="reports-export" id="exportReport" type="button">
-            <i class="bi bi-download" aria-hidden="true"></i>
-            <span>Exportar CSV</span>
-          </button>
+        <section class="reports-navigation" aria-label="Navegação dos relatórios">
+          <nav class="report-subject-tabs" role="tablist" aria-label="Assunto do relatório">
+            <button class="report-tab is-active" id="subjectTabTrees" type="button" role="tab" aria-selected="true" data-report-subject="trees">Árvores</button>
+            <button class="report-tab" id="subjectTabOccurrences" type="button" role="tab" aria-selected="false" data-report-subject="occurrences">Ocorrências</button>
+            <button class="report-tab" id="subjectTabOrders" type="button" role="tab" aria-selected="false" data-report-subject="orders">Ordens de serviço</button>
+            <button class="report-tab" id="subjectTabTeams" type="button" role="tab" aria-selected="false" data-report-subject="teams">Equipes</button>
+          </nav>
+          <div class="report-grouping-row">
+            <div class="report-grouping-area">
+              <span class="report-grouping-label">Agrupar por</span>
+              <nav class="report-group-tabs" id="reportGroupingTabs" role="tablist" aria-label="Agrupamento do relatório"></nav>
+            </div>
+            <label class="report-team-filter" id="reportTeamFilter" for="reportTeamSelect" hidden>
+              <span>Equipe</span>
+              <select id="reportTeamSelect"><option value="">Todas as equipes</option></select>
+            </label>
+            <button class="reports-export" id="exportReport" type="button">
+              <i class="bi bi-download" aria-hidden="true"></i>
+              <span>Exportar CSV</span>
+            </button>
+          </div>
         </section>
 
         <!-- Resume o relatório selecionado e apresenta contagem e distribuição visual. -->
