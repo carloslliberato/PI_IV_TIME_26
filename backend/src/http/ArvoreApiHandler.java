@@ -3,6 +3,8 @@ package backend.src.http;
 import backend.src.model.Arvore;
 import backend.src.model.Risco;
 
+import repository.ArvoreRepository;
+
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -22,26 +24,9 @@ public class ArvoreApiHandler implements HttpHandler {
 
         if ("GET".equals(metodo)) {
 
-            Arvore arvore1 = new Arvore(
-                1,
-                "Ipê-amarelo",
-                -22.90,
-                -47.06,
-                Risco.ALTO
-            );
+            ArvoreRepository repository = new ArvoreRepository();
 
-            Arvore arvore2 = new Arvore(
-                2,
-                "Cerejeira-japonesa",
-                -22.91,
-                -47.05,
-                Risco.MODERADO
-            );
-
-            ArrayList<Arvore> arvores = new ArrayList<>();
-
-            arvores.add(arvore1);
-            arvores.add(arvore2);
+            ArrayList<Arvore> arvores = repository.buscarTodas();   
 
             Gson gson = new Gson();
 
