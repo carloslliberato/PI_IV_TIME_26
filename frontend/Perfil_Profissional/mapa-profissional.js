@@ -35,8 +35,37 @@ let professionalOccurrenceMarkersById = new Map();
 let professionalServiceOrderMarkersById = new Map();
 let activeMapDataLayer = "trees";
 
+function converterRisco(risco) {
+  const riscos = {
+    BAIXO: "Baixo",
+    MODERADO: "Moderado",
+    ALTO: "Alto",
+    CRITICO: "Crítico"
+  };
+
+  return riscos[risco] || "Baixo";
+}
+
+async function carregarArvores() {
+  const resposta = await fetch("/api/arvores");
+  const arvoresApi = await resposta.json();
+
+  professionalMapDemo.trees = arvoresApi.map(arvore => ({
+    id: String(arvore.id),
+    nome: arvore.especie,
+    especie: arvore.especie,
+    bairro: "Não informado",
+    endereco: "Não informado",
+    lat: arvore.latitude,
+    lng: arvore.longitude,
+    risco: converterRisco(arvore.risco)
+  }));
+}
+
 // Carrega a tela depois que o sidebar profissional autorizou o acesso e inseriu seus estilos.
-function initializeProfessionalMap() {
+async function initializeProfessionalMap() {
+  await carregarArvores();
+
   document.getElementById("mapScopeName").textContent = professionalMapDemo.municipality.nome;
   updateProfessionalMapListHeading();
 

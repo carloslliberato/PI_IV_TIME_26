@@ -23,6 +23,9 @@ public class ServidorHttp {
         // FUTURO BACK-END: substituir o armazenamento de demonstração do handler por repository/DAO e banco.
         servidor.createContext("/api/equipes/", new FuncionarioEquipeApiHandler());
 
+        // API das árvores
+        servidor.createContext("/api/arvores", new ArvoreApiHandler());
+
         // caminho do contexto
         servidor.createContext("/", new ArquivosEstaticosHandler());
         servidor.start();

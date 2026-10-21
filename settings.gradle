@@ -1,0 +1,4 @@
+rootProject.name = 'arboriza'
+
+// Diz ao Gradle que essas duas pastas fazem parte de um único projeto integrado
+include 'servidor', 'backend'
