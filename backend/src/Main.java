@@ -51,5 +51,7 @@ public class Main {
             return;
         }
 
+        repository.ConexaoMongo.getDatabase();
+
     }
 }
