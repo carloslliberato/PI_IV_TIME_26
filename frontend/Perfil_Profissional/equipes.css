@@ -1,0 +1,130 @@
+/* Estrutura geral, cabeçalho da página e identificação do município. */
+.teams-page { padding-top: 35px; }
+.teams-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 23px; }
+.teams-heading h1 { margin: 8px 0 6px; color: #18251e; font-size: clamp(28px, 3vw, 38px); font-weight: 850; letter-spacing: -.04em; }
+.teams-heading p { margin: 0; color: #718078; font-size: 14px; }
+.teams-municipality { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 9px 12px; border: 1px solid #e1ebe5; border-radius: 999px; background: #f7faf8; color: #557061; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.teams-municipality i { color: #28734f; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
+
+/* Campo de busca para localizar equipes pelo ID, nome, região ou gestor. */
+.teams-search { height: 52px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding: 0 16px; border: 1px solid #dfe8e2; border-radius: 12px; background: #fff; color: #638071; box-shadow: 0 3px 12px rgba(20, 60, 40, .025); }
+.teams-search:focus-within { border-color: #91b8a0; box-shadow: 0 0 0 3px rgba(29, 118, 81, .1); }
+.teams-search > i { font-size: 17px; }
+.teams-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: #34443a; font: inherit; font-size: 13px; }
+.teams-search input::placeholder { color: #9aa49e; }
+
+/* Cartão e tabela responsiva das equipes cadastradas. */
+.teams-card { overflow: hidden; border: 1px solid #e1eae4; border-radius: 16px; background: #fff; box-shadow: 0 8px 26px rgba(22, 59, 40, .04); }
+.teams-card-heading { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 17px 22px; border-bottom: 1px solid #edf1ee; }
+.teams-card-heading h2 { margin: 0; color: #26372e; font-size: 16px; font-weight: 800; }
+.teams-card-heading p { margin: 5px 0 0; color: #87928b; font-size: 12px; }
+.teams-data-note { display: inline-flex; align-items: center; gap: 6px; color: #829087; font-size: 11px; white-space: nowrap; }
+.teams-data-note i { color: #72917f; }
+.teams-table-wrap { overflow-x: auto; }
+.teams-table { width: 100%; min-width: 850px; border-collapse: collapse; text-align: left; }
+.teams-table th { padding: 13px 17px; background: #f7faf8; color: #748179; font-size: 11px; font-weight: 750; letter-spacing: .025em; white-space: nowrap; }
+.teams-table td { padding: 15px 17px; border-top: 1px solid #edf1ee; color: #57645d; font-size: 12px; vertical-align: middle; }
+.teams-table tbody tr:hover { background: #fbfdfb; }
+.teams-table td strong { color: #2d3b33; font-size: 12px; font-weight: 750; }
+.team-id-link { padding: 0; border: 0; background: transparent; color: #176344; font: inherit; font-size: 12px; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.team-id-link:hover { color: #0e4934; }
+.team-status-badge { display: inline-flex; align-items: center; padding: 5px 9px; border-radius: 999px; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.team-status-badge.available { background: #e8f4e8; color: #43833c; }
+.team-status-badge.unavailable { background: #fff0df; color: #a75b20; }
+.teams-empty { min-height: 190px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; color: #849087; text-align: center; }
+.teams-empty[hidden] { display: none; }
+.teams-empty > i { color: #7c9e88; font-size: 27px; }
+.teams-empty strong { color: #35463b; font-size: 14px; }
+.teams-empty span { font-size: 12px; }
+
+/* Base visual e ordem de empilhamento dos modais de equipe e ações relacionadas. */
+.teams-modal-open, .teams-employee-modal-open { overflow: hidden; }
+.teams-modal-backdrop { position: fixed; z-index: 1200; inset: 0; display: flex; align-items: center; justify-content: center; padding: 22px; overflow-y: auto; background: rgba(18, 34, 25, .56); backdrop-filter: blur(3px); }
+.teams-modal-backdrop[hidden] { display: none; }
+.teams-modal-card { position: relative; width: min(980px, 100%); max-height: calc(100vh - 44px); overflow-y: auto; padding: 27px; border: 1px solid #e2eae5; border-radius: 17px; background: #fff; box-shadow: 0 22px 70px rgba(15, 45, 29, .24); }
+.teams-modal-close { position: absolute; z-index: 2; top: 15px; right: 15px; width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid #e7ece9; border-radius: 50%; background: #fff; color: #64716a; cursor: pointer; }
+.teams-modal-close:hover { border-color: #bdd2c4; background: #f4f8f5; color: #176344; }
+.teams-nested-modal { z-index: 1300; }
+
+/* Resumo e identidade da equipe selecionada. */
+.team-detail-heading { display: flex; align-items: center; gap: 14px; padding: 1px 48px 18px 0; }
+.team-detail-icon { width: 45px; height: 45px; flex: 0 0 45px; display: grid; place-items: center; border-radius: 13px; background: #e8f3ee; color: #176344; font-size: 20px; }
+.team-detail-eyebrow { color: #7a887f; font-size: 11px; font-weight: 750; }
+.team-detail-heading h2, .team-orders-heading h2 { margin: 4px 0 0; color: #25352c; font-size: 22px; }
+.team-detail-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; padding: 16px; border: 1px solid #e8efea; border-radius: 12px; background: #f8fbf9; }
+.team-detail-summary > div > span { display: block; margin-bottom: 5px; color: #829087; font-size: 10px; }
+.team-detail-summary > div > strong { display: block; color: #3d4b43; font-size: 12px; font-weight: 700; }
+
+/* Lista de funcionários com disponibilidade e links de contato. */
+.team-members-section { margin-top: 22px; }
+.team-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 12px; }
+.team-section-heading h3, .team-orders-action h3 { margin: 0; color: #2c3d33; font-size: 15px; font-weight: 800; }
+.team-section-heading p, .team-orders-action p { margin: 5px 0 0; color: #7c8981; font-size: 11px; }
+.team-members-table-wrap { overflow-x: auto; border: 1px solid #e8eeea; border-radius: 10px; }
+.team-members-table { width: 100%; min-width: 620px; border-collapse: collapse; text-align: left; }
+.team-members-table th { padding: 11px 13px; background: #f7faf8; color: #748179; font-size: 10px; font-weight: 750; white-space: nowrap; }
+.team-members-table td { padding: 12px 13px; border-top: 1px solid #edf1ee; color: #57645d; font-size: 11px; }
+.team-members-table td strong { color: #34443a; font-size: 11px; }
+.team-members-empty-cell { padding: 24px !important; color: #87928b !important; text-align: center; }
+.team-contact-link { color: #176344; font-size: 11px; text-decoration: none; }
+.team-contact-link:hover { text-decoration: underline; }
+
+/* Ações disponíveis na ficha: cadastrar pessoa e encaminhar OS aberta. */
+.team-orders-action { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 18px; padding: 15px 16px; border: 1px solid #e8eeea; border-radius: 11px; background: #fbfdfb; }
+.team-primary-button, .team-secondary-button { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 13px; border: 0; border-radius: 8px; font: inherit; font-size: 11px; font-weight: 750; cursor: pointer; }
+.team-primary-button { background: #176344; color: #fff; }
+.team-primary-button:hover { background: #0f503a; }
+.team-primary-button:disabled { opacity: .65; cursor: wait; }
+.team-secondary-button { border: 1px solid #cfe0d4; background: #f3f8f4; color: #176344; }
+.team-secondary-button:hover { border-color: #a9c5b2; background: #eaf3ec; }
+
+/* Formulário obrigatório de cadastro de funcionário, incluindo estado de erro/envio. */
+.employee-modal-card { width: min(560px, 100%); }
+.employee-form-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.employee-form-icon { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; border-radius: 12px; background: #e8f3ee; color: #176344; font-size: 18px; }
+.employee-form-heading > div > span { color: #7b8a80; font-size: 9px; font-weight: 800; letter-spacing: .06em; }
+.employee-form-heading h2 { margin: 3px 0; color: #27372e; font-size: 19px; }
+.employee-form-heading p { margin: 0; color: #7b8880; font-size: 11px; }
+#employeeRegistrationForm { display: grid; gap: 12px; }
+#employeeRegistrationForm > label { display: grid; gap: 6px; color: #58675e; font-size: 11px; font-weight: 700; }
+#employeeRegistrationForm input, #employeeRegistrationForm select { width: 100%; min-width: 0; height: 42px; padding: 0 11px; border: 1px solid #dce6df; border-radius: 8px; background: #fff; color: #3f4d45; font: inherit; font-size: 12px; }
+#employeeRegistrationForm input:focus, #employeeRegistrationForm select:focus { border-color: #91b8a0; outline: 3px solid rgba(29, 118, 81, .1); }
+#employeeRegistrationForm input[readonly], #employeeRegistrationForm select:disabled { background: #f6f9f7; color: #66756c; opacity: 1; }
+.employee-form-feedback { min-height: 15px; margin: 0; color: #38724e; font-size: 11px; line-height: 1.45; }
+.employee-form-feedback.is-error { color: #b63127; }
+.employee-save-button { width: 100%; min-height: 44px; font-size: 12px; }
+
+/* Seletor das ordens abertas que ainda não têm equipe destinada. */
+.team-orders-modal-card { width: min(650px, 100%); }
+.team-orders-heading { display: flex; align-items: center; gap: 12px; padding-right: 46px; }
+.team-orders-heading h2 { font-size: 19px; }
+.team-orders-intro { margin: 15px 0; color: #718078; font-size: 12px; line-height: 1.5; }
+.team-order-choices { display: grid; gap: 9px; max-height: min(48vh, 410px); overflow-y: auto; }
+.team-order-choice { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid #e5ece7; border-radius: 10px; background: #fff; cursor: pointer; }
+.team-order-choice:has(input:checked) { border-color: #82ae91; background: #f6faf7; box-shadow: 0 0 0 2px rgba(29, 118, 81, .08); }
+.team-order-choice input { margin: 2px 0 0; accent-color: #176344; }
+.team-order-choice-copy { min-width: 0; display: grid; gap: 4px; }
+.team-order-choice-copy strong { color: #34443a; font-size: 11px; }
+.team-order-choice-copy small { color: #728078; font-size: 10px; }
+.team-order-choice-copy > span { color: #647168; font-size: 10px; line-height: 1.45; }
+.team-assign-order-button { margin-top: 14px; }
+.team-orders-empty { min-height: 110px; display: flex; align-items: center; justify-content: center; gap: 9px; color: #5a7564; font-size: 12px; }
+.team-orders-empty i { color: #4b925c; font-size: 19px; }
+
+/* Notificações breves após ações concluídas. */
+.teams-toast { position: fixed; z-index: 1400; right: 22px; bottom: 22px; max-width: min(420px, calc(100vw - 32px)); padding: 13px 17px; border: 1px solid #d5e5da; border-radius: 10px; background: #fff; color: #246244; font-size: 12px; font-weight: 700; box-shadow: 0 8px 28px rgba(17, 49, 32, .16); }
+.teams-toast[hidden] { display: none; }
+
+/* Ajusta tabela e modais para tablets e celulares. */
+@media (max-width: 760px) {
+  .teams-page { padding-top: 22px; }
+  .teams-heading { flex-direction: column; gap: 10px; }
+  .teams-municipality { margin-top: 0; }
+  .teams-card-heading { align-items: flex-start; flex-direction: column; padding: 15px; }
+  .teams-modal-backdrop { align-items: flex-start; padding: 10px; }
+  .teams-modal-card { max-height: calc(100vh - 20px); padding: 21px 16px; }
+  .team-detail-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .team-section-heading, .team-orders-action { align-items: flex-start; flex-direction: column; }
+  .team-section-heading .team-primary-button, .team-orders-action .team-secondary-button { width: 100%; }
+}

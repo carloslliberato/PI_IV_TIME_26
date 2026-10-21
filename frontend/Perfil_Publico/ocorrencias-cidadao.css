@@ -1,0 +1,29 @@
+﻿/* Estrutura e identidade visual da página de consulta de ocorrências. */
+.occurrences-main{background:#fbfdfc;min-height:100vh;flex:1;min-width:0}
+.occurrences-content{max-width:1240px;margin:0 auto;padding:38px clamp(22px,4vw,58px) 24px}
+.occurrences-page-heading{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:25px}
+.occurrences-eyebrow{display:inline-flex;align-items:center;color:#67986b;font-size:12px;font-weight:800;letter-spacing:1.1px;margin-bottom:9px}
+.occurrences-page-heading h1{font-size:clamp(27px,3vw,34px);font-weight:800;letter-spacing:-.7px;color:#1d2923;margin:0 0 8px}
+.occurrences-page-heading p{color:#748078;margin:0;max-width:760px;line-height:1.55}
+.occurrences-heading-icon{width:64px;height:64px;flex:0 0 64px;border-radius:18px;display:flex;align-items:center;justify-content:center;background:#e7f2eb;color:#1b7650;font-size:28px}
+/* Cartões delimitam o filtro e os resultados para facilitar a leitura. */
+.occurrences-card{background:#fff;border:1px solid #e4ece7;border-radius:18px;padding:clamp(19px,2.5vw,28px);box-shadow:0 10px 35px rgba(23,72,48,.045);margin-bottom:18px}
+.occurrences-card-heading{display:flex;align-items:center;gap:13px;padding-bottom:20px;margin-bottom:18px;border-bottom:1px solid #edf1ee}
+.occurrences-intro-icon{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:#e8f3ee;color:#166143;font-size:19px;flex:0 0 44px}
+.occurrences-card-heading h2,.table-card-heading h2{font-size:17px;font-weight:800;color:#174f35;margin:0 0 4px}
+.occurrences-card-heading p,.table-card-heading p{font-size:13px;color:#77827c;margin:0}
+.occurrences-card .form-label{font-size:13px;font-weight:700;color:#34443b;margin-bottom:7px}
+.occurrences-card .form-select{min-height:45px;border:1px solid #dfe8e2;border-radius:10px;color:#26362d;font-size:13px;padding:10px 36px 10px 12px;box-shadow:none}
+.occurrences-card .form-select:focus{border-color:#82b59a;box-shadow:0 0 0 .2rem rgba(40,132,79,.1)}
+.table-card{padding-bottom:8px}.table-card-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}
+.table-heading-icon{width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:#edf5ef;color:#24784c;font-size:19px;flex:0 0 42px}
+.occurrences-table{min-width:780px;margin:0;color:#34443b;font-size:13px}
+.occurrences-table thead th{background:#f5f8f5;color:#607267;font-size:11px;font-weight:800;letter-spacing:.45px;text-transform:uppercase;padding:13px 14px;border-bottom:1px solid #e7eee9;white-space:nowrap}
+.occurrences-table tbody td{padding:14px;border-bottom:1px solid #edf1ee;vertical-align:middle}.occurrences-table tbody tr:last-child td{border-bottom:0}
+.occurrence-id{font-weight:800;color:#24784c}.occurrence-badge{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:750;white-space:nowrap}
+.status-aberta{background:#fff3dc;color:#96630a}.status-andamento{background:#e4f0ff;color:#28639b}.status-concluida{background:#e5f4e9;color:#287045}
+.priority-baixa{background:#edf4ef;color:#557362}.priority-media{background:#fff3dc;color:#96630a}.priority-alta{background:#fbe9e7;color:#a83e32}
+.empty-state{display:flex;align-items:center;flex-direction:column;gap:6px;padding:35px 16px;color:#7c8981;text-align:center}.empty-state i{font-size:25px;color:#6e9b7d;margin-bottom:3px}.empty-state strong{font-size:14px;color:#34443b}.empty-state span{font-size:12px}
+.occurrences-footnote{text-align:center;color:#91a097;font-size:11px;margin:20px 0 0}
+@media(max-width:800px){.occurrences-content{padding:28px 22px 20px}}
+@media(max-width:650px){.app-shell{display:block}.sidebar{width:100%;padding:16px}.brand{padding-bottom:16px}.sidebar-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.nav-item{font-size:13px;padding:10px;gap:8px}.nav-item i{font-size:17px;width:19px}.nav-item.active::before{left:-16px}.sidebar-bottom{display:none}.occurrences-content{padding:24px 14px}.occurrences-page-heading{align-items:flex-start}.occurrences-heading-icon{width:48px;height:48px;flex-basis:48px;font-size:23px}.occurrences-card{border-radius:14px}}

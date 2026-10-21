@@ -2,6 +2,10 @@ package backend.src;
 
 import backend.src.service.ConexaoServidor;
 
+import java.io.IOException;
+
+import backend.src.http.ServidorHttp;
+
 public class Main {
     public static final String HOST_PADRAO = "localhost";
     public static final int PORTA_PADRAO = 3000;
@@ -31,10 +35,20 @@ public class Main {
         }
 
         boolean conectado = conexaoServidor.conectar();
-        if(conectado){
-            System.out.println("Conexão estabelecida com sucesso!");
-        }else{
+        if (conectado) {
+            System.out.println("Conexão servidor-cliente estabelecida com sucesso!");
+        } else {
             System.err.println("Não foi possível iniciar a conexão.");
+            return;
+        }
+
+        try {
+            ServidorHttp.conectar();
+        } catch (IOException erro) {
+            System.err.println(
+                    "Não foi possível iniciar o servidor HTTP: "
+                            + erro.getMessage());
+            return;
         }
 
         repository.ConexaoMongo.getDatabase();

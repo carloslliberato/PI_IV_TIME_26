@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <!-- Define o idioma, a escala responsiva e o título da tela de ocorrências. -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arboriza | Ocorrências</title>
+
+  <!-- Carrega os ícones do projeto, o visual compartilhado e os estilos desta tela. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="styles-profissional.css" data-professional-sidebar-styles="true">
+  <link rel="stylesheet" href="ocorrencias.css">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- O sidebar valida login e setor, destaca Ocorrências e carrega ocorrencias.js após autorizar o acesso. -->
+    <div id="sidebar-profissional" data-script="ocorrencias.js"></div>
+
+    <main class="main professional-main">
+      <!-- Apresenta o objetivo da tela e o município dos registros. -->
+      <section class="professional-content occurrences-page" aria-labelledby="occurrencesPageTitle">
+        <header class="occurrences-heading">
+          <div>
+            <span class="professional-eyebrow">GESTÃO MUNICIPAL</span>
+            <h1 id="occurrencesPageTitle">Ocorrências</h1>
+            <p>Acompanhe os registros do município e encaminhe os casos para atendimento.</p>
+          </div>
+          <span class="occurrences-municipality"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i><span id="occurrencesMunicipality">Campinas - SP</span></span>
+        </header>
+
+        <!-- Os filtros permitem buscar por árvore ou bairro e ordenar por data ou criticidade. -->
+        <section class="occurrences-toolbar" aria-label="Filtros de ocorrências">
+          <label class="occurrences-search" for="occurrencesSearch">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <span class="visually-hidden">Buscar por árvore ou bairro</span>
+            <input id="occurrencesSearch" type="search" placeholder="Buscar por árvore ou bairro..." autocomplete="off">
+          </label>
+          <label class="occurrences-sort" for="occurrencesSort">
+            <i class="bi bi-sort-down" aria-hidden="true"></i>
+            <span class="visually-hidden">Ordenar ocorrências</span>
+            <select id="occurrencesSort">
+              <option value="recent">Mais recentes</option>
+              <option value="critical">Mais críticas</option>
+            </select>
+          </label>
+        </section>
+
+        <!-- A tabela resume as ocorrências municipais e informa OS e equipe vinculadas. -->
+        <section class="occurrences-card" aria-labelledby="occurrencesTableTitle">
+          <header class="occurrences-card-heading">
+            <div>
+              <h2 id="occurrencesTableTitle">Ocorrências registradas</h2>
+              <p id="occurrencesResultCount" aria-live="polite">Carregando ocorrências...</p>
+            </div>
+          </header>
+          <div class="occurrences-table-wrap">
+            <table class="occurrences-table">
+              <thead>
+                <tr>
+                  <th scope="col">ID da ocorrência</th>
+                  <th scope="col">Tipo de ocorrência</th>
+                  <th scope="col">Bairro</th>
+                  <th scope="col">Nível de risco</th>
+                  <th scope="col">Ordem de serviço</th>
+                  <th scope="col">Equipe destinada</th>
+                  <th scope="col">Data</th>
+                </tr>
+              </thead>
+              <tbody id="occurrencesTableBody"></tbody>
+            </table>
+            <div class="occurrences-empty" id="occurrencesEmpty" hidden>
+              <i class="bi bi-inbox" aria-hidden="true"></i>
+              <strong>Nenhuma ocorrência encontrada</strong>
+              <span>Tente buscar por outro bairro ou árvore.</span>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <!-- O modal exibe a descrição completa e permite encaminhar a ocorrência para uma equipe livre. -->
+  <div class="occurrence-modal-backdrop" id="occurrenceModal" role="dialog" aria-modal="true" aria-labelledby="occurrenceModalTitle" hidden>
+    <section class="occurrence-modal-card">
+      <button class="occurrence-modal-close" id="closeOccurrenceModal" type="button" aria-label="Fechar detalhes da ocorrência"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+      <div id="occurrenceModalContent"></div>
+    </section>
+  </div>
+
+  <!-- Exibe confirmações de ações locais sem depender de um serviço externo. -->
+  <div class="occurrences-toast" id="occurrencesToast" role="status" aria-live="polite" hidden></div>
+
+  <!-- O sidebar valida login e setor antes de carregar a lógica desta página. -->
+  <script src="sidebar-profissional.js"></script>
+</body>
+</html>

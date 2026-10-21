@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <!-- Define idioma, responsividade e dependencias visuais da tela de login. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Arboriza | Fazer login</title>
@@ -9,13 +10,16 @@
   <link rel="stylesheet" href="login.css">
 </head>
 <body>
+  <!-- Area principal que centraliza o cartao de acesso e o rodape. -->
   <main class="login-page">
     <a href="../Perfil_Publico/index.html" class="back-link">
       <i class="bi bi-arrow-left"></i>
       Voltar ao perfil público
     </a>
 
+    <!-- Cartao dividido entre a apresentacao da marca e o formulario de acesso. -->
     <section class="login-card" aria-label="Acesso ao Arboriza">
+      <!-- Painel visual com identidade, mensagem e decoracao da marca. -->
       <aside class="brand-panel">
         <div class="brand-lockup">
           <div class="brand-icon"><i class="bi bi-tree-fill"></i><span class="leaf leaf-one"></span><span class="leaf leaf-two"></span></div>
@@ -31,6 +35,7 @@
         <div class="brand-footer"><i class="bi bi-geo-alt"></i> Mapeamento <span>•</span> Prevenção <span>•</span> Cuidado</div>
       </aside>
 
+      <!-- Painel com campos de credencial, acoes e mensagens de validacao. -->
       <section class="form-panel">
         <div class="form-content">
           <div class="mobile-brand"><i class="bi bi-tree-fill"></i><span>arboriza</span></div>
@@ -38,6 +43,7 @@
           <h1>Fazer login</h1>
           <p class="intro">Entre na sua conta para continuar.</p>
 
+          <!-- login.js valida os dados e executa o fluxo demonstrativo de entrada. -->
           <form id="loginForm" novalidate>
             <div class="field-group">
               <label for="email">E-mail</label>
@@ -60,6 +66,7 @@
     </section>
     <footer class="page-footer">© Arboriza · Gestão preventiva da arborização urbana</footer>
   </main>
+  <!-- Carrega as interacoes depois da estrutura HTML. -->
   <script src="login.js"></script>
 </body>
 </html>

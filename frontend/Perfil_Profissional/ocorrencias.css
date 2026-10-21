@@ -1,0 +1,103 @@
+/* Estrutura geral da página, cabeçalho e identificação do município. */
+.occurrences-page { padding-top: 35px; }
+.occurrences-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+.occurrences-heading h1 { margin: 8px 0 6px; color: #18251e; font-size: clamp(28px, 3vw, 38px); font-weight: 850; letter-spacing: -.04em; }
+.occurrences-heading p { margin: 0; color: #718078; font-size: 14px; }
+.occurrences-municipality { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 9px 12px; border: 1px solid #e1ebe5; border-radius: 999px; background: #f7faf8; color: #557061; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.occurrences-municipality i { color: #28734f; }
+
+/* Busca e ordenação mantêm os mesmos controles visuais do painel profissional. */
+.occurrences-toolbar { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(210px, 280px); gap: 14px; margin-bottom: 20px; }
+.occurrences-search, .occurrences-sort { height: 52px; display: flex; align-items: center; gap: 12px; padding: 0 16px; border: 1px solid #dfe8e2; border-radius: 12px; background: #fff; color: #638071; box-shadow: 0 3px 12px rgba(20, 60, 40, .025); }
+.occurrences-search:focus-within, .occurrences-sort:focus-within { border-color: #91b8a0; box-shadow: 0 0 0 3px rgba(29, 118, 81, .1); }
+.occurrences-search > i, .occurrences-sort > i { flex: 0 0 auto; font-size: 17px; }
+.occurrences-search input, .occurrences-sort select { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: #34443a; font: inherit; font-size: 13px; }
+.occurrences-search input::placeholder { color: #9aa49e; }
+.occurrences-sort select { cursor: pointer; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
+
+/* Cartão e tabela com rolagem horizontal para telas estreitas. */
+.occurrences-card { overflow: hidden; border: 1px solid #e1eae4; border-radius: 16px; background: #fff; box-shadow: 0 8px 26px rgba(22, 59, 40, .04); }
+.occurrences-card-heading { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 17px 22px; border-bottom: 1px solid #edf1ee; }
+.occurrences-card-heading h2 { margin: 0; color: #26372e; font-size: 16px; font-weight: 800; }
+.occurrences-card-heading p { margin: 5px 0 0; color: #87928b; font-size: 12px; }
+.occurrences-data-note { display: inline-flex; align-items: center; gap: 6px; color: #829087; font-size: 11px; white-space: nowrap; }
+.occurrences-data-note i { color: #72917f; }
+.occurrences-table-wrap { overflow-x: auto; }
+.occurrences-table { width: 100%; min-width: 1030px; border-collapse: collapse; text-align: left; }
+.occurrences-table th { padding: 13px 16px; background: #f7faf8; color: #748179; font-size: 11px; font-weight: 750; letter-spacing: .025em; white-space: nowrap; }
+.occurrences-table td { padding: 14px 16px; border-top: 1px solid #edf1ee; color: #57645d; font-size: 12px; vertical-align: middle; }
+.occurrences-table tbody tr:hover { background: #fbfdfb; }
+.occurrences-table td strong { display: block; color: #2d3b33; font-size: 12px; font-weight: 750; }
+.occurrence-id-link { padding: 0; border: 0; background: transparent; color: #176344; font: inherit; font-size: 12px; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.occurrence-id-link:hover { color: #0e4934; }
+.occurrence-tree-neighborhood { display: block; margin-top: 3px; color: #929b95; font-size: 10px; }
+
+/* Badges evidenciam risco e a existência ou ausência de uma ordem de serviço. */
+.occurrence-risk-badge { display: inline-flex; align-items: center; padding: 5px 9px; border-radius: 999px; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.occurrence-risk-badge.low { background: #e8f4e8; color: #43833c; }
+.occurrence-risk-badge.medium { background: #fff3d4; color: #ac7b0b; }
+.occurrence-risk-badge.high { background: #ffeadb; color: #b35a1e; }
+.occurrence-risk-badge.critical { background: #fde9e6; color: #bd3b2f; }
+.occurrence-order-created, .occurrence-order-missing { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.occurrence-order-created { color: #26704d; font-size: 11px; font-weight: 750; }
+.occurrence-order-missing { color: #c9362b; font-size: 11px; font-weight: 750; }
+.occurrences-empty { min-height: 190px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; color: #849087; text-align: center; }
+.occurrences-empty[hidden] { display: none; }
+.occurrences-empty > i { color: #7c9e88; font-size: 27px; }
+.occurrences-empty strong { color: #35463b; font-size: 14px; }
+.occurrences-empty span { font-size: 12px; }
+
+/* Modal com descrição, dados do registro e fluxo demonstrativo de criação de OS. */
+.occurrence-modal-open { overflow: hidden; }
+.occurrence-modal-backdrop { position: fixed; z-index: 1200; inset: 0; display: flex; align-items: center; justify-content: center; padding: 22px; overflow-y: auto; background: rgba(18, 34, 25, .56); backdrop-filter: blur(3px); }
+.occurrence-modal-backdrop[hidden] { display: none; }
+.occurrence-modal-card { position: relative; width: min(760px, 100%); max-height: calc(100vh - 44px); overflow-y: auto; padding: 28px; border: 1px solid #e2eae5; border-radius: 17px; background: #fff; box-shadow: 0 22px 70px rgba(15, 45, 29, .24); }
+.occurrence-modal-close { position: absolute; top: 15px; right: 15px; width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid #e7ece9; border-radius: 50%; background: #fff; color: #64716a; cursor: pointer; }
+.occurrence-modal-close:hover { border-color: #bdd2c4; background: #f4f8f5; color: #176344; }
+.occurrence-detail-heading { display: flex; align-items: center; gap: 14px; padding-right: 44px; }
+.occurrence-detail-icon { width: 44px; height: 44px; flex: 0 0 44px; display: grid; place-items: center; border-radius: 13px; font-size: 19px; }
+.occurrence-detail-icon.low { background: #e8f4e8; color: #43833c; }
+.occurrence-detail-icon.medium { background: #fff3d4; color: #ac7b0b; }
+.occurrence-detail-icon.high { background: #ffeadb; color: #b35a1e; }
+.occurrence-detail-icon.critical { background: #fde9e6; color: #bd3b2f; }
+.occurrence-detail-eyebrow { color: #7a887f; font-size: 11px; font-weight: 750; }
+.occurrence-detail-heading h2 { margin: 4px 0 0; color: #25352c; font-size: 21px; line-height: 1.25; }
+.occurrence-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px 18px; }
+.occurrence-detail-meta { margin-top: 22px; padding: 17px; border: 1px solid #e9efeb; border-radius: 12px; background: #fbfdfb; }
+.occurrence-detail-grid > div { min-width: 0; }
+.occurrence-detail-grid > div > span { display: block; margin-bottom: 5px; color: #829087; font-size: 10px; }
+.occurrence-detail-grid > div > strong { display: block; color: #3d4b43; font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
+.occurrence-description { margin-top: 17px; padding: 16px 17px; border-left: 3px solid #83a991; border-radius: 0 10px 10px 0; background: #f5f9f6; }
+.occurrence-description h3, .occurrence-order-create h3 { margin: 0; color: #2d4035; font-size: 13px; font-weight: 800; }
+.occurrence-description p { margin: 8px 0 0; color: #5d6b62; font-size: 12px; line-height: 1.6; }
+.occurrence-order-create, .occurrence-order-summary { margin-top: 18px; padding: 17px; border: 1px solid #e4ebe6; border-radius: 12px; background: #fff; }
+.occurrence-order-create > p { margin: 5px 0 13px; color: #7b8880; font-size: 11px; }
+.occurrence-order-create label { display: block; margin: 14px 0 6px; color: #5e6d64; font-size: 11px; font-weight: 700; }
+.occurrence-order-form-row { display: flex; gap: 9px; }
+.occurrence-order-form-row select { min-width: 0; flex: 1; height: 42px; padding: 0 11px; border: 1px solid #dce6df; border-radius: 8px; background: #fff; color: #3f4d45; font: inherit; font-size: 12px; }
+.occurrence-primary-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 42px; padding: 0 14px; border: 0; border-radius: 8px; background: #176344; color: #fff; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
+.occurrence-primary-button:hover { background: #0f503a; }
+.occurrence-order-summary h3 { margin: 0 0 14px; color: #2d4035; font-size: 13px; }
+.occurrence-order-summary h3 i { margin-right: 5px; color: #26704d; }
+.occurrence-order-summary .occurrence-detail-grid { padding: 13px; border-radius: 9px; background: #f6faf7; }
+.occurrence-order-summary > p { margin: 12px 0 0; color: #65736a; font-size: 11px; }
+.occurrence-no-team { display: flex; align-items: center; gap: 7px; margin: 12px 0 0; color: #b35a1e; font-size: 12px; }
+
+/* Confirmações de ações aparecem brevemente no canto inferior da tela. */
+.occurrences-toast { position: fixed; z-index: 1300; right: 22px; bottom: 22px; max-width: min(420px, calc(100vw - 32px)); padding: 13px 17px; border: 1px solid #d5e5da; border-radius: 10px; background: #fff; color: #246244; font-size: 12px; font-weight: 700; box-shadow: 0 8px 28px rgba(17, 49, 32, .16); }
+.occurrences-toast[hidden] { display: none; }
+
+/* Ajusta filtros, tabela e modal para celular. */
+@media (max-width: 720px) {
+  .occurrences-page { padding-top: 22px; }
+  .occurrences-heading { flex-direction: column; gap: 10px; }
+  .occurrences-municipality { margin-top: 0; }
+  .occurrences-toolbar { grid-template-columns: 1fr; gap: 9px; }
+  .occurrences-card-heading { align-items: flex-start; flex-direction: column; padding: 15px; }
+  .occurrence-modal-backdrop { align-items: flex-start; padding: 10px; }
+  .occurrence-modal-card { max-height: calc(100vh - 20px); padding: 21px 16px; }
+  .occurrence-detail-heading h2 { font-size: 18px; }
+  .occurrence-detail-grid { grid-template-columns: 1fr; }
+  .occurrence-order-form-row { flex-direction: column; }
+}

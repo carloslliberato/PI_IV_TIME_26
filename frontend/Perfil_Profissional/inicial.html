@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <!-- Define idioma e escala responsiva da página inicial profissional. -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arboriza | Inicial profissional</title>
+
+  <!-- Os ícones e estilos são independentes dos arquivos do Perfil_Publico. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="styles-profissional.css" data-professional-sidebar-styles="true">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- O sidebar valida login e setor, insere o menu e carrega inicial.js com acesso autorizado. -->
+    <div id="sidebar-profissional" data-script="inicial.js"></div>
+
+    <main class="main professional-main">
+      <!-- Topbar com município do cadastro, saudação da pessoa logada e saída da sessão. -->
+      <header class="professional-topbar">
+        <div class="professional-location">
+          <span class="professional-eyebrow">MUNICÍPIO DO CADASTRO</span>
+          <div class="professional-location-value">
+            <i class="bi bi-geo-alt" aria-hidden="true"></i>
+            <span id="municipioProfissional">Carregando município...</span>
+          </div>
+        </div>
+
+        <div class="professional-account">
+          <p class="professional-welcome">Bem-vindo(a), <strong id="nomeProfissional">...</strong></p>
+          <button class="professional-logout" id="btnLogout" type="button">
+            <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+            <span>Sair</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="professional-content" aria-labelledby="pageTitle">
+        <div class="professional-page-heading">
+          <div>
+            <h1 id="pageTitle">PAINEL DE GESTÃO</h1>
+          </div>
+        </div>
+
+        <!-- O alerta resume o risco alto e leva à lista de ocorrências do município. -->
+        <a class="risk-alert" id="riskAlert" href="ocorrencias.html" aria-label="Ver ocorrências relacionadas a árvores com risco alto">
+          <div class="risk-alert-icon"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i></div>
+          <div>
+            <h2 id="riskAlertTitle">Verificando riscos altos</h2>
+            <p id="riskAlertMessage">Carregando dados do município...</p>
+          </div>
+          <span class="risk-alert-more">Ver mais <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+        </a>
+
+        <!-- Os três atalhos exibem totais demonstrativos e abrem a tela correspondente. -->
+        <section class="dashboard-grid dashboard-grid-shortcuts" aria-label="Resumo e atalhos de gestão">
+          <a class="dashboard-card dashboard-card-danger dashboard-card-link" href="ocorrencias.html" aria-label="Ver todas as ocorrências">
+            <div class="dashboard-card-top">
+              <span class="dashboard-icon"><i class="bi bi-inbox-fill" aria-hidden="true"></i></span>
+              <span class="dashboard-card-label">Total de ocorrências</span>
+            </div>
+            <strong class="dashboard-value" id="totalOcorrencias">—</strong>
+            <span class="dashboard-card-note">no município</span>
+          </a>
+
+          <a class="dashboard-card dashboard-card-link" href="ordens-servico.html" aria-label="Ver ordens de serviço">
+            <div class="dashboard-card-top">
+              <span class="dashboard-icon"><i class="bi bi-wrench-adjustable-circle-fill" aria-hidden="true"></i></span>
+              <span class="dashboard-card-label">Ordens de serviço</span>
+            </div>
+            <strong class="dashboard-value" id="totalOrdens">—</strong>
+            <span class="dashboard-card-note">no município</span>
+          </a>
+
+          <a class="dashboard-card dashboard-card-primary dashboard-card-link" href="arvores.html" aria-label="Ver árvores cadastradas">
+            <div class="dashboard-card-top">
+              <span class="dashboard-icon"><i class="bi bi-tree-fill" aria-hidden="true"></i></span>
+              <span class="dashboard-card-label">Árvores cadastradas</span>
+            </div>
+            <strong class="dashboard-value" id="totalArvores">—</strong>
+            <span class="dashboard-card-note">no município</span>
+          </a>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <!-- O sidebar injeta inicial.js depois de confirmar que login e setor são válidos. -->
+  <script src="sidebar-profissional.js"></script>
+</body>
+</html>

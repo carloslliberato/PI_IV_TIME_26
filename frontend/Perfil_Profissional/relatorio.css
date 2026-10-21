@@ -1,0 +1,71 @@
+/* Organiza o cabeçalho do relatório e o identificador do município. */
+.reports-page { padding-top: 35px; }
+.reports-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 25px; }
+.reports-heading h1 { margin: 8px 0 6px; color: #18251e; font-size: clamp(28px, 3vw, 38px); font-weight: 850; letter-spacing: -.04em; }
+.reports-heading p { margin: 0; color: #718078; font-size: 14px; }
+.reports-municipality { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 9px 12px; border: 1px solid #e1ebe5; border-radius: 999px; background: #f7faf8; color: #557061; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.reports-municipality i { color: #28734f; }
+
+/* Apresenta todos os assuntos e agrupamentos em abas sublinhadas. */
+.reports-navigation { margin-bottom: 20px; border-bottom: 1px solid #e7eeea; }
+.report-subject-tabs, .report-group-tabs { display: flex; align-items: stretch; gap: 7px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.report-subject-tabs::-webkit-scrollbar, .report-group-tabs::-webkit-scrollbar { display: none; }
+.report-subject-tabs { border-bottom: 1px solid #e7eeea; }
+.report-tab { position: relative; flex: 0 0 auto; min-height: 48px; padding: 0 18px; border: 0; background: transparent; color: #68776e; font: inherit; font-size: 13px; font-weight: 650; white-space: nowrap; cursor: pointer; }
+.report-tab:hover { color: #176344; }
+.report-tab.is-active { color: #176344; font-weight: 800; }
+.report-tab.is-active::after { position: absolute; right: 10px; bottom: -1px; left: 10px; height: 3px; border-radius: 3px 3px 0 0; background: #176344; content: ""; }
+.report-tab:focus-visible { outline: 3px solid rgba(29, 118, 81, .25); outline-offset: -3px; }
+.report-grouping-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 15px; padding-top: 12px; }
+.report-grouping-area { min-width: 0; }
+.report-grouping-label { display: block; margin: 0 0 3px 12px; color: #87928b; font-size: 10px; font-weight: 750; }
+.report-group-tabs .report-tab { min-height: 43px; padding: 0 13px; font-size: 12px; }
+.report-group-tabs .report-tab.is-active::after { right: 8px; left: 8px; }
+.report-team-filter { display: grid; flex: 0 0 190px; gap: 5px; color: #68776e; font-size: 10px; font-weight: 750; }
+.report-team-filter[hidden] { display: none; }
+.report-team-filter select { width: 100%; height: 40px; padding: 0 10px; border: 1px solid #dfe8e2; border-radius: 8px; outline: 0; background: #fff; color: #35453b; font: inherit; font-size: 12px; }
+.report-team-filter select:focus { border-color: #91b8a0; box-shadow: 0 0 0 3px rgba(29, 118, 81, .1); }
+.reports-export { height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; border: 1px solid #dce9e1; border-radius: 10px; background: #f5f9f6; color: #176344; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; transition: background .15s ease, border-color .15s ease; }
+.reports-export:hover { border-color: #bdd5c5; background: #eaf4ed; }
+
+/* Forma o cartão que reúne o resumo, o gráfico e sua tabela equivalente. */
+.reports-card { overflow: hidden; border: 1px solid #e1eae4; border-radius: 16px; background: #fff; box-shadow: 0 8px 26px rgba(22, 59, 40, .04); }
+.reports-card-heading { min-height: 86px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; border-bottom: 1px solid #edf1ee; }
+.reports-card-heading h2 { margin: 0; color: #26372e; font-size: 17px; font-weight: 800; }
+.reports-card-heading p { margin: 5px 0 0; color: #87928b; font-size: 12px; }
+.reports-total { display: grid; justify-items: end; gap: 2px; color: #849087; font-size: 10px; }
+.reports-total strong { color: #176344; font-size: 23px; line-height: 1; }
+
+/* Exibe uma barra proporcional e o nome/valor de cada grupo do relatório. */
+.reports-chart { display: grid; gap: 15px; padding: 23px 24px; border-bottom: 1px solid #edf1ee; }
+.report-bar-row { display: grid; grid-template-columns: minmax(105px, 180px) minmax(90px, 1fr) 62px; align-items: center; gap: 13px; }
+.report-bar-label { overflow: hidden; color: #536258; font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.report-bar-track { height: 12px; overflow: hidden; border-radius: 999px; background: #edf3ef; }
+.report-bar-fill { height: 100%; min-width: 3px; border-radius: inherit; background: linear-gradient(90deg, #176344, #55a276); }
+.report-bar-value { color: #35483d; font-size: 12px; font-weight: 800; text-align: right; }
+
+/* Facilita a leitura dos valores também sem depender das barras do gráfico. */
+.reports-table-wrap { overflow-x: auto; }
+.reports-table { width: 100%; border-collapse: collapse; text-align: left; }
+.reports-table th { padding: 12px 20px; background: #f7faf8; color: #748179; font-size: 11px; font-weight: 750; white-space: nowrap; }
+.reports-table td { padding: 13px 20px; border-top: 1px solid #edf1ee; color: #57645d; font-size: 12px; }
+.reports-table tbody tr:hover { background: #fbfdfb; }
+.reports-table td:last-child { color: #176344; font-weight: 750; }
+.reports-source-note { display: flex; align-items: center; gap: 7px; margin: 13px 2px 0; color: #87928b; font-size: 11px; }
+.reports-source-note i { color: #72917f; }
+
+/* Empilha controles, cabeçalho e colunas do gráfico em telas estreitas. */
+@media (max-width: 720px) {
+  .reports-page { padding-top: 22px; }
+  .reports-heading { flex-direction: column; gap: 10px; }
+  .reports-municipality { margin-top: 0; }
+  .report-grouping-row { align-items: stretch; flex-direction: column; }
+  .report-subject-tabs { gap: 0; }
+  .report-subject-tabs .report-tab { padding: 0 13px; font-size: 12px; }
+  .reports-export { width: 100%; }
+  .reports-card-heading { align-items: flex-start; padding: 16px; }
+  .reports-chart { gap: 13px; padding: 18px 14px; }
+  .report-bar-row { grid-template-columns: minmax(85px, 120px) minmax(50px, 1fr) 48px; gap: 8px; }
+  .report-bar-label, .report-bar-value { font-size: 10px; }
+  .reports-table th, .reports-table td { padding-right: 14px; padding-left: 14px; }
+}

@@ -45,6 +45,8 @@ body{
   gap:12px;
   padding:0 4px 30px;
 }
+.brand-link{color:inherit;text-decoration:none}
+.brand-link:hover{color:inherit;text-decoration:none}
 .brand-mark{
   width:40px;height:40px;
   display:flex;align-items:center;justify-content:center;
@@ -404,6 +406,43 @@ body{
 .tree-pin.high{background:#d94836}
 .tree-pin.critical{background:#8d2018}
 
+/* Ficha detalhada da árvore aberta a partir do marcador do mapa. */
+.tree-details-modal{overflow:hidden}
+.tree-details-id{margin-bottom:5px;color:#718078;font-size:12px;font-weight:650}
+.tree-details-identity{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:15px;border-radius:12px;background:#f1f7f3}
+.tree-details-identity span,.tree-detail-field span{display:block;margin-bottom:5px;color:#718078;font-size:12px}
+.tree-details-identity strong{display:block;color:#26342d;font-size:15px}
+.tree-details-section-title{margin:22px 0 11px;color:#26342d;font-size:15px;font-weight:800}
+.tree-details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tree-detail-field{min-width:0;padding:12px;border:1px solid #e7eeea;border-radius:10px;background:#fff}
+.tree-detail-field strong{display:block;overflow-wrap:anywhere;color:#303d36;font-size:13px;font-weight:650;line-height:1.45}
+.tree-detail-field-wide{grid-column:1/-1}
+.tree-detail-risk{color:#328a3c!important}
+.tree-detail-risk.medium{color:#ad7a00!important}
+.tree-detail-risk.high,.tree-detail-risk.critical{color:#bb3f31!important}
+.tree-details-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tree-details-gallery img{width:100%;height:180px;object-fit:cover;border-radius:11px;background:#eef3f0}
+.tree-history-caption{margin:-5px 0 15px;color:#718078;font-size:13px}
+.tree-history-list{list-style:none;margin:0;padding:0 0 0 7px}
+.tree-history-item{position:relative;display:flex;gap:12px;min-height:68px;padding:0 0 15px 15px}
+.tree-history-item:not(:last-child)::before{position:absolute;top:11px;bottom:-1px;left:4px;width:2px;background:#d7e4d8;content:""}
+.tree-history-marker{position:relative;z-index:1;flex:0 0 11px;width:11px;height:11px;margin-top:3px;border:2px solid #fff;border-radius:50%;background:#4b8d35;box-shadow:0 0 0 1px #4b8d35}
+.tree-history-marker.occurrence{background:#d66b3d;box-shadow:0 0 0 1px #d66b3d}
+.tree-history-marker.maintenance{background:#37856a;box-shadow:0 0 0 1px #37856a}
+.tree-history-content{min-width:0;flex:1;padding:0 0 3px}
+.tree-history-meta{display:flex;align-items:center;gap:9px;margin-bottom:4px}
+.tree-history-meta time{color:#4b7d30;font-size:12px;font-weight:800}
+.tree-history-type{padding:3px 8px;border-radius:999px;background:#edf5e9;color:#477b2e;font-size:10px;font-weight:750}
+.tree-history-type.occurrence{background:#fff0e9;color:#aa512f}
+.tree-history-type.maintenance{background:#e9f4ef;color:#2f755c}
+.tree-history-content strong{display:block;color:#344239;font-size:14px}
+.tree-history-content p{margin:3px 0 0;color:#718078;font-size:12px;line-height:1.45}
+@media(max-width:575px){
+  .tree-details-identity{grid-template-columns:1fr}
+  .tree-details-gallery img{height:125px}
+  .tree-details-modal .modal-body{padding:17px}
+}
+
 .modal-content{border-radius:15px}
 .modal-header{padding:19px 22px;border-bottom:1px solid var(--line)}
 .modal-body{padding:22px}
@@ -443,6 +482,9 @@ body{
 .public-top-actions{margin-left:auto;white-space:nowrap}
 .login-link{display:inline-flex;align-items:center;gap:8px;color:var(--green-800);text-decoration:none;font-weight:750;padding:10px 12px;border-radius:9px;border:1px solid #dce9e2;background:#f7fbf8;transition:.2s}
 .login-link:hover{background:#e9f3ef;color:var(--green-900)}
+.welcome-message{color:#45534c;font-size:14px;white-space:nowrap}
+.welcome-message strong{color:var(--green-800)}
+.logout-link{padding:8px 12px}
 .public-filter-wrap{position:relative;flex:0 0 auto}
 .btn-filter{height:44px;display:flex;align-items:center;gap:9px;padding:0 14px;border:1px solid #dde6e1;border-radius:10px;background:#fff;color:#2b3732;font-weight:650;white-space:nowrap}
 .btn-filter:hover,.btn-filter[aria-expanded="true"]{border-color:#b8d2c4;background:#f5faf7;color:var(--green-800)}

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <!-- Define idioma, responsividade e bibliotecas visuais usadas pelo cadastro. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Arboriza | Cadastro de funcionário</title>
@@ -9,10 +10,12 @@
   <link rel="stylesheet" href="cadastro.css">
 </head>
 <body>
+  <!-- Area principal que contem o cartao de cadastro e o rodape. -->
   <main class="register-page">
-    <a class="back-link" href="login.html"><i class="bi bi-arrow-left"></i> Voltar para o login</a>
+    <a class="back-link" href="../Login/login.html"><i class="bi bi-arrow-left"></i> Voltar para o login</a>
 
     <section class="register-card" aria-label="Cadastro de funcionário municipal">
+      <!-- Painel visual com a identidade e a mensagem do Arboriza. -->
       <aside class="brand-panel">
         <div class="brand-lockup">
           <div class="brand-icon"><i class="bi bi-tree-fill"></i><span class="leaf leaf-one"></span><span class="leaf leaf-two"></span></div>
@@ -28,6 +31,7 @@
         <div class="brand-footer"><i class="bi bi-geo-alt"></i> Mapeamento <span>•</span> Prevenção <span>•</span> Cuidado</div>
       </aside>
 
+      <!-- Painel com os dados profissionais solicitados para criar a conta. -->
       <section class="form-panel">
         <div class="form-content">
           <div class="mobile-brand"><i class="bi bi-tree-fill"></i><span>arboriza</span></div>
@@ -35,6 +39,7 @@
           <h1>Faça seu cadastro</h1>
           <p class="intro">Preencha seus dados profissionais para solicitar acesso à plataforma.</p>
 
+          <!-- cadastro.js aplica mascaras, validacoes e o fluxo demonstrativo de envio. -->
           <form id="registerForm" novalidate>
             <div class="field-group">
               <label for="nome">Nome completo</label>
@@ -113,13 +118,14 @@
             <div class="form-message" id="formMessage" role="status" aria-live="polite"></div>
           </form>
 
-          <div class="signup-line">Já tem uma conta? <a href="login.html">Fazer login</a></div>
+          <div class="signup-line">Já tem uma conta? <a href="../Login/login.html">Fazer login</a></div>
           <div class="secure-note"><i class="bi bi-shield-check"></i> O acesso profissional deve ser validado pela prefeitura.</div>
         </div>
       </section>
     </section>
     <footer class="page-footer">© Arboriza · Gestão preventiva da arborização urbana</footer>
   </main>
+  <!-- Carrega as interacoes depois que o formulario ja existe no documento. -->
   <script src="cadastro.js"></script>
 </body>
 </html>
