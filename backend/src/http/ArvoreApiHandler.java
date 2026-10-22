@@ -1,7 +1,6 @@
 package backend.src.http;
 
 import backend.src.model.Arvore;
-import backend.src.model.Risco;
 
 import repository.ArvoreRepository;
 
@@ -45,6 +44,38 @@ public class ArvoreApiHandler implements HttpHandler {
                 saida.write(respostaBytes);
             }
 
+        }
+
+        else if ("POST".equals(metodo)) {
+
+            Gson gson = new Gson();
+
+            String corpo = new String(
+                exchange.getRequestBody().readAllBytes(),
+                StandardCharsets.UTF_8
+            );
+
+            Arvore arvore = gson.fromJson(corpo, Arvore.class);
+
+            ArvoreRepository repository = new ArvoreRepository();
+            repository.salvar(arvore);
+
+            byte[] respostaBytes =
+                gson.toJson(arvore).getBytes(StandardCharsets.UTF_8);
+
+            exchange.getResponseHeaders().set(
+                "Content-Type",
+                "application/json; charset=UTF-8"
+            );
+
+            exchange.sendResponseHeaders(
+                201,
+                respostaBytes.length
+            );
+
+            try (OutputStream saida = exchange.getResponseBody()) {
+                saida.write(respostaBytes);
+            }
         }
     }
 }

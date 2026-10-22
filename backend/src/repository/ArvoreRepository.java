@@ -44,4 +44,16 @@ public class ArvoreRepository {
 
         return arvores;
     }
+
+    public void salvar(Arvore arvore) {
+
+        Document documento = new Document("id", arvore.getId())
+            .append("especie", arvore.getEspecie())
+            .append("latitude", arvore.getLatitude())
+            .append("longitude", arvore.getLongitude())
+            .append("risco", arvore.getRisco().name());
+
+        colecao.insertOne(documento);
+    }
+
 }
