@@ -1,8 +1,7 @@
 // Define a estrutura HTML reutilizada como menu lateral nas paginas do portal publico.
 const publicSidebarMarkup = `
 <aside class="sidebar">
-  <!-- <a class="brand brand-link" href="index.html" aria-label="Arboriza - página inicial"> -->
-  <a class="brand brand-link" href="/" aria-label="Arboriza - página inicial">
+  <a class="brand brand-link" href="index.html" aria-label="Arboriza - página inicial">
     <div class="brand-mark"><i class="bi bi-tree-fill"></i></div>
     <div>
       <div class="brand-name">Arboriza</div>
@@ -11,20 +10,11 @@ const publicSidebarMarkup = `
   </a>
 
   <nav class="sidebar-nav" aria-label="Menu público">
-    <a class="nav-item" data-page="/" href="#arvores"><i class="bi bi-tree"></i><span>Árvores</span></a>
-    <a class="nav-item" data-page="/ocorrencias-cidadao" href="/ocorrencias-cidadao" id="navOccurrences"><i class="bi bi-exclamation-triangle"></i><span>Ocorrências</span></a>
-    <a class="nav-item" data-page="/cadastro-cidadao" href="/cadastro-cidadao" id="navSignup"><i class="bi bi-person-plus"></i><span>Faça seu cadastro</span></a>
-    <a class="nav-item" data-page="/abrir-chamado" href="/abrir-chamado" id="navCall"><i class="bi bi-megaphone"></i><span>Abrir chamado</span></a>
-  
-    <!-- <a class="nav-item" data-page="index.html" href="#arvores"><i class="bi bi-tree"></i><span>Árvores</span></a>
-<a class="nav-item" href="#ocorrencias" id="navOccurrences"><i
-    class="bi bi-exclamation-triangle"></i><span>Ocorrências</span></a>
-<a class="nav-item" data-page="cadastro-cidadao.html" href="cadastro-cidadao.html" id="navSignup"><i
-    class="bi bi-person-plus"></i><span>Faça seu cadastro</span></a>
-<a class="nav-item" data-page="abrir-chamado.html" href="abrir-chamado.html" id="navCall"><i
-    class="bi bi-megaphone"></i><span>Abrir chamado</span></a> -->
-  
-    </nav>
+    <a class="nav-item" data-page="index.html" href="index.html"><i class="bi bi-tree"></i><span>Árvores</span></a>
+    <a class="nav-item" href="ocorrencias.html" id="navOccurrences"><i class="bi bi-exclamation-triangle"></i><span>Ocorrências</span></a>
+    <a class="nav-item" data-page="cadastro-cidadao.html" href="cadastro-cidadao.html" id="navSignup"><i class="bi bi-person-plus"></i><span>Faça seu cadastro</span></a>
+    <a class="nav-item" data-page="abrir-chamado.html" href="abrir-chamado.html" id="navCall"><i class="bi bi-megaphone"></i><span>Abrir chamado</span></a>
+  </nav>
 
   <div class="sidebar-bottom">
     <div class="mission-card">
@@ -43,18 +33,13 @@ if (sidebarContainer) {
   sidebarContainer.outerHTML = publicSidebarMarkup;
 
   // Identifica qual arquivo esta aberto para ajustar os links e o item selecionado.
-  // const currentPage = window.location.pathname.split("/").pop() || "index.html";
-  const currentPage = window.location.pathname;
+  const currentPage = window.location.pathname.split("/").pop() || "index.html";
   document.querySelectorAll(".sidebar-nav .nav-item").forEach(link => {
     const page = link.dataset.page;
     if (page) {
       // Na pagina inicial, o link de arvores aponta para a secao local; nas outras, volta ao mapa.
-      // link.href = page === "index.html"
-      //   ? (currentPage === "index.html" ? "#arvores" : "index.html#arvores")
-      //   : page;
-
-      link.href = page === "/"
-        ? (currentPage === "/" ? "#arvores" : "/#arvores")
+      link.href = page === "index.html"
+        ? (currentPage === "index.html" ? "#arvores" : "index.html#arvores")
         : page;
     }
 
@@ -66,10 +51,8 @@ if (sidebarContainer) {
 
   // Sempre leva o item Ocorrencias para a tela de consulta e marca-o quando ela estiver aberta.
   const occurrencesLink = document.getElementById("navOccurrences");
-  // occurrencesLink.href = "ocorrencias-cidadao.html";
-  occurrencesLink.href = "/ocorrencias-cidadao";
-  // const isOccurrencesPage = currentPage === "ocorrencias-cidadao.html";
-  const isOccurrencesPage = currentPage === "ocorrencias-cidadao";
+  occurrencesLink.href = "ocorrencias-cidadao.html";
+  const isOccurrencesPage = currentPage === "ocorrencias-cidadao.html";
   occurrencesLink.classList.toggle("active", isOccurrencesPage);
   if (isOccurrencesPage) occurrencesLink.setAttribute("aria-current", "page");
   else occurrencesLink.removeAttribute("aria-current");
@@ -104,15 +87,13 @@ if (sidebarContainer) {
     if (isCitizen) {
       // Para cidadaos autenticados, troca o cadastro por um atalho de acompanhamento.
       const accountLink = document.getElementById("navSignup");
-      // accountLink.href = "acompanhe-chamado.html";
-      accountLink.href = "/acompanhe-chamado";
+      accountLink.href = "acompanhe-chamado.html";
       accountLink.querySelector("i").className = "bi bi-clipboard2-check";
       accountLink.querySelector("span").textContent = "Acompanhe seus chamados";
       accountLink.removeAttribute("data-page");
       accountLink.dataset.accountRole = "citizen";
       // Mantem o atalho selecionado quando o cidadao estiver na tela de acompanhamento.
-      // const isTrackingPage = currentPage === "acompanhe-chamado.html";
-      const isTrackingPage = currentPage === "acompanhe-chamado";
+      const isTrackingPage = currentPage === "acompanhe-chamado.html";
       accountLink.classList.toggle("active", isTrackingPage);
       if (isTrackingPage) accountLink.setAttribute("aria-current", "page");
       else accountLink.removeAttribute("aria-current");
@@ -156,4 +137,3 @@ if (sidebarContainer) {
     document.body.appendChild(script);
   }
 }
-

@@ -285,7 +285,6 @@ function setupEvents() {
   const navContact = document.getElementById("navContact");
   if (navContact) navContact.addEventListener("click",e=>{e.preventDefault();openAction("contact")});
   // document.getElementById("navOccurrences").href = "ocorrencias-cidadao.html";
-  document.getElementById("navOccurrences").href = "/ocorrencias-cidadao";
   document.getElementById("publicActionForm").addEventListener("submit",e=>{e.preventDefault();alert(({signup:"Cadastro",call:"Chamado",contact:"Mensagem",login:"Login"})[current]+" em modo demonstrativo. A integração real será feita posteriormente.");e.target.reset();modal.hide();});
 }
 function clearFilterInputs(){document.getElementById("filterFruitBearing").checked=false;document.getElementById("filterRisk").value="";document.getElementById("filterMaintenance").checked=false;document.getElementById("filterFlowering").checked=false;document.getElementById("filterWeather").checked=false;}
