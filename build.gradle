@@ -39,6 +39,14 @@ project(':servidor') {
 
 // Configuração específica da pasta backend/
 project(':backend') {
+//     sourceSets {
+//     main {
+//         java {
+//             setSrcDirs(['..'])
+//             include 'backend/src/**/*.java'
+//         }
+//     }
+// }
     dependencies {
         // Bibliotecas úteis caso o backend suba a API REST para o frontend
         implementation 'io.javalin:javalin:6.3.0'
