@@ -1,4 +1,4 @@
-package backend.src.protocolo;
+package protocolo;
 
 import java.io.*;
 

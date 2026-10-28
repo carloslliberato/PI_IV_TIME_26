@@ -1,6 +1,4 @@
-package backend.src;
-
-import backend.src.service.ConexaoServidor;
+import service.ConexaoServidor;
 
 import java.io.IOException;
 

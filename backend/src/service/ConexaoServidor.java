@@ -1,8 +1,8 @@
-package backend.src.service;
+package service;
 
 import java.net.*;
 import java.io.*;
-import backend.src.protocolo.Parceiro;
+import protocolo.Parceiro;
 
 public class ConexaoServidor {
     private String host;
