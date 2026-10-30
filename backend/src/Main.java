@@ -1,6 +1,7 @@
 import service.ConexaoServidor;
-
 import java.io.IOException;
+import repository.ConexaoMongo;
+import service.ServidorHttp;
 
 public class Main {
     public static final String HOST_PADRAO = "localhost";
@@ -8,25 +9,13 @@ public class Main {
 
     public static void main(String[] args) {
 
-        if (args.length > 2) {
-            System.err.println("Uso esperado: java backend.src.Main [HOST [PORTA]]\n");
-            return;
-        }
-
         ConexaoServidor conexaoServidor = null;
         try {
-            String host = Main.HOST_PADRAO;
-            int porta = Main.PORTA_PADRAO;
 
-            if (args.length > 0)
-                host = args[0];
+            conexaoServidor = new ConexaoServidor(HOST_PADRAO, PORTA_PADRAO);
 
-            if (args.length == 2)
-                porta = Integer.parseInt(args[1]);
-
-            conexaoServidor = new ConexaoServidor(host, porta);
         } catch (Exception erro) {
-            System.err.println("Indique o servidor e a porta corretos!\n");
+            System.err.println("Erro no servidor: porta e host incorretos!\n");
             return;
         }
 
@@ -37,7 +26,21 @@ public class Main {
             System.err.println("Não foi possível iniciar a conexão.");
             return;
         }
-        repository.ConexaoMongo.getDatabase();
+
+        try{
+            ConexaoMongo.getDatabase();
+        }catch(Exception e){
+            System.err.printf("Erro ao conectar o banco de dados: %s%n", e);
+            return;
+        }
+
+        try{
+            ServidorHttp servidorHttp = new ServidorHttp();
+            servidorHttp.iniciar();
+        }catch(Exception e){
+            System.err.printf("Erro ao iniciar servidor http: %s%n", e);
+            return;
+        }
 
     }
 }

@@ -56,7 +56,7 @@ project(':backend') {
     application {
         // ATENÇÃO: Se no topo do seu Main.java estiver escrito "package backend.src;",
         // mantenha 'backend.src.Main'. Se você apagar o package do Main.java, mude para 'Main'.
-        mainClass = 'backend.src.Main'
+        mainClass = 'Main'
     }
 
     tasks.named('run', JavaExec) {
