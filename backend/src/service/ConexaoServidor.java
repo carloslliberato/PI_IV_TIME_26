@@ -1,15 +1,20 @@
 package service;
 
-import java.net.*;
-import java.io.*;
+import java.net.Socket;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 import protocolo.Parceiro;
 
 public class ConexaoServidor {
+
     private String host;
     private int porta;
+
     private Socket conexao;
     private ObjectOutputStream transmissor;
     private ObjectInputStream receptor;
+
     private Parceiro parceiro;
 
     public ConexaoServidor(String host, int porta) {
@@ -21,86 +26,66 @@ public class ConexaoServidor {
 
         try {
             conexao = new Socket(host, porta);
-        } catch (Exception erro) {
-            System.err.println("Indique o servidor e a porta corretos!\n");
-            fechar();
-            return false;
-        }
 
-        try {
             transmissor = new ObjectOutputStream(
                     conexao.getOutputStream());
-        } catch (Exception erro) {
-            System.err.println("Indique o servidor e a porta corretos!\n");
-            fechar();
-            return false;
-        }
 
-        try {
             receptor = new ObjectInputStream(
                     conexao.getInputStream());
+
+            parceiro = new Parceiro(
+                    conexao,
+                    receptor,
+                    transmissor);
+
+            return true;
+
         } catch (Exception erro) {
-            System.err.println("Indique o servidor e a porta corretos!\n");
+            System.err.println(
+                    "Não foi possível conectar ao servidor Socket: "
+                            + erro.getMessage());
+
             fechar();
             return false;
         }
-
-        try {
-            parceiro = new Parceiro(conexao, receptor, transmissor);
-        } catch (Exception erro) {
-            System.err.println("Erro ao criar o parceiro: " + erro.getMessage());
-            fechar();
-            return false;
-        }
-
-        return true;
     }
 
     public void fechar() {
+
         try {
             if (receptor != null) {
                 receptor.close();
+                receptor = null;
             }
         } catch (Exception erro) {
-            System.err.println("Erro ao fechar o receptor.");
+            System.err.println("Erro ao fechar receptor: " + erro.getMessage());
         }
 
         try {
             if (transmissor != null) {
                 transmissor.close();
+                transmissor = null;
             }
         } catch (Exception erro) {
-            System.err.println("Erro ao fechar o transmissor.");
+            System.err.println("Erro ao fechar transmissor: " + erro.getMessage());
         }
+
+        boolean conexaoFechada = false;
 
         try {
             if (conexao != null) {
                 conexao.close();
+                conexao = null;
+                conexaoFechada = true;
             }
         } catch (Exception erro) {
-            System.err.println("Erro ao fechar a conexão.");
+            System.err.println("Erro ao fechar Socket: " + erro.getMessage());
+        }
+
+        parceiro = null;
+
+        if (conexaoFechada) {
+            System.out.println("Conexão com o servidor Socket encerrada!");
         }
     }
-
-    // TratadoraDeComunicadoDeDesligamento tratadoraDeComunicadoDeDesligamento =
-    // null;try
-    // {
-    // tratadoraDeComunicadoDeDesligamento = new
-    // TratadoraDeComunicadoDeDesligamento(servidor);
-    // }catch(
-    // Exception erro)
-    // {
-    // } // sei que servidor foi instanciado
-
-    // tratadoraDeComunicadoDeDesligamento.start();
-
-    // try
-    // {
-    // servidor.receba(new PedidoParaSair());
-    // }catch(
-    // Exception erro)
-    // {
-    // }
-
-    // System.out.println("Obrigado por usar este programa!");System.exit(0);
 }

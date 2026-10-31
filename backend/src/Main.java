@@ -2,44 +2,113 @@ import service.ConexaoServidor;
 import repository.ConexaoMongo;
 import service.ServidorHttp;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class Main {
+
     public static final String HOST_PADRAO = "localhost";
     public static final int PORTA_PADRAO = 3000;
 
+    private static ConexaoServidor conexaoServidor;
+    private static ServidorHttp servidorHttp;
+
+    private static boolean mongoConectado = false;
+
+    private static final AtomicBoolean ENCERRADO =
+        new AtomicBoolean(false);
+
     public static void main(String[] args) {
 
-        ConexaoServidor conexaoServidor = null;
+        // Registra o procedimento de encerramento da aplicação.
+        Runtime.getRuntime().addShutdownHook(
+            new Thread(Main::fecharRecursos)
+        );
+
         try {
 
-            conexaoServidor = new ConexaoServidor(HOST_PADRAO, PORTA_PADRAO);
+            // 1. Conexão com o servidor Socket do professor.
+            conexaoServidor = new ConexaoServidor(
+                HOST_PADRAO,
+                PORTA_PADRAO
+            );
+
+            if (!conexaoServidor.conectar()) {
+                throw new RuntimeException(
+                    "Não foi possível conectar ao servidor Socket."
+                );
+            }
+
+            System.out.println(
+                "Conexão com o servidor Socket estabelecida!"
+            );
+
+            // 2. Conexão com o MongoDB.
+            ConexaoMongo.getDatabase();
+            mongoConectado = true;
+
+            System.out.println(
+                "Conexão com o banco de dados estabelecida!"
+            );
+
+            // 3. Inicialização do servidor HTTP.
+            servidorHttp = new ServidorHttp();
+            servidorHttp.iniciar();
+
+            System.out.println("Arboriza iniciado com sucesso!");
 
         } catch (Exception erro) {
-            System.err.println("Erro no servidor: porta e host incorretos!\n");
+
+            System.err.println(
+                "Erro ao iniciar o Arboriza: " + erro.getMessage()
+            );
+
+            fecharRecursos();
+        }
+    }
+
+    private static void fecharRecursos() {
+System.out.println(">>> SHUTDOWN HOOK EXECUTADO!");
+        // Evita que os recursos sejam fechados duas vezes.
+        if (!ENCERRADO.compareAndSet(false, true)) {
             return;
         }
 
-        boolean conectado = conexaoServidor.conectar();
-        if (conectado) {
-            System.out.println("Conexão servidor-cliente estabelecida com sucesso!");
-        } else {
-            System.err.println("Não foi possível iniciar a conexão.");
-            return;
+        System.out.println("\nEncerrando Arboriza...");
+
+        // Fecha o servidor HTTP.
+        try {
+            if (servidorHttp != null) {
+                servidorHttp.fechar();
+            }
+        } catch (Exception erro) {
+            System.err.println(
+                "Erro ao encerrar servidor HTTP: " + erro.getMessage()
+            );
         }
 
-        try{
-            ConexaoMongo.getDatabase();
-        }catch(Exception e){
-            System.err.printf("Erro ao conectar o banco de dados: %s%n", e);
-            return;
+        // Fecha o MongoDB.
+        try {
+            if (mongoConectado) {
+                ConexaoMongo.fechar();
+                mongoConectado = false;
+            }
+        } catch (Exception erro) {
+            System.err.println(
+                "Erro ao encerrar MongoDB: " + erro.getMessage()
+            );
         }
 
-        try{
-            ServidorHttp servidorHttp = new ServidorHttp();
-            servidorHttp.iniciar();
-        }catch(Exception e){
-            System.err.printf("Erro ao iniciar servidor http: %s%n", e);
-            return;
+        // Fecha o servidor Socket.
+        try {
+            if (conexaoServidor != null) {
+                conexaoServidor.fechar();
+            }
+        } catch (Exception erro) {
+            System.err.println(
+                "Erro ao encerrar servidor Socket: " + erro.getMessage()
+            );
         }
 
+        System.out.println("Arboriza encerrado!");
     }
 }
