@@ -128,11 +128,15 @@ public class PedidoDeValidacaoCadastro extends Comunicado {
     }
 
     public List<String> getPreferenciasNotificacoes() {
-        return new ArrayList<>(preferenciasNotificacoes);
+        return this.preferenciasNotificacoes = preferenciasNotificacoes == null
+                ? null
+                : new ArrayList<>(preferenciasNotificacoes);
     }
 
     public void setPreferenciasNotificacoes(List<String> preferenciasNotificacoes) {
-        this.preferenciasNotificacoes = new ArrayList<>(preferenciasNotificacoes);
+        this.preferenciasNotificacoes = preferenciasNotificacoes == null
+                ? null
+                : new ArrayList<>(preferenciasNotificacoes);
     }
 
 }

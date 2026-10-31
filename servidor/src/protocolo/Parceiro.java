@@ -52,7 +52,7 @@ public class Parceiro {
             this.mutEx.release();
             return this.proximoComunicado;
         } catch (Exception erro) {
-            throw new Exception("Erro de recepcao");
+            throw new Exception("Erro de recepcao: ", erro);
         }
     }
 

@@ -74,10 +74,8 @@ public class SupervisoraDeConexao extends Thread {
             }
 
         } catch (Exception erro) {
-            System.err.println(
-                    "Erro na comunicação com o cliente: "
-                            + erro.getMessage());
-
+            System.err.println("Erro na comunicação com o cliente:");
+            erro.printStackTrace();
         } finally {
 
             if (this.usuario != null) {

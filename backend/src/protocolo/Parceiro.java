@@ -66,7 +66,7 @@ public class Parceiro {
             this.proximoComunicado = null;
             return ret;
         } catch (Exception erro) {
-            throw new Exception("Erro de recepcao");
+            throw new Exception("Erro de recepcao: ", erro);
         }
     }
 

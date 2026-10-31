@@ -3,14 +3,16 @@ package protocolo;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ResultadoValidacaoCadastro extends Comunicado{
-    
+public class ResultadoValidacaoCadastro extends Comunicado {
+
     private boolean valido;
     private ArrayList<String> erros;
 
     public ResultadoValidacaoCadastro(boolean valido, List<String> erros) {
         this.valido = valido;
-        this.erros = new ArrayList<>(erros);
+        this.erros = erros == null
+                ? new ArrayList<>()
+                : new ArrayList<>(erros);
     }
 
     public boolean isValido() {
@@ -22,12 +24,15 @@ public class ResultadoValidacaoCadastro extends Comunicado{
     }
 
     public List<String> getErros() {
-        return new ArrayList<>(erros);
+        return erros == null
+                ? new ArrayList<>()
+                : new ArrayList<>(erros);
     }
 
     public void setErros(ArrayList<String> erros) {
-        this.erros = new ArrayList<>(erros);
+        this.erros = erros == null
+                ? new ArrayList<>()
+                : new ArrayList<>(erros);
     }
 
-    
 }
