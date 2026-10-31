@@ -105,4 +105,11 @@ public class ServidorHttp {
             System.err.printf("Erro ao iniciar o servidor HTTP: %s%n", e.getMessage());
         }
     }
+
+    public void fechar() {
+        if (servidorHttp != null) {
+            servidorHttp.stop();
+            System.out.println("Servidor HTTP encerrado!");
+        }
+    }
 }

@@ -8,13 +8,13 @@
 
   <!-- Carrega os ícones, o estilo profissional compartilhado e os estilos desta página. -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="styles-profissional.css" data-professional-sidebar-styles="true">
-  <link rel="stylesheet" href="equipes.css">
+  <link rel="stylesheet" href="/perfil_profissional/styles-profissional.css" data-professional-sidebar-styles="true">
+  <link rel="stylesheet" href="/perfil_profissional/equipes.css">
 </head>
 <body>
   <div class="app-shell">
     <!-- O sidebar valida login/setor, destaca Equipes e carrega equipes.js após autorizar o acesso. -->
-    <div id="sidebar-profissional" data-script="equipes.js"></div>
+    <div id="sidebar-profissional" data-script="/perfil_profissional/equipes.js"></div>
 
     <main class="main professional-main">
       <!-- Identifica a tela e o município dos registros. -->
@@ -88,6 +88,6 @@
   <div class="teams-toast" id="teamsToast" role="status" aria-live="polite" hidden></div>
 
   <!-- O sidebar só injeta equipes.js depois de validar login=true e setor não nulo. -->
-  <script src="sidebar-profissional.js"></script>
+  <script src="/perfil_profissional/sidebar-profissional.js"></script>
 </body>
 </html>

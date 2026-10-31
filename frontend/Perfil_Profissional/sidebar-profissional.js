@@ -22,7 +22,7 @@
   // Somente usuários autenticados e vinculados a um setor acessam o perfil profissional.
   if (!loginValido || !setorValido) {
     document.documentElement.style.visibility = "hidden";
-    window.location.replace("../Login/login.html");
+    window.location.replace("/login");
     return;
   }
 
@@ -33,7 +33,7 @@
   if (!document.querySelector("link[data-professional-sidebar-styles]")) {
     const styles = document.createElement("link");
     styles.rel = "stylesheet";
-    styles.href = "styles-profissional.css";
+    styles.href = "/perfil_profissional/styles-profissional.css";
     styles.dataset.professionalSidebarStyles = "true";
     document.head.appendChild(styles);
   }
@@ -43,19 +43,19 @@
 
   // Os caminhos apontam para as telas profissionais que serão criadas nesta pasta.
   const itensMenu = [
-    { texto: "Inicial", icone: "bi-house-door", caminho: "inicial.html" },
-    { texto: "Mapa", icone: "bi-map", caminho: "mapa-profissional.html" },
-    { texto: "Ocorrências", icone: "bi-exclamation-triangle", caminho: "ocorrencias.html" },
-    { texto: "Ordens de serviço", icone: "bi-tools", caminho: "ordens-servico.html" },
-    { texto: "Árvores", icone: "bi-tree", caminho: "arvores.html" },
-    { texto: "Equipes", icone: "bi-people", caminho: "equipes.html" },
-    { texto: "Relatórios", icone: "bi-file-earmark-bar-graph", caminho: "relatorio.html" }
+    { texto: "Inicial", icone: "bi-house-door", caminho: "/perfil-profissional" },
+    { texto: "Mapa", icone: "bi-map", caminho: "/mapa-profissional" },
+    { texto: "Ocorrências", icone: "bi-exclamation-triangle", caminho: "/ocorrencias" },
+    { texto: "Ordens de serviço", icone: "bi-tools", caminho: "/ordens-servico" },
+    { texto: "Árvores", icone: "bi-tree", caminho: "/arvores" },
+    { texto: "Equipes", icone: "bi-people", caminho: "/equipes" },
+    { texto: "Relatórios", icone: "bi-file-earmark-bar-graph", caminho: "/relatorio" }
   ];
 
   // Mantém a marca, os ícones, a fonte e o rodapé iguais aos do sidebar público.
   const sidebarMarkup = `
     <aside class="sidebar">
-      <a class="brand brand-link" href="inicial.html" aria-label="Arboriza - página inicial profissional">
+      <a class="brand brand-link" href="/perfil-profissional" aria-label="Arboriza - página inicial profissional">
         <div class="brand-mark"><i class="bi bi-tree-fill"></i></div>
         <div>
           <div class="brand-name">Arboriza</div>
@@ -83,7 +83,7 @@
 
   // Substitui o espaço reservado pelo menu e marca o link da tela atual como ativo.
   container.outerHTML = sidebarMarkup;
-  const paginaAtual = window.location.pathname.split("/").pop() || "inicial.html";
+  const paginaAtual = window.location.pathname;
   document.querySelectorAll(".sidebar-nav .nav-item").forEach(link => {
     const estaAtivo = link.dataset.page === paginaAtual;
     link.classList.toggle("active", estaAtivo);

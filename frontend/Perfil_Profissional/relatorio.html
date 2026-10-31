@@ -8,13 +8,13 @@
 
   <!-- Carrega ícones, estilos compartilhados e estilos próprios desta tela. -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="styles-profissional.css" data-professional-sidebar-styles="true">
-  <link rel="stylesheet" href="relatorio.css">
+  <link rel="stylesheet" href="/perfil_profissional/styles-profissional.css" data-professional-sidebar-styles="true">
+  <link rel="stylesheet" href="/perfil_profissional/relatorio.css">
 </head>
 <body>
   <div class="app-shell">
     <!-- O sidebar valida o acesso e carrega o script específico desta tela. -->
-    <div id="sidebar-profissional" data-script="relatorio.js"></div>
+    <div id="sidebar-profissional" data-script="/perfil_profissional/relatorio.js"></div>
 
     <main class="main professional-main">
       <section class="professional-content reports-page" aria-labelledby="reportsPageTitle">
@@ -81,6 +81,6 @@
   </div>
 
   <!-- O sidebar injeta relatorio.js depois de validar login e setor. -->
-  <script src="sidebar-profissional.js"></script>
+  <script src="/perfil_profissional/sidebar-profissional.js"></script>
 </body>
 </html>

@@ -9,13 +9,13 @@
   <!-- Bibliotecas de ícones e mapa; os arquivos do próprio projeto usam caminhos relativos. -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="styles-profissional.css" data-professional-sidebar-styles="true">
-  <link rel="stylesheet" href="mapa-profissional.css">
+  <link rel="stylesheet" href="/perfil_profissional/styles-profissional.css" data-professional-sidebar-styles="true">
+  <link rel="stylesheet" href="/perfil_profissional/mapa-profissional.css">
 </head>
 <body>
   <div class="app-shell">
     <!-- O sidebar verifica login e setor, destaca Mapa e carrega a lógica desta tela. -->
-    <div id="sidebar-profissional" data-script="mapa-profissional.js"></div>
+    <div id="sidebar-profissional" data-script="/perfil_profissional/mapa-profissional.js"></div>
 
     <main class="main professional-main">
       <section class="professional-content professional-map-content" aria-labelledby="mapPageTitle">
@@ -120,6 +120,6 @@
 
   <!-- Leaflet fornece o mapa interativo; o sidebar carrega mapa-profissional.js após validar o acesso. -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="sidebar-profissional.js"></script>
+  <script src="/perfil_profissional/sidebar-profissional.js"></script>
 </body>
 </html>

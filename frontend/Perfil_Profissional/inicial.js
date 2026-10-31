@@ -74,7 +74,7 @@ function encerrarSessaoProfissional() {
   ["arborizaUsuario", "login", "idSetor", "nome", "nomeUsuario", "nomeLogado"].forEach(chave => {
     localStorage.removeItem(chave);
   });
-  window.location.replace("../Login/login.html");
+  window.location.replace("/login");
 }
 
 // Liga as ações aos elementos depois que o sidebar carregar este script.

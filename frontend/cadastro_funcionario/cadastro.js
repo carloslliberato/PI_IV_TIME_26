@@ -78,5 +78,5 @@ registerForm.addEventListener('submit', (event) => {
 
   // Se todos os dados passaram, confirma o modo demonstrativo e envia a pessoa para o login.
   alert('Cadastro concluído com sucesso! Você será redirecionado para a página de login.');
-  window.location.href = '../Login/login.html';
+  window.location.href = '/login';
 });

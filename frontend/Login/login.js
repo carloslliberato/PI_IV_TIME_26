@@ -46,7 +46,7 @@ loginForm.addEventListener('submit', (event) => {
   formMessage.textContent = 'Sessão demonstrativa iniciada. A autenticação real será conectada à API do Arboriza.';
   formMessage.classList.add('success');
   // Redireciona para o portal publico depois de registrar os dados demonstrativos.
-  window.location.href = '../Perfil_Publico/index.html';
+  window.location.href = '/';
 });
 
 // Informa que a recuperacao de senha ainda nao esta disponivel nesta etapa.

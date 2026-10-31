@@ -8,13 +8,13 @@
 
   <!-- Carrega os ícones do projeto, o visual compartilhado e os estilos desta tela. -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="styles-profissional.css" data-professional-sidebar-styles="true">
-  <link rel="stylesheet" href="ocorrencias.css">
+  <link rel="stylesheet" href="/perfil_profissional/styles-profissional.css" data-professional-sidebar-styles="true">
+  <link rel="stylesheet" href="/perfil_profissional/ocorrencias.css">
 </head>
 <body>
   <div class="app-shell">
     <!-- O sidebar valida login e setor, destaca Ocorrências e carrega ocorrencias.js após autorizar o acesso. -->
-    <div id="sidebar-profissional" data-script="ocorrencias.js"></div>
+    <div id="sidebar-profissional" data-script="/perfil_profissional/ocorrencias.js"></div>
 
     <main class="main professional-main">
       <!-- Apresenta o objetivo da tela e o município dos registros. -->
@@ -91,6 +91,6 @@
   <div class="occurrences-toast" id="occurrencesToast" role="status" aria-live="polite" hidden></div>
 
   <!-- O sidebar valida login e setor antes de carregar a lógica desta página. -->
-  <script src="sidebar-profissional.js"></script>
+  <script src="/perfil_profissional/sidebar-profissional.js"></script>
 </body>
 </html>

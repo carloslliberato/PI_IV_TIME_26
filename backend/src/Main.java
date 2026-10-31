@@ -1,5 +1,4 @@
 import service.ConexaoServidor;
-import java.io.IOException;
 import repository.ConexaoMongo;
 import service.ServidorHttp;
 

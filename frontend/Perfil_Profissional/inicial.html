@@ -8,12 +8,12 @@
 
   <!-- Os ícones e estilos são independentes dos arquivos do Perfil_Publico. -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="styles-profissional.css" data-professional-sidebar-styles="true">
+  <link rel="stylesheet" href="/perfil_profissional/styles-profissional.css" data-professional-sidebar-styles="true">
 </head>
 <body>
   <div class="app-shell">
     <!-- O sidebar valida login e setor, insere o menu e carrega inicial.js com acesso autorizado. -->
-    <div id="sidebar-profissional" data-script="inicial.js"></div>
+    <div id="sidebar-profissional" data-script="/perfil_profissional/inicial.js"></div>
 
     <main class="main professional-main">
       <!-- Topbar com município do cadastro, saudação da pessoa logada e saída da sessão. -->
@@ -43,7 +43,7 @@
         </div>
 
         <!-- O alerta resume o risco alto e leva à lista de ocorrências do município. -->
-        <a class="risk-alert" id="riskAlert" href="ocorrencias.html" aria-label="Ver ocorrências relacionadas a árvores com risco alto">
+        <a class="risk-alert" id="riskAlert" href="/ocorrencias" aria-label="Ver ocorrências relacionadas a árvores com risco alto">
           <div class="risk-alert-icon"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i></div>
           <div>
             <h2 id="riskAlertTitle">Verificando riscos altos</h2>
@@ -54,7 +54,7 @@
 
         <!-- Os três atalhos exibem totais demonstrativos e abrem a tela correspondente. -->
         <section class="dashboard-grid dashboard-grid-shortcuts" aria-label="Resumo e atalhos de gestão">
-          <a class="dashboard-card dashboard-card-danger dashboard-card-link" href="ocorrencias.html" aria-label="Ver todas as ocorrências">
+          <a class="dashboard-card dashboard-card-danger dashboard-card-link" href="/ocorrencias" aria-label="Ver todas as ocorrências">
             <div class="dashboard-card-top">
               <span class="dashboard-icon"><i class="bi bi-inbox-fill" aria-hidden="true"></i></span>
               <span class="dashboard-card-label">Total de ocorrências</span>
@@ -63,7 +63,7 @@
             <span class="dashboard-card-note">no município</span>
           </a>
 
-          <a class="dashboard-card dashboard-card-link" href="ordens-servico.html" aria-label="Ver ordens de serviço">
+          <a class="dashboard-card dashboard-card-link" href="/ordens-servico" aria-label="Ver ordens de serviço">
             <div class="dashboard-card-top">
               <span class="dashboard-icon"><i class="bi bi-wrench-adjustable-circle-fill" aria-hidden="true"></i></span>
               <span class="dashboard-card-label">Ordens de serviço</span>
@@ -72,7 +72,7 @@
             <span class="dashboard-card-note">no município</span>
           </a>
 
-          <a class="dashboard-card dashboard-card-primary dashboard-card-link" href="arvores.html" aria-label="Ver árvores cadastradas">
+          <a class="dashboard-card dashboard-card-primary dashboard-card-link" href="/arvores" aria-label="Ver árvores cadastradas">
             <div class="dashboard-card-top">
               <span class="dashboard-icon"><i class="bi bi-tree-fill" aria-hidden="true"></i></span>
               <span class="dashboard-card-label">Árvores cadastradas</span>
@@ -86,6 +86,6 @@
   </div>
 
   <!-- O sidebar injeta inicial.js depois de confirmar que login e setor são válidos. -->
-  <script src="sidebar-profissional.js"></script>
+  <script src="/perfil_profissional/sidebar-profissional.js"></script>
 </body>
 </html>
