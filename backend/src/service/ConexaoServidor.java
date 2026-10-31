@@ -5,6 +5,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 import protocolo.Parceiro;
+import protocolo.PedidoDeValidacaoCadastro;
+import protocolo.ResultadoValidacaoCadastro;
+import protocolo.Comunicado;
 
 public class ConexaoServidor {
 
@@ -88,4 +91,26 @@ public class ConexaoServidor {
             System.out.println("Conexão com o servidor Socket encerrada!");
         }
     }
+
+    public Parceiro getParceiro() {
+        return parceiro;
+    }
+
+    public ResultadoValidacaoCadastro validarCadastro(PedidoDeValidacaoCadastro pedido) throws Exception {
+
+        if (parceiro == null) {
+            throw new Exception("Não existe conexão com o servidor Socket.");
+        }
+        parceiro.receba(pedido);
+
+        Comunicado resposta = parceiro.envie();
+
+        if (!(resposta instanceof ResultadoValidacaoCadastro)) {
+            throw new Exception("Resposta inesperada do servidor.");
+
+        }
+        return (ResultadoValidacaoCadastro) resposta;
+
+    }
+
 }

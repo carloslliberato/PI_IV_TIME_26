@@ -1,15 +1,25 @@
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import protocolo.Comunicado;
+import protocolo.Parceiro;
+import protocolo.PedidoParaSair;
+import protocolo.PedidoDeValidacaoCadastro;
+import protocolo.ResultadoValidacaoCadastro;
+
+import service.ValidadorCadastro;
+
 public class SupervisoraDeConexao extends Thread {
-    private double valor = 0;
+
     private Parceiro usuario;
     private Socket conexao;
     private ArrayList<Parceiro> usuarios;
 
     public SupervisoraDeConexao(Socket conexao, ArrayList<Parceiro> usuarios)
             throws Exception {
+
         if (conexao == null)
             throw new Exception("Conexao ausente");
 
@@ -22,80 +32,85 @@ public class SupervisoraDeConexao extends Thread {
 
     public void run() {
 
-        ObjectOutputStream transmissor;
+        ObjectOutputStream transmissor = null;
+        ObjectInputStream receptor = null;
+
         try {
             transmissor = new ObjectOutputStream(
                     this.conexao.getOutputStream());
-        } catch (Exception erro) {
-            return;
-        }
 
-        ObjectInputStream receptor = null;
-        try {
             receptor = new ObjectInputStream(
                     this.conexao.getInputStream());
-        } catch (Exception err0) {
-            try {
-                transmissor.close();
-            } catch (Exception falha) {
-            } // so tentando fechar antes de acabar a thread
 
-            return;
-        }
-
-        try {
-            this.usuario = new Parceiro(this.conexao,
+            this.usuario = new Parceiro(
+                    this.conexao,
                     receptor,
                     transmissor);
-        } catch (Exception erro) {
-        } // sei que passei os parametros corretos
 
-        try {
             synchronized (this.usuarios) {
                 this.usuarios.add(this.usuario);
             }
 
             for (;;) {
+
                 Comunicado comunicado = this.usuario.envie();
 
-                if (comunicado == null)
-                    return;
-                else if (comunicado instanceof PedidoDeOperacao) {
-                    PedidoDeOperacao pedidoDeOperacao = (PedidoDeOperacao) comunicado;
+                if (comunicado == null) {
+                    break;
+                }
 
-                    switch (pedidoDeOperacao.getOperacao()) {
-                        case '+':
-                            this.valor += pedidoDeOperacao.getValor();
-                            break;
+                else if (comunicado instanceof PedidoDeValidacaoCadastro) {
 
-                        case '-':
-                            this.valor -= pedidoDeOperacao.getValor();
-                            break;
+                    PedidoDeValidacaoCadastro pedido = (PedidoDeValidacaoCadastro) comunicado;
 
-                        case '*':
-                            this.valor *= pedidoDeOperacao.getValor();
-                            break;
+                    ResultadoValidacaoCadastro resultado = ValidadorCadastro.validar(pedido);
 
-                        case '/':
-                            this.valor /= pedidoDeOperacao.getValor();
-                    }
-                } else if (comunicado instanceof PedidoDeResultado) {
-                    this.usuario.receba(new Resultado(this.valor));
-                } else if (comunicado instanceof PedidoParaSair) {
-                    synchronized (this.usuarios) {
-                        this.usuarios.remove(this.usuario);
-                    }
-                    this.usuario.adeus();
+                    this.usuario.receba(resultado);
+                }
+
+                else if (comunicado instanceof PedidoParaSair) {
+                    break;
                 }
             }
-        } catch (Exception erro) {
-            try {
-                transmissor.close();
-                receptor.close();
-            } catch (Exception falha) {
-            } // so tentando fechar antes de acabar a thread
 
-            return;
+        } catch (Exception erro) {
+            System.err.println(
+                    "Erro na comunicação com o cliente: "
+                            + erro.getMessage());
+
+        } finally {
+
+            if (this.usuario != null) {
+
+                synchronized (this.usuarios) {
+                    this.usuarios.remove(this.usuario);
+                }
+
+                try {
+                    this.usuario.adeus();
+                } catch (Exception erro) {
+                    System.err.println(
+                            "Erro ao encerrar conexão: "
+                                    + erro.getMessage());
+                }
+
+            } else {
+
+                try {
+                    if (receptor != null)
+                        receptor.close();
+
+                    if (transmissor != null)
+                        transmissor.close();
+
+                    this.conexao.close();
+
+                } catch (Exception erro) {
+                    System.err.println(
+                            "Erro ao fechar conexão: "
+                                    + erro.getMessage());
+                }
+            }
         }
     }
 }

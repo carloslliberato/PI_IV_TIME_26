@@ -1,6 +1,8 @@
 import java.net.*;
 import java.util.*;
 
+import protocolo.Parceiro;
+
 public class AceitadoraDeConexao extends Thread {
     private ServerSocket pedido;
     private ArrayList<Parceiro> usuarios;

@@ -2,8 +2,8 @@
 package model;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
 import org.bson.types.ObjectId;
 
 public class Conta {

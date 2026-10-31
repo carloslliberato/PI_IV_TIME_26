@@ -1,8 +1,7 @@
 package protocolo;
-
 import java.io.*;
 import java.net.*;
-import java.util.*;
+// import java.util.*;
 import java.util.concurrent.Semaphore;
 
 public class Parceiro {
@@ -14,7 +13,8 @@ public class Parceiro {
 
     private Semaphore mutEx = new Semaphore(1, true);
 
-    public Parceiro(Socket conexao,
+    public Parceiro(
+            Socket conexao,
             ObjectInputStream receptor,
             ObjectOutputStream transmissor)
             throws Exception // se parametro nulos
@@ -33,9 +33,10 @@ public class Parceiro {
         this.transmissor = transmissor;
     }
 
-    public void receba(Comunicado x) throws Exception {
+    public void receba(Comunicado comunicado) throws Exception {
+        // envia um objeto de mensagem ao outro lado da conexão
         try {
-            this.transmissor.writeObject(x);
+            this.transmissor.writeObject(comunicado);
             this.transmissor.flush();
         } catch (IOException erro) {
             throw new Exception("Erro de transmissao");
@@ -43,6 +44,7 @@ public class Parceiro {
     }
 
     public Comunicado espie() throws Exception {
+        // permite verificar a próxima mensagem sem consumi-la imediatamente.
         try {
             this.mutEx.acquireUninterruptibly();
             if (this.proximoComunicado == null)
@@ -55,6 +57,8 @@ public class Parceiro {
     }
 
     public Comunicado envie() throws Exception {
+        // lê uma mensagem recebida, podendo devolver uma mensagem que já foi lida
+        // anteriormente
         try {
             if (this.proximoComunicado == null)
                 this.proximoComunicado = (Comunicado) this.receptor.readObject();
@@ -75,4 +79,6 @@ public class Parceiro {
             throw new Exception("Erro de desconexao");
         }
     }
+
+    
 }
