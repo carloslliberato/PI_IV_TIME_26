@@ -30,4 +30,15 @@ public class MunicipioRepository {
 
         return Optional.of(documento.getObjectId("_id"));
     }
+
+    public Optional<String> buscarNomePorId(ObjectId id) {
+
+    Document documento = colecao.find(eq("_id", id)).first();
+
+    if (documento == null) {
+        return Optional.empty();
+    }
+
+    return Optional.of(documento.getString("nome"));
+}
 }

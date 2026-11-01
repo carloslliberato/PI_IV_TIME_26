@@ -15,22 +15,16 @@ import protocolo.ResultadoValidacaoCadastro;
 
 // Bibliotecas
 import java.util.List;
+import java.util.Optional;
+
 import org.bson.types.ObjectId;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class ContaService {
 
-    // ==========================================
-    // ATRIBUTOS
-    // ==========================================
-
     private final ContaRepository contaRepository;
     private final MunicipioRepository municipioRepository;
     private final ConexaoServidor conexaoServidor;
-
-    // ==========================================
-    // CONSTRUTOR
-    // ==========================================
 
     public ContaService(
             ContaRepository contaRepository,
@@ -42,16 +36,12 @@ public class ContaService {
         this.conexaoServidor = conexaoServidor;
     }
 
-    // ==========================================
-    // MÉTODOS AUXILIARES
-    // ==========================================
-
     // Verifica se o e-mail já está cadastrado
     public boolean emailJaCadastrado(String email) {
         return contaRepository.existeEmail(email);
     }
 
-    // Busca o identificador do município no MongoDB
+    // Busca o ID do município pelo nome
     private ObjectId buscarMunicipio(String nomeMunicipio) {
 
         return municipioRepository.buscarIdPorNome(nomeMunicipio)
@@ -59,16 +49,23 @@ public class ContaService {
                         "Município não encontrado."));
     }
 
+    // Busca o nome do município pelo ID
+    private String buscarNomeMunicipio(ObjectId municipioId) {
+
+        return municipioRepository.buscarNomePorId(municipioId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Município da conta não encontrado."));
+    }
+
     // Criptografa a senha utilizando BCrypt
     private String criptografarSenha(String senha) {
         return BCrypt.hashpw(senha, BCrypt.gensalt());
     }
 
-    // Envia os dados para validação pelo servidor Socket
+    // Envia os dados do cadastro para validação pelo servidor Socket
     private ResultadoValidacaoCadastro validarCadastroNoServidor(
             CadastroContaDTO dados, String tipoConta) throws Exception {
 
-        // Inicialmente, os campos específicos ficam nulos
         String setor = null;
         String outroSetor = null;
         String cargo = null;
@@ -76,7 +73,7 @@ public class ContaService {
         Boolean receberNotificacoes = null;
         List<String> preferencias = null;
 
-        // Preenche os campos específicos de cada tipo de conta
+        // Campos específicos de cada perfil
         if ("CIDADAO".equals(tipoConta)) {
 
             receberNotificacoes = dados.isReceberNotificacoes();
@@ -89,7 +86,6 @@ public class ContaService {
             cargo = dados.getCargo();
         }
 
-        // Cria o pedido de validação
         PedidoDeValidacaoCadastro pedido = new PedidoDeValidacaoCadastro(
                 tipoConta,
                 dados.getNome(),
@@ -108,13 +104,84 @@ public class ContaService {
         return conexaoServidor.validarCadastro(pedido);
     }
 
-    // ==========================================
-    // CADASTRO DE CONTAS
-    // ==========================================
-
-    // Cadastra um cidadão
+    // Cadastra um cidadão ou adiciona o perfil a um funcionário existente
     public Conta cadastrarCidadao(CadastroContaDTO dados) throws Exception {
-        return cadastrarConta(dados, "CIDADAO");
+
+        Optional<Conta> contaExistente =
+                contaRepository.buscarPorEmail(dados.getEmail());
+
+        // Se não existir, cria uma nova conta
+        if (contaExistente.isEmpty()) {
+            return cadastrarConta(dados, "CIDADAO");
+        }
+
+        // Se existir, tenta adicionar o perfil de cidadão
+        return adicionarPerfilCidadao(contaExistente.get(), dados);
+    }
+
+    // Adiciona o perfil de cidadão a uma conta de funcionário existente
+    private Conta adicionarPerfilCidadao(
+            Conta conta, CadastroContaDTO dados) throws Exception {
+
+        List<String> perfis = conta.getPerfis();
+
+        // Verifica se a conta já possui o perfil de cidadão
+        if (perfis.contains("CIDADAO")) {
+            throw new IllegalArgumentException(
+                    "Esta conta já possui o perfil de cidadão.");
+        }
+
+        // Verifica se a conta possui o perfil de funcionário
+        if (!perfis.contains("FUNCIONARIO")) {
+            throw new IllegalArgumentException(
+                    "Não é possível adicionar o perfil de cidadão a esta conta.");
+        }
+
+        // Confere a senha informada com a senha armazenada
+        if (dados.getSenha() == null
+                || !BCrypt.checkpw(dados.getSenha(), conta.getSenhaHash())) {
+
+            throw new IllegalArgumentException("Senha incorreta.");
+        }
+
+        // Prepara o pedido de validação para o Socket
+        PedidoDeValidacaoCadastro pedido = new PedidoDeValidacaoCadastro(
+                "CIDADAO",
+                conta.getNome(),
+                conta.getEmail(),
+                conta.getTelefone(),
+                buscarNomeMunicipio(conta.getMunicipioId()),
+                dados.getSenha(),
+                dados.getConfirmarSenha(),
+                null,
+                null,
+                null,
+                dados.isReceberNotificacoes(),
+                dados.getPreferencias()
+        );
+
+        // Envia os dados para validação
+        ResultadoValidacaoCadastro resultado =
+                conexaoServidor.validarCadastro(pedido);
+
+        // Verifica se a validação foi aprovada
+        if (!resultado.isValido()) {
+            throw new IllegalArgumentException(
+                    String.join(" ", resultado.getErros()));
+        }
+
+        // Adiciona o perfil de cidadão
+        perfis.add("CIDADAO");
+        conta.setPerfis(perfis);
+
+        // Atualiza as informações de notificações
+        conta.setReceberNotificacoes(dados.isReceberNotificacoes());
+        conta.setPreferenciasNotificacoes(dados.getPreferencias());
+
+        // Atualiza a conta existente no MongoDB
+        contaRepository.atualizar(conta);
+
+        return conta;
     }
 
     // Cadastra um funcionário
@@ -122,35 +189,32 @@ public class ContaService {
         return cadastrarConta(dados, "FUNCIONARIO");
     }
 
-    // ==========================================
-    // MÉTODO COMPARTILHADO DE CADASTRO
-    // ==========================================
+    // Cria uma nova conta de cidadão ou funcionário
+    private Conta cadastrarConta(
+            CadastroContaDTO dados, String tipoConta) throws Exception {
 
-    private Conta cadastrarConta(CadastroContaDTO dados, String tipoConta) throws Exception {
-
-        // 1. Verifica se o e-mail já está cadastrado
+        // Verifica se o e-mail já está cadastrado
         if (emailJaCadastrado(dados.getEmail())) {
             throw new IllegalArgumentException(
                     "Este e-mail já está cadastrado.");
         }
 
-        // 2. Busca o identificador do município no MongoDB
+        // Busca o ID do município
         ObjectId municipioId = buscarMunicipio(dados.getMunicipio());
 
-        // 3. Envia os dados para validação pelo servidor Socket
+        // Valida os dados pelo servidor Socket
         ResultadoValidacaoCadastro resultado =
                 validarCadastroNoServidor(dados, tipoConta);
 
-        // 4. Verifica se o cadastro foi aprovado
         if (!resultado.isValido()) {
             throw new IllegalArgumentException(
                     String.join(" ", resultado.getErros()));
         }
 
-        // 5. Criptografa a senha
+        // Criptografa a senha
         String senhaHash = criptografarSenha(dados.getSenha());
 
-        // 6. Cria a conta
+        // Cria a nova conta
         Conta conta = new Conta(
                 dados.getNome(),
                 dados.getEmail(),
@@ -165,7 +229,7 @@ public class ContaService {
                 dados.getPreferencias()
         );
 
-        // 7. Salva a conta no MongoDB
+        // Salva a nova conta no MongoDB
         contaRepository.salvar(conta);
 
         return conta;

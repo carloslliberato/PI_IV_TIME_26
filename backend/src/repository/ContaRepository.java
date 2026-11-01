@@ -6,6 +6,7 @@ import model.Conta;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -37,15 +38,21 @@ public class ContaRepository implements Repository<Conta> {
     }
 
     // Atualiza uma conta existente
+    // Atualiza uma conta existente
     public void atualizar(Conta conta) {
 
         Document documento = converterParaDocumento(conta);
 
         documento.remove("_id");
 
-        colecao.updateOne(
+        UpdateResult resultado = colecao.updateOne(
                 eq("_id", conta.getId()),
                 new Document("$set", documento));
+
+        if (resultado.getMatchedCount() == 0) {
+            throw new IllegalArgumentException(
+                    "Não foi possível encontrar a conta para atualização.");
+        }
     }
 
     // Busca uma conta pelo ID
