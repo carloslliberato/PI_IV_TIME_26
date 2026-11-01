@@ -36,5 +36,9 @@ public class ConfiguracaoRotas {
             contaController.cadastrarFuncionario(ctx);
         });
 
+        servidorHttp.post("/api/contas/login", ctx -> {
+            contaController.autenticar(ctx);
+        });
+
     }
 }

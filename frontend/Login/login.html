@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <!-- Define idioma, responsividade e dependencias visuais da tela de login. -->
   <meta charset="UTF-8">
@@ -9,6 +10,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="/login/login.css">
 </head>
+
 <body>
   <!-- Area principal que centraliza o cartao de acesso e o rodape. -->
   <main class="login-page">
@@ -22,7 +24,8 @@
       <!-- Painel visual com identidade, mensagem e decoracao da marca. -->
       <aside class="brand-panel">
         <div class="brand-lockup">
-          <div class="brand-icon"><i class="bi bi-tree-fill"></i><span class="leaf leaf-one"></span><span class="leaf leaf-two"></span></div>
+          <div class="brand-icon"><i class="bi bi-tree-fill"></i><span class="leaf leaf-one"></span><span
+              class="leaf leaf-two"></span></div>
           <div class="brand-name">arboriza</div>
           <p class="brand-subtitle">GESTÃO PREVENTIVA DA<br>ARBORIZAÇÃO URBANA</p>
         </div>
@@ -31,8 +34,11 @@
           <h2>Cidades mais verdes,<br>vidas melhores.</h2>
           <p>Conectando pessoas e cuidado com a arborização urbana.</p>
         </div>
-        <div class="decor decor-one"></div><div class="decor decor-two"></div><div class="decor decor-three"></div>
-        <div class="brand-footer"><i class="bi bi-geo-alt"></i> Mapeamento <span>•</span> Prevenção <span>•</span> Cuidado</div>
+        <div class="decor decor-one"></div>
+        <div class="decor decor-two"></div>
+        <div class="decor decor-three"></div>
+        <div class="brand-footer"><i class="bi bi-geo-alt"></i> Mapeamento <span>•</span> Prevenção <span>•</span>
+          Cuidado</div>
       </aside>
 
       <!-- Painel com campos de credencial, acoes e mensagens de validacao. -->
@@ -47,19 +53,45 @@
           <form id="loginForm" novalidate>
             <div class="field-group">
               <label for="email">E-mail</label>
-              <div class="input-wrap"><i class="bi bi-envelope"></i><input id="email" name="email" type="email" placeholder="voce@exemplo.com" autocomplete="email" required></div>
+              <div class="input-wrap"><i class="bi bi-envelope"></i><input id="email" name="email" type="email"
+                  placeholder="voce@exemplo.com" autocomplete="email" required></div>
               <small class="field-error" id="emailError"></small>
             </div>
             <div class="field-group">
-              <div class="password-label"><label for="senha">Senha</label><a href="#" id="forgotPassword">Esqueceu a senha?</a></div>
-              <div class="input-wrap"><i class="bi bi-lock"></i><input id="senha" name="senha" type="password" placeholder="Digite sua senha" autocomplete="current-password" required minlength="6"><button class="password-toggle" id="togglePassword" type="button" aria-label="Mostrar senha"><i class="bi bi-eye"></i></button></div>
+              <div class="password-label"><label for="senha">Senha</label><a href="#" id="forgotPassword">Esqueceu a
+                  senha?</a></div>
+              <div class="input-wrap"><i class="bi bi-lock"></i><input id="senha" name="senha" type="password"
+                  placeholder="Digite sua senha" autocomplete="current-password" required minlength="8"><button
+                  class="password-toggle" id="togglePassword" type="button" aria-label="Mostrar senha"><i
+                    class="bi bi-eye"></i></button></div>
               <small class="field-error" id="passwordError"></small>
             </div>
             <button class="submit-button" type="submit">Entrar <i class="bi bi-arrow-right"></i></button>
             <div class="form-message" id="formMessage" role="status" aria-live="polite"></div>
           </form>
 
-          <div class="signup-line">Ainda não tem cadastro? <a href="/cadastro-funcionario" class="register-link">Faça seu cadastro</a></div>
+          <!-- Área exibida quando a conta possui os dois perfis. -->
+          <section id="profileChoice" class="d-none mt-4" aria-label="Escolha de perfil">
+            <h2 class="h5">Como deseja acessar o Arboriza?</h2>
+            <p>Esta conta possui dois perfis. Escolha como deseja continuar.</p>
+
+            <div class="d-grid gap-2">
+              <button type="button" id="citizenAccess" class="btn btn-outline-success">
+                <i class="bi bi-person"></i> Acessar como cidadão
+              </button>
+
+              <button type="button" id="employeeAccess" class="btn btn-success">
+                <i class="bi bi-building"></i> Acessar como funcionário
+              </button>
+
+              <button type="button" id="backToLogin" class="btn btn-link">
+                Voltar ao login
+              </button>
+            </div>
+          </section>
+
+          <div class="signup-line">Ainda não tem cadastro? <a href="/cadastro-funcionario" class="register-link">Faça
+              seu cadastro</a></div>
           <div class="secure-note"><i class="bi bi-shield-check"></i> Seus dados devem ser tratados com segurança.</div>
         </div>
       </section>
@@ -69,4 +101,5 @@
   <!-- Carrega as interacoes depois da estrutura HTML. -->
   <script src="/login/login.js"></script>
 </body>
+
 </html>

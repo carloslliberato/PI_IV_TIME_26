@@ -3,8 +3,13 @@ package controller;
 import com.google.gson.Gson;
 
 import service.ContaService;
+
 import dto.CadastroContaDTO;
+import dto.LoginDTO;
+
 import io.javalin.http.Context;
+
+import model.Conta;
 
 import java.util.Map;
 
@@ -92,4 +97,33 @@ public class ContaController {
         }
     }
 
+    public void autenticar(Context ctx) {
+
+        try {
+            LoginDTO dados = gson.fromJson(ctx.body(), LoginDTO.class);
+
+            if (dados == null) {
+                throw new IllegalArgumentException("Dados de login inválidos.");
+            }
+
+            Conta conta = contaService.autenticar(dados);
+
+            ctx.status(200).json(Map.of(
+                    "mensagem", "Login realizado com sucesso!",
+                    "id", conta.getId().toString(),
+                    "nome", conta.getNome(),
+                    "email", conta.getEmail(),
+                    "perfis", conta.getPerfis(),
+                    "setor", conta.getSetor() == null ? "" : conta.getSetor(),
+                    "cargo", conta.getCargo() == null ? "" : conta.getCargo()));
+
+        } catch (IllegalArgumentException e) {
+            ctx.status(401).json(Map.of("erro", e.getMessage()));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            ctx.status(500).json(Map.of(
+                    "erro", "Erro interno ao realizar o login."));
+        }
+    }
 }

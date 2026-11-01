@@ -7,6 +7,7 @@ import repository.MunicipioRepository;
 
 // DTO e modelo
 import dto.CadastroContaDTO;
+import dto.LoginDTO;
 import model.Conta;
 
 // Protocolo Socket
@@ -98,8 +99,7 @@ public class ContaService {
                 outroSetor,
                 cargo,
                 receberNotificacoes,
-                preferencias
-        );
+                preferencias);
 
         return conexaoServidor.validarCadastro(pedido);
     }
@@ -107,8 +107,7 @@ public class ContaService {
     // Cadastra um cidadão ou adiciona o perfil a um funcionário existente
     public Conta cadastrarCidadao(CadastroContaDTO dados) throws Exception {
 
-        Optional<Conta> contaExistente =
-                contaRepository.buscarPorEmail(dados.getEmail());
+        Optional<Conta> contaExistente = contaRepository.buscarPorEmail(dados.getEmail());
 
         // Se não existir, cria uma nova conta
         if (contaExistente.isEmpty()) {
@@ -157,12 +156,10 @@ public class ContaService {
                 null,
                 null,
                 dados.isReceberNotificacoes(),
-                dados.getPreferencias()
-        );
+                dados.getPreferencias());
 
         // Envia os dados para validação
-        ResultadoValidacaoCadastro resultado =
-                conexaoServidor.validarCadastro(pedido);
+        ResultadoValidacaoCadastro resultado = conexaoServidor.validarCadastro(pedido);
 
         // Verifica se a validação foi aprovada
         if (!resultado.isValido()) {
@@ -203,8 +200,7 @@ public class ContaService {
         ObjectId municipioId = buscarMunicipio(dados.getMunicipio());
 
         // Valida os dados pelo servidor Socket
-        ResultadoValidacaoCadastro resultado =
-                validarCadastroNoServidor(dados, tipoConta);
+        ResultadoValidacaoCadastro resultado = validarCadastroNoServidor(dados, tipoConta);
 
         if (!resultado.isValido()) {
             throw new IllegalArgumentException(
@@ -226,11 +222,33 @@ public class ContaService {
                 dados.getOutroSetor(),
                 dados.getCargo(),
                 dados.isReceberNotificacoes(),
-                dados.getPreferencias()
-        );
+                dados.getPreferencias());
 
         // Salva a nova conta no MongoDB
         contaRepository.salvar(conta);
+
+        return conta;
+    }
+
+    public Conta autenticar(LoginDTO dados) {
+
+        if (dados == null ||
+                dados.getEmail() == null || dados.getEmail().isBlank() ||
+                dados.getSenha() == null || dados.getSenha().isBlank()) {
+
+            throw new IllegalArgumentException("E-mail e senha são obrigatórios.");
+        }
+
+        Conta conta = contaRepository.buscarPorEmail(dados.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("E-mail ou senha incorretos."));
+
+        boolean senhaCorreta = BCrypt.checkpw(
+                dados.getSenha(),
+                conta.getSenhaHash());
+
+        if (!senhaCorreta) {
+            throw new IllegalArgumentException("E-mail ou senha incorretos.");
+        }
 
         return conta;
     }
