@@ -65,10 +65,10 @@
                 <label for="municipio">Município de gestão</label>
                 <div class="select-wrap"><i class="bi bi-geo-alt"></i><select id="municipio" name="municipio" required>
                   <option value="">Selecione o município</option>
-                  <option value="campinas">Campinas - SP</option>
-                  <option value="hortolandia">Hortolândia - SP</option>
-                  <option value="sumare">Sumaré - SP</option>
-                  <option>Outro município</option>
+                  <option value="Campinas">Campinas - SP</option>
+                  <option value="Hortolândia">Hortolândia - SP</option>
+                  <option value="Sumaré">Sumaré - SP</option>
+                  <!-- <option>Outro município</option> -->
                 </select></div>
                 <small class="field-error" id="municipioError"></small>
               </div>
@@ -125,7 +125,33 @@
     </section>
     <footer class="page-footer">© Arboriza · Gestão preventiva da arborização urbana</footer>
   </main>
+  <!-- Notificacao de sucesso do cadastro -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+  <div
+    id="employeeToast"
+    class="toast"
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
+  >
+    <div class="toast-header">
+      <i class="bi bi-check-circle-fill text-success me-2"></i>
+      <strong class="me-auto">Arboriza</strong>
+      <button
+        type="button"
+        class="btn-close"
+        data-bs-dismiss="toast"
+        aria-label="Fechar"
+      ></button>
+    </div>
+
+    <div class="toast-body">
+      Cadastro realizado com sucesso!
+    </div>
+  </div>
+</div>
   <!-- Carrega as interacoes depois que o formulario ja existe no documento. -->
+   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/cadastro_funcionario/cadastro.js"></script>
 </body>
 </html>
