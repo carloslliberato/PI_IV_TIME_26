@@ -127,16 +127,16 @@ public class PedidoDeValidacaoCadastro extends Comunicado {
         this.receberNotificacoes = receberNotificacoes;
     }
 
-public List<String> getPreferenciasNotificacoes() {
-    return preferenciasNotificacoes == null
-            ? null
-            : new ArrayList<>(preferenciasNotificacoes);
-}
+    public List<String> getPreferenciasNotificacoes() {
+        return preferenciasNotificacoes == null
+                ? null
+                : new ArrayList<>(preferenciasNotificacoes);
+    }
 
-public void setPreferenciasNotificacoes(List<String> preferenciasNotificacoes) {
-    this.preferenciasNotificacoes = preferenciasNotificacoes == null
-            ? null
-            : new ArrayList<>(preferenciasNotificacoes);
-}
+    public void setPreferenciasNotificacoes(List<String> preferenciasNotificacoes) {
+        this.preferenciasNotificacoes = preferenciasNotificacoes == null
+                ? null
+                : new ArrayList<>(preferenciasNotificacoes);
+    }
 
 }

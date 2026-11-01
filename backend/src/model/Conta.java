@@ -15,16 +15,19 @@ public class Conta {
     private String telefone;
     private List<String> perfis;
     private final ObjectId municipioId;
-    private ObjectId setorId;
+    private String setor;
+    private String outroSetor;
     private String cargo;
+    private Boolean receberNotificacoes;
     private List<String> preferenciasNotificacoes;
     private final Instant dataCadastro;
     private Instant dataAtualizacao;
 
     // Construtor para criar uma nova conta
     public Conta(String nome, String email, String senhaHash, String telefone,
-            List<String> perfis, ObjectId municipioId, ObjectId setorId,
-            String cargo, List<String> preferenciasNotificacoes) {
+            List<String> perfis, ObjectId municipioId, String setor,
+            String outroSetor, String cargo, Boolean receberNotificacoes,
+            List<String> preferenciasNotificacoes) {
 
         this._id = new ObjectId();
         this.nome = nome;
@@ -33,10 +36,13 @@ public class Conta {
         this.telefone = telefone;
         this.perfis = perfis == null ? null : new ArrayList<>(perfis);
         this.municipioId = municipioId;
-        this.setorId = setorId;
+        this.setor = setor;
+        this.outroSetor = outroSetor;
         this.cargo = cargo;
+        this.receberNotificacoes = receberNotificacoes;
         this.preferenciasNotificacoes = preferenciasNotificacoes == null
-                ? null : new ArrayList<>(preferenciasNotificacoes);
+                ? null
+                : new ArrayList<>(preferenciasNotificacoes);
         this.dataCadastro = Instant.now();
         this.dataAtualizacao = null;
 
@@ -46,7 +52,8 @@ public class Conta {
     // Construtor para recuperar uma conta do banco de dados
     public Conta(ObjectId _id, String nome, String email, String senhaHash,
             String telefone, List<String> perfis, ObjectId municipioId,
-            ObjectId setorId, String cargo,
+            String setor, String outroSetor, String cargo,
+            Boolean receberNotificacoes,
             List<String> preferenciasNotificacoes,
             Instant dataCadastro, Instant dataAtualizacao) {
 
@@ -57,10 +64,13 @@ public class Conta {
         this.telefone = telefone;
         this.perfis = perfis == null ? null : new ArrayList<>(perfis);
         this.municipioId = municipioId;
-        this.setorId = setorId;
+        this.setor = setor;
+        this.outroSetor = outroSetor;
         this.cargo = cargo;
+        this.receberNotificacoes = receberNotificacoes;
         this.preferenciasNotificacoes = preferenciasNotificacoes == null
-                ? null : new ArrayList<>(preferenciasNotificacoes);
+                ? null
+                : new ArrayList<>(preferenciasNotificacoes);
         this.dataCadastro = dataCadastro;
         this.dataAtualizacao = dataAtualizacao;
 
@@ -95,7 +105,7 @@ public class Conta {
                         "A lista de perfis não pode conter valores nulos.");
             }
 
-            if (!perfil.equals("cidadao") && !perfil.equals("funcionario")) {
+            if (!perfil.equals("CIDADAO") && !perfil.equals("FUNCIONARIO")) {
                 throw new IllegalArgumentException(
                         "Perfil inválido encontrado na lista de perfis.");
             }
@@ -108,11 +118,26 @@ public class Conta {
             perfisVerificados.add(perfil);
         }
 
-        if (perfis.contains("funcionario")
-                && (setorId == null || cargo == null || cargo.isBlank())) {
+        if (perfis.contains("FUNCIONARIO")) {
+
+            if (setor == null || setor.isBlank()
+                    || cargo == null || cargo.isBlank()) {
+
+                throw new IllegalArgumentException(
+                        "Funcionários precisam de cargo e setor.");
+            }
+
+            if (setor.equals("Outro")
+                    && (outroSetor == null || outroSetor.isBlank())) {
+
+                throw new IllegalArgumentException(
+                        "É necessário informar o nome do outro setor.");
+            }
+
+        } else if (outroSetor != null && !outroSetor.isBlank()) {
 
             throw new IllegalArgumentException(
-                    "Funcionários precisam de cargo e setor.");
+                    "Cidadãos não podem possuir outro setor.");
         }
     }
 
@@ -155,17 +180,26 @@ public class Conta {
         return municipioId;
     }
 
-    public ObjectId getSetorId() {
-        return setorId;
+    public String getSetor() {
+        return setor;
+    }
+
+    public String getOutroSetor() {
+        return outroSetor;
     }
 
     public String getCargo() {
         return cargo;
     }
 
+    public Boolean getReceberNotificacoes() {
+        return receberNotificacoes;
+    }
+
     public List<String> getPreferenciasNotificacoes() {
         return preferenciasNotificacoes == null
-                ? null : new ArrayList<>(preferenciasNotificacoes);
+                ? null
+                : new ArrayList<>(preferenciasNotificacoes);
     }
 
     public Instant getDataCadastro() {
@@ -220,14 +254,28 @@ public class Conta {
         this.atualizarData();
     }
 
-    public void setSetorId(ObjectId setorId) {
-        ObjectId setorAnterior = this.setorId;
-        this.setorId = setorId;
+    public void setSetor(String setor) {
+        String setorAnterior = this.setor;
+        this.setor = setor;
 
         try {
             this.validarDados();
         } catch (IllegalArgumentException e) {
-            this.setorId = setorAnterior;
+            this.setor = setorAnterior;
+            throw e;
+        }
+
+        this.atualizarData();
+    }
+
+    public void setOutroSetor(String outroSetor) {
+        String outroSetorAnterior = this.outroSetor;
+        this.outroSetor = outroSetor;
+
+        try {
+            this.validarDados();
+        } catch (IllegalArgumentException e) {
+            this.outroSetor = outroSetorAnterior;
             throw e;
         }
 
@@ -248,11 +296,17 @@ public class Conta {
         this.atualizarData();
     }
 
+    public void setReceberNotificacoes(Boolean receberNotificacoes) {
+        this.receberNotificacoes = receberNotificacoes;
+        this.atualizarData();
+    }
+
     public void setPreferenciasNotificacoes(
             List<String> preferenciasNotificacoes) {
 
         this.preferenciasNotificacoes = preferenciasNotificacoes == null
-                ? null : new ArrayList<>(preferenciasNotificacoes);
+                ? null
+                : new ArrayList<>(preferenciasNotificacoes);
 
         this.atualizarData();
     }
@@ -290,6 +344,8 @@ public class Conta {
         return "Conta [nome=" + nome
                 + ", email=" + email
                 + ", telefone=" + telefone
+                + ", setor=" + setor
+                + ", outroSetor=" + outroSetor
                 + ", cargo=" + cargo + "]";
     }
 }

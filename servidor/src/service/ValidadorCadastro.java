@@ -8,12 +8,6 @@ import protocolo.ResultadoValidacaoCadastro;
 
 public class ValidadorCadastro {
 
-    private static final List<String> MUNICIPIOS = Arrays.asList(
-            "campinas",
-            "hortolandia",
-            "sumare",
-            "outro");
-
     private static final List<String> SETORES = Arrays.asList(
             "Secretaria do Meio Ambiente",
             "Departamento de Arborização Urbana",
@@ -72,11 +66,7 @@ public class ValidadorCadastro {
             erros.add("Telefone inválido. Informe DDD e número.");
         }
 
-        if (pedido.getMunicipio() == null ||
-                !MUNICIPIOS.contains(pedido.getMunicipio())) {
-
-            erros.add("Município inválido.");
-        }
+//
 
         String senha = pedido.getSenha();
         String confirmarSenha = pedido.getConfirmarSenha();

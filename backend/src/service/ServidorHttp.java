@@ -1,6 +1,8 @@
 
 package service;
 
+import config.ConfiguracaoPaginas;
+import config.ConfiguracaoRotas;
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
 import java.nio.file.Files;
@@ -11,6 +13,11 @@ public class ServidorHttp {
     private Javalin servidorHttp;
     private final int PORTA_PADRAO = 8080;
     private Path pastaFrontend;
+    private ConexaoServidor conexaoServidor;
+
+    public ServidorHttp(ConexaoServidor conexaoServidor) {
+        this.conexaoServidor = conexaoServidor;
+    }
 
     public void iniciar() throws Exception {
 
@@ -25,79 +32,17 @@ public class ServidorHttp {
             });
         });
 
-        // PERFIL PÚBLICO
-        servidorHttp.get("/", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_publico").resolve("index.html");
-            ctx.html(Files.readString(arquivo));
-        });
+        // Registra as rotas das páginas HTML
+        ConfiguracaoPaginas configuracaoPaginas =
+                new ConfiguracaoPaginas(pastaFrontend);
 
-        servidorHttp.get("/abrir-chamado", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_publico").resolve("abrir-chamado.html");
-            ctx.html(Files.readString(arquivo));
-        });
+        configuracaoPaginas.registrarPaginas(servidorHttp);
 
-        servidorHttp.get("/acompanhar-chamado", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_publico").resolve("acompanhe-chamado.html");
-            ctx.html(Files.readString(arquivo));
-        });
+        // Registra as rotas da API
+        ConfiguracaoRotas configuracaoRotas =
+                new ConfiguracaoRotas(conexaoServidor);
 
-        servidorHttp.get("/cadastro-cidadao", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_publico").resolve("cadastro-cidadao.html");
-            ctx.html(Files.readString(arquivo));
-        });
-
-        servidorHttp.get("/ocorrencias-cidadao", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_publico").resolve("ocorrencias-cidadao.html");
-            ctx.html(Files.readString(arquivo));
-        });
-
-        // LOGIN
-        servidorHttp.get("/login", ctx -> {
-            Path arquivo = pastaFrontend.resolve("login").resolve("login.html");
-            ctx.html(Files.readString(arquivo));
-        });
-
-        // CADASTRO DE FUNCIONÁRIO
-        servidorHttp.get("/cadastro-funcionario", ctx -> {
-            Path arquivo = pastaFrontend.resolve("cadastro_funcionario").resolve("cadastro.html");
-            ctx.html(Files.readString(arquivo));
-        });
-
-        // PERFIL PROFISSIONAL
-        servidorHttp.get("/perfil-profissional", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_profissional").resolve("inicial.html");
-            ctx.html(Files.readString(arquivo));
-        });
-
-        servidorHttp.get("/arvores", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_profissional").resolve("arvores.html");
-            ctx.html(Files.readString(arquivo));
-        });
-
-        servidorHttp.get("/equipes", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_profissional").resolve("equipes.html");
-            ctx.html(Files.readString(arquivo));
-        });
-
-        servidorHttp.get("/mapa-profissional", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_profissional").resolve("mapa-profissional.html");
-            ctx.html(Files.readString(arquivo));
-        });
-
-        servidorHttp.get("/ocorrencias", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_profissional").resolve("ocorrencias.html");
-            ctx.html(Files.readString(arquivo));
-        });
-
-        servidorHttp.get("/ordens-servico", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_profissional").resolve("ordens-servico.html");
-            ctx.html(Files.readString(arquivo));
-        });
-
-        servidorHttp.get("/relatorio", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_profissional").resolve("relatorio.html");
-            ctx.html(Files.readString(arquivo));
-        });
+        configuracaoRotas.registrarRotas(servidorHttp);
 
         servidorHttp.start(PORTA_PADRAO);
         System.out.println("Servidor HTTP iniciado!");

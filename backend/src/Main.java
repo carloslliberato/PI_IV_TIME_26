@@ -14,44 +14,38 @@ public class Main {
 
     private static boolean mongoConectado = false;
 
-    private static final AtomicBoolean ENCERRADO =
-        new AtomicBoolean(false);
+    private static final AtomicBoolean ENCERRADO = new AtomicBoolean(false);
 
     public static void main(String[] args) {
 
         // Registra o procedimento de encerramento da aplicação.
         Runtime.getRuntime().addShutdownHook(
-            new Thread(Main::fecharRecursos)
-        );
+                new Thread(Main::fecharRecursos));
 
         try {
 
             // 1. Conexão com o servidor Socket do professor.
             conexaoServidor = new ConexaoServidor(
-                HOST_PADRAO,
-                PORTA_PADRAO
-            );
+                    HOST_PADRAO,
+                    PORTA_PADRAO);
 
             if (!conexaoServidor.conectar()) {
                 throw new RuntimeException(
-                    "Não foi possível conectar ao servidor Socket."
-                );
+                        "Não foi possível conectar ao servidor Socket.");
             }
 
             System.out.println(
-                "Conexão com o servidor Socket estabelecida!"
-            );
+                    "Conexão com o servidor Socket estabelecida!");
 
             // 2. Conexão com o MongoDB.
             ConexaoMongo.getDatabase();
             mongoConectado = true;
 
             System.out.println(
-                "Conexão com o banco de dados estabelecida!"
-            );
+                    "Conexão com o banco de dados estabelecida!");
 
             // 3. Inicialização do servidor HTTP.
-            servidorHttp = new ServidorHttp();
+            servidorHttp = new ServidorHttp(conexaoServidor);
             servidorHttp.iniciar();
 
             System.out.println("Arboriza iniciado com sucesso!");
@@ -59,15 +53,14 @@ public class Main {
         } catch (Exception erro) {
 
             System.err.println(
-                "Erro ao iniciar o Arboriza: " + erro.getMessage()
-            );
+                    "Erro ao iniciar o Arboriza: " + erro.getMessage());
 
             fecharRecursos();
         }
     }
 
     private static void fecharRecursos() {
-System.out.println(">>> SHUTDOWN HOOK EXECUTADO!");
+        System.out.println(">>> SHUTDOWN HOOK EXECUTADO!");
         // Evita que os recursos sejam fechados duas vezes.
         if (!ENCERRADO.compareAndSet(false, true)) {
             return;
@@ -82,8 +75,7 @@ System.out.println(">>> SHUTDOWN HOOK EXECUTADO!");
             }
         } catch (Exception erro) {
             System.err.println(
-                "Erro ao encerrar servidor HTTP: " + erro.getMessage()
-            );
+                    "Erro ao encerrar servidor HTTP: " + erro.getMessage());
         }
 
         // Fecha o MongoDB.
@@ -94,8 +86,7 @@ System.out.println(">>> SHUTDOWN HOOK EXECUTADO!");
             }
         } catch (Exception erro) {
             System.err.println(
-                "Erro ao encerrar MongoDB: " + erro.getMessage()
-            );
+                    "Erro ao encerrar MongoDB: " + erro.getMessage());
         }
 
         // Fecha o servidor Socket.
@@ -105,8 +96,7 @@ System.out.println(">>> SHUTDOWN HOOK EXECUTADO!");
             }
         } catch (Exception erro) {
             System.err.println(
-                "Erro ao encerrar servidor Socket: " + erro.getMessage()
-            );
+                    "Erro ao encerrar servidor Socket: " + erro.getMessage());
         }
 
         System.out.println("Arboriza encerrado!");
