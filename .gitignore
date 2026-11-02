@@ -6,5 +6,3 @@
 
 # Arquivos temporários do Gradle
 .gradle/
-
-.env
