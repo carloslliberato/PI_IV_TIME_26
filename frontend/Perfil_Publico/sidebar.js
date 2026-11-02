@@ -114,16 +114,47 @@ if (sidebarContainer) {
       logoutLink.className = "login-link logout-link";
       logoutLink.href = "#logout";
       logoutLink.textContent = "Sair";
-      logoutLink.addEventListener("click", event => {
+      logoutLink.addEventListener("click", async event => {
         event.preventDefault();
-        // Encerra a sessao local removendo os dados usados para reconhecer o usuario.
-        localStorage.removeItem("arborizaUsuario");
-        localStorage.removeItem("login");
-        localStorage.removeItem("idSetor");
-        localStorage.removeItem("nome");
-        localStorage.removeItem("nomeUsuario");
-        localStorage.removeItem("nomeLogado");
-        window.location.reload();
+
+        // Evita cliques repetidos durante a requisição.
+        logoutLink.style.pointerEvents = "none";
+
+        try {
+
+          // Solicita ao backend o encerramento da sessão.
+          const resposta = await fetch("/api/contas/logout", {
+            method: "POST"
+          });
+
+          const resultado = await resposta.json();
+
+          // Verifica se o backend confirmou o logout.
+          if (!resposta.ok) {
+            throw new Error(
+              resultado.erro || "Não foi possível encerrar a sessão."
+            );
+          }
+
+          // Remove os dados locais após a confirmação.
+          localStorage.removeItem("arborizaUsuario");
+          localStorage.removeItem("login");
+          localStorage.removeItem("idSetor");
+          localStorage.removeItem("nome");
+          localStorage.removeItem("nomeUsuario");
+          localStorage.removeItem("nomeLogado");
+
+          // Atualiza o portal público.
+          window.location.reload();
+
+        } catch (erro) {
+
+          console.error("Erro ao encerrar sessão:", erro);
+
+          alert("Não foi possível encerrar sua sessão. Tente novamente.");
+
+          logoutLink.style.pointerEvents = "auto";
+        }
       });
 
       actions.replaceChildren(greeting, logoutLink);

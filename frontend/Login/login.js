@@ -56,10 +56,30 @@ function salvarSessao(usuario, perfil) {
 }
 
 // Redireciona de acordo com o perfil escolhido.
-function acessarPerfil(perfil) {
+async function acessarPerfil(perfil) {
 
+    // Envia o perfil escolhido para o backend.
+    const resposta = await fetch('/api/contas/perfil', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            perfil: perfil
+        })
+    });
+
+    const resultado = await resposta.json();
+
+    // Verifica se o backend aceitou a escolha.
+    if (!resposta.ok) {
+        throw new Error(resultado.erro || 'Não foi possível selecionar o perfil.');
+    }
+
+    // Guarda os dados apenas para utilização visual no frontend.
     salvarSessao(usuarioAutenticado, perfil);
 
+    // Redireciona para o portal escolhido.
     if (perfil === 'CIDADAO') {
         window.location.href = '/';
     } else if (perfil === 'FUNCIONARIO') {
@@ -136,12 +156,12 @@ loginForm.addEventListener('submit', async (event) => {
 
             formMessage.textContent = '';
 
-        // Se possui somente perfil de cidadão.
+            // Se possui somente perfil de cidadão.
         } else if (possuiCidadao) {
 
             acessarPerfil('CIDADAO');
 
-        // Se possui somente perfil de funcionário.
+            // Se possui somente perfil de funcionário.
         } else if (possuiFuncionario) {
 
             acessarPerfil('FUNCIONARIO');
@@ -162,13 +182,26 @@ loginForm.addEventListener('submit', async (event) => {
 });
 
 // Escolha do portal público.
-citizenAccess.addEventListener('click', () => {
-    acessarPerfil('CIDADAO');
+citizenAccess.addEventListener('click', async () => {
+
+    try {
+        await acessarPerfil('CIDADAO');
+
+    } catch (erro) {
+        formMessage.textContent = erro.message;
+        formMessage.classList.add('error');
+    }
 });
 
-// Escolha do portal profissional.
-employeeAccess.addEventListener('click', () => {
-    acessarPerfil('FUNCIONARIO');
+employeeAccess.addEventListener('click', async () => {
+
+    try {
+        await acessarPerfil('FUNCIONARIO');
+
+    } catch (erro) {
+        formMessage.textContent = erro.message;
+        formMessage.classList.add('error');
+    }
 });
 
 // Permite voltar e entrar com outra conta.
@@ -186,12 +219,250 @@ backToLogin.addEventListener('click', () => {
     formMessage.className = 'form-message';
 });
 
-// Informa que a recuperação de senha ainda não está disponível.
+// Elementos da recuperação de senha.
+const recoveryPanel = document.getElementById('recoveryPanel');
+
+const recoveryRequestStep = document.getElementById('recoveryRequestStep');
+const recoveryResetStep = document.getElementById('recoveryResetStep');
+
+const requestRecoveryForm = document.getElementById('requestRecoveryForm');
+const resetPasswordForm = document.getElementById('resetPasswordForm');
+
+const recoveryEmailInput = document.getElementById('recoveryEmail');
+const recoveryCodeInput = document.getElementById('recoveryCode');
+
+const newPasswordInput = document.getElementById('newPassword');
+const confirmNewPasswordInput = document.getElementById('confirmNewPassword');
+
+const recoveryRequestMessage = document.getElementById('recoveryRequestMessage');
+const resetPasswordMessage = document.getElementById('resetPasswordMessage');
+
+const recoveryEmailDisplay = document.getElementById('recoveryEmailDisplay');
+
+const recoverySuccess = document.getElementById('recoverySuccess');
+
+const signupLine = document.querySelector('.signup-line');
+
+let emailRecuperacao = '';
+
+
+// Abre a tela de recuperação de senha.
 document.getElementById('forgotPassword').addEventListener('click', (event) => {
 
     event.preventDefault();
 
-    formMessage.className = 'form-message';
-    formMessage.textContent =
-        'A recuperação de senha será disponibilizada em uma próxima etapa.';
+    loginForm.classList.add('d-none');
+    profileChoice.classList.add('d-none');
+
+    signupLine.classList.add('d-none');
+
+    recoveryPanel.classList.remove('d-none');
+
+    recoveryRequestStep.classList.remove('d-none');
+    recoveryResetStep.classList.add('d-none');
+
+    recoveryEmailInput.value = emailInput.value.trim();
+
+    formMessage.textContent = '';
+    recoveryRequestMessage.textContent = '';
+    resetPasswordMessage.textContent = '';
 });
+
+
+// Volta para a tela de login.
+function voltarAoLogin() {
+
+    recoveryPanel.classList.add('d-none');
+
+    loginForm.classList.remove('d-none');
+
+    signupLine.classList.remove('d-none');
+
+    recoveryRequestStep.classList.remove('d-none');
+    recoveryResetStep.classList.add('d-none');
+
+    loginForm.reset();
+    requestRecoveryForm.reset();
+    resetPasswordForm.reset();
+
+    recoverySuccess.classList.add('d-none');
+    resetPasswordForm.classList.remove('d-none');
+
+    recoveryRequestMessage.textContent = '';
+    resetPasswordMessage.textContent = '';
+
+    formMessage.textContent = '';
+    formMessage.className = 'form-message';
+
+    emailRecuperacao = '';
+}
+
+
+// Botão para voltar ao login na primeira etapa.
+document.getElementById('backToLoginFromRequest')
+    .addEventListener('click', voltarAoLogin);
+
+
+// Solicita o código de recuperação.
+requestRecoveryForm.addEventListener('submit', async (event) => {
+
+    event.preventDefault();
+
+    recoveryRequestMessage.textContent = '';
+    recoveryRequestMessage.className = 'form-message';
+
+    const email = recoveryEmailInput.value.trim();
+
+    if (!email || !recoveryEmailInput.validity.valid) {
+        recoveryRequestMessage.textContent = 'Informe um e-mail válido.';
+        recoveryRequestMessage.classList.add('error');
+        return;
+    }
+
+    const botao = requestRecoveryForm.querySelector('button[type="submit"]');
+
+    botao.disabled = true;
+    recoveryRequestMessage.textContent = 'Enviando solicitação...';
+
+    try {
+
+        const resposta = await fetch('/api/contas/recuperacao-senha', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email: email
+            })
+        });
+
+        const resultado = await resposta.json();
+
+        if (!resposta.ok) {
+            throw new Error(resultado.erro || 'Não foi possível solicitar a recuperação.');
+        }
+
+        emailRecuperacao = email;
+
+        recoveryEmailDisplay.textContent = email;
+
+        // Avança para a etapa de redefinição.
+        recoveryRequestStep.classList.add('d-none');
+        recoveryResetStep.classList.remove('d-none');
+
+        recoveryRequestMessage.textContent = '';
+
+    } catch (erro) {
+
+        recoveryRequestMessage.textContent = erro.message;
+        recoveryRequestMessage.classList.add('error');
+
+    } finally {
+
+        botao.disabled = false;
+    }
+});
+
+
+// Redefine a senha utilizando o código recebido.
+resetPasswordForm.addEventListener('submit', async (event) => {
+
+    event.preventDefault();
+
+    resetPasswordMessage.textContent = '';
+    resetPasswordMessage.className = 'form-message';
+
+    const codigo = recoveryCodeInput.value.trim();
+    const novaSenha = newPasswordInput.value;
+    const confirmarNovaSenha = confirmNewPasswordInput.value;
+
+    // Valida o código.
+    if (!/^[0-9]{6}$/.test(codigo)) {
+        resetPasswordMessage.textContent =
+            'Informe o código de seis dígitos recebido por e-mail.';
+        resetPasswordMessage.classList.add('error');
+        return;
+    }
+
+    // Valida o tamanho da senha.
+    if (novaSenha.length < 8) {
+        resetPasswordMessage.textContent =
+            'A senha deve possuir pelo menos 8 caracteres.';
+        resetPasswordMessage.classList.add('error');
+        return;
+    }
+
+    // Confere as senhas.
+    if (novaSenha !== confirmarNovaSenha) {
+        resetPasswordMessage.textContent =
+            'As senhas não coincidem.';
+        resetPasswordMessage.classList.add('error');
+        return;
+    }
+
+    const botao = resetPasswordForm.querySelector('button[type="submit"]');
+
+    botao.disabled = true;
+    resetPasswordMessage.textContent = 'Redefinindo senha...';
+
+    try {
+
+        const resposta = await fetch('/api/contas/redefinir-senha', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email: emailRecuperacao,
+                codigo: codigo,
+                novaSenha: novaSenha,
+                confirmarNovaSenha: confirmarNovaSenha
+            })
+        });
+
+        const resultado = await resposta.json();
+
+        if (!resposta.ok) {
+            throw new Error(resultado.erro || 'Não foi possível redefinir a senha.');
+        }
+
+        // Exibe a confirmação de sucesso.
+        resetPasswordForm.classList.add('d-none');
+
+        document.getElementById('changeRecoveryEmail').classList.add('d-none');
+
+        resetPasswordMessage.textContent = '';
+
+        recoverySuccess.classList.remove('d-none');
+
+    } catch (erro) {
+
+        resetPasswordMessage.textContent = erro.message;
+        resetPasswordMessage.classList.add('error');
+
+    } finally {
+
+        botao.disabled = false;
+    }
+});
+
+
+// Permite voltar e alterar o e-mail informado.
+document.getElementById('changeRecoveryEmail')
+    .addEventListener('click', () => {
+
+        recoveryResetStep.classList.add('d-none');
+        recoveryRequestStep.classList.remove('d-none');
+
+        recoveryRequestMessage.textContent = '';
+        resetPasswordMessage.textContent = '';
+
+        recoveryCodeInput.value = '';
+        newPasswordInput.value = '';
+        confirmNewPasswordInput.value = '';
+    });
+
+
+// Finaliza a recuperação e retorna ao login.
+document.getElementById('finishRecovery')
+    .addEventListener('click', voltarAoLogin);

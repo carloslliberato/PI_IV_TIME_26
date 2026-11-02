@@ -29,6 +29,13 @@ public class ServidorHttp {
                 staticFiles.hostedPath = "/";
                 staticFiles.directory = pastaFrontend.toString();
                 staticFiles.location = Location.EXTERNAL;
+
+                // Impede que arquivos HTML sejam entregues
+                // diretamente pela configuração de arquivos estáticos.
+                staticFiles.skipFileFunction = requisicao ->
+                        requisicao.getRequestURI()
+                                .toLowerCase()
+                                .endsWith(".html");
             });
         });
 

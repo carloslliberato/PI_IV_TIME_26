@@ -61,3 +61,52 @@ h1{font-size:34px;letter-spacing:-1px;font-weight:800;margin:9px 0 8px;color:#17
 @media(max-width:800px){.login-card{grid-template-columns: .8fr 1.2fr;min-height:560px}.brand-panel{padding:42px 26px 26px}.brand-name{font-size:45px}.brand-icon{transform:scale(.85);margin-bottom:0}.brand-message h2{font-size:22px}.form-panel{padding:45px 35px}}
 @media(max-width:600px){.login-page{padding:20px 14px}.back-link{margin-bottom:14px}.login-card{grid-template-columns:1fr;min-height:0;border-radius:18px}.brand-panel{display:none}.form-panel{padding:35px 25px 30px}.mobile-brand{display:flex}h1{font-size:30px}.intro{margin-bottom:27px}.secure-note{margin-top:25px}.page-footer{line-height:1.5}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;scroll-behavior:auto!important}}
+
+/* Recuperação de senha */
+
+.recovery-back-button {
+  display: block;
+  margin: 20px auto 0;
+  padding: 5px;
+  border: 0;
+  background: transparent;
+  color: var(--green-800);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.recovery-back-button:hover {
+  color: var(--green-900);
+  text-decoration: underline;
+}
+
+.recovery-email-info {
+  margin: -18px 0 24px;
+  padding: 12px;
+  border-radius: 9px;
+  background: var(--green-050);
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.recovery-email-info strong {
+  color: var(--green-800);
+}
+
+.recovery-success {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.recovery-success > i {
+  color: var(--green-700);
+  font-size: 42px;
+}
+
+.recovery-success p {
+  margin: 12px 0 22px;
+  color: var(--green-800);
+  font-size: 14px;
+  font-weight: 650;
+}

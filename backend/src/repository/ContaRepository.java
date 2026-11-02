@@ -183,4 +183,17 @@ public class ContaRepository implements Repository<Conta> {
                 instanteCadastro,
                 instanteAtualizacao);
     }
+
+    // Atualiza somente a senha de uma conta
+    public void atualizarSenha(ObjectId contaId, String senhaHash) {
+
+        UpdateResult resultado = colecao.updateOne(
+                eq("_id", contaId),
+                new Document("$set", new Document("senhaHash", senhaHash)));
+
+        if (resultado.getMatchedCount() == 0) {
+            throw new IllegalArgumentException(
+                    "Não foi possível encontrar a conta para atualizar a senha.");
+        }
+    }
 }

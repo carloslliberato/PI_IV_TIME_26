@@ -70,11 +70,51 @@ function carregarDashboardProfissional() {
 }
 
 // Encerra a sessão local e retorna ao login.
-function encerrarSessaoProfissional() {
-  ["arborizaUsuario", "login", "idSetor", "nome", "nomeUsuario", "nomeLogado"].forEach(chave => {
-    localStorage.removeItem(chave);
-  });
-  window.location.replace("/login");
+// Encerra a sessão no backend e retorna ao login.
+async function encerrarSessaoProfissional() {
+
+  const botaoLogout = document.getElementById("btnLogout");
+
+  try {
+
+    // Evita que o usuário clique várias vezes.
+    botaoLogout.disabled = true;
+
+    // Solicita ao backend o encerramento da sessão.
+    const resposta = await fetch("/api/contas/logout", {
+      method: "POST"
+    });
+
+    const resultado = await resposta.json();
+
+    // Verifica se o backend conseguiu encerrar a sessão.
+    if (!resposta.ok) {
+      throw new Error(resultado.erro || "Não foi possível encerrar a sessão.");
+    }
+
+    // Remove os dados locais depois da confirmação do backend.
+    [
+      "arborizaUsuario",
+      "login",
+      "idSetor",
+      "nome",
+      "nomeUsuario",
+      "nomeLogado"
+    ].forEach(chave => {
+      localStorage.removeItem(chave);
+    });
+
+    // Retorna à página de login.
+    window.location.replace("/login");
+
+  } catch (erro) {
+
+    console.error("Erro ao encerrar sessão:", erro);
+
+    alert("Não foi possível encerrar sua sessão. Tente novamente.");
+
+    botaoLogout.disabled = false;
+  }
 }
 
 // Liga as ações aos elementos depois que o sidebar carregar este script.

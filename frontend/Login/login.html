@@ -70,6 +70,114 @@
             <div class="form-message" id="formMessage" role="status" aria-live="polite"></div>
           </form>
 
+          <!-- Área de recuperação de senha -->
+          <section id="recoveryPanel" class="d-none">
+
+            <!-- Etapa 1: solicitar código -->
+            <div id="recoveryRequestStep">
+
+              <span class="eyebrow">RECUPERAÇÃO DE CONTA</span>
+              <h1>Esqueceu sua senha?</h1>
+              <p class="intro">
+                Informe seu e-mail para receber um código de recuperação.
+              </p>
+
+              <form id="requestRecoveryForm" novalidate>
+
+                <div class="field-group">
+                  <label for="recoveryEmail">E-mail</label>
+
+                  <div class="input-wrap">
+                    <i class="bi bi-envelope"></i>
+                    <input id="recoveryEmail" type="email" placeholder="voce@exemplo.com" autocomplete="email" required>
+                  </div>
+                </div>
+
+                <button class="submit-button" type="submit">
+                  Enviar código <i class="bi bi-send"></i>
+                </button>
+
+                <div class="form-message" id="recoveryRequestMessage" role="status" aria-live="polite">
+                </div>
+
+                <button type="button" id="backToLoginFromRequest" class="recovery-back-button">
+                  <i class="bi bi-arrow-left"></i> Voltar ao login
+                </button>
+
+              </form>
+            </div>
+
+            <!-- Etapa 2: redefinir senha -->
+            <div id="recoveryResetStep" class="d-none">
+
+              <span class="eyebrow">NOVA SENHA</span>
+              <h1>Redefinir senha</h1>
+
+              <p class="intro">
+                Informe o código enviado ao seu e-mail e escolha uma nova senha.
+              </p>
+
+              <p class="recovery-email-info">
+                Código enviado para: <strong id="recoveryEmailDisplay"></strong>
+              </p>
+
+              <form id="resetPasswordForm" novalidate>
+
+                <div class="field-group">
+                  <label for="recoveryCode">Código de recuperação</label>
+
+                  <div class="input-wrap">
+                    <i class="bi bi-shield-lock"></i>
+                    <input id="recoveryCode" type="text" placeholder="Digite os 6 dígitos" inputmode="numeric"
+                      maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code" required>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <label for="newPassword">Nova senha</label>
+
+                  <div class="input-wrap">
+                    <i class="bi bi-lock"></i>
+                    <input id="newPassword" type="password" placeholder="Digite sua nova senha"
+                      autocomplete="new-password" minlength="8" required>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <label for="confirmNewPassword">Confirmar nova senha</label>
+
+                  <div class="input-wrap">
+                    <i class="bi bi-lock-fill"></i>
+                    <input id="confirmNewPassword" type="password" placeholder="Repita sua nova senha"
+                      autocomplete="new-password" minlength="8" required>
+                  </div>
+                </div>
+
+                <button class="submit-button" type="submit">
+                  Redefinir senha <i class="bi bi-check2"></i>
+                </button>
+
+                <div class="form-message" id="resetPasswordMessage" role="status" aria-live="polite">
+                </div>
+
+                <button type="button" id="changeRecoveryEmail" class="recovery-back-button">
+                  <i class="bi bi-arrow-left"></i> Voltar
+                </button>
+
+              </form>
+
+              <div id="recoverySuccess" class="d-none recovery-success">
+                <i class="bi bi-check-circle-fill"></i>
+                <p>Sua senha foi redefinida com sucesso!</p>
+
+                <button type="button" id="finishRecovery" class="submit-button">
+                  Voltar ao login <i class="bi bi-arrow-right"></i>
+                </button>
+              </div>
+
+            </div>
+          </section>
+
           <!-- Área exibida quando a conta possui os dois perfis. -->
           <section id="profileChoice" class="d-none mt-4" aria-label="Escolha de perfil">
             <h2 class="h5">Como deseja acessar o Arboriza?</h2>

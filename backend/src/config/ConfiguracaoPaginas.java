@@ -1,6 +1,9 @@
+
 package config;
 
 import io.javalin.Javalin;
+import io.javalin.http.Context;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -13,6 +16,8 @@ public class ConfiguracaoPaginas {
     }
 
     public void registrarPaginas(Javalin servidorHttp) {
+
+        // PÁGINAS PÚBLICAS
         servidorHttp.get("/", ctx -> {
             Path arquivo = pastaFrontend.resolve("perfil_publico").resolve("index.html");
             ctx.html(Files.readString(arquivo));
@@ -50,39 +55,74 @@ public class ConfiguracaoPaginas {
             ctx.html(Files.readString(arquivo));
         });
 
-        // PERFIL PROFISSIONAL
-        servidorHttp.get("/perfil-profissional", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_profissional").resolve("inicial.html");
-            ctx.html(Files.readString(arquivo));
-        });
+        // PÁGINAS PROFISSIONAIS (PROTEGIDAS)
+        registrarPaginaProfissional(
+                servidorHttp, "/perfil-profissional", "inicial.html");
 
-        servidorHttp.get("/arvores", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_profissional").resolve("arvores.html");
-            ctx.html(Files.readString(arquivo));
-        });
+        registrarPaginaProfissional(
+                servidorHttp, "/arvores", "arvores.html");
 
-        servidorHttp.get("/equipes", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_profissional").resolve("equipes.html");
-            ctx.html(Files.readString(arquivo));
-        });
+        registrarPaginaProfissional(
+                servidorHttp, "/equipes", "equipes.html");
 
-        servidorHttp.get("/mapa-profissional", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_profissional").resolve("mapa-profissional.html");
-            ctx.html(Files.readString(arquivo));
-        });
+        registrarPaginaProfissional(
+                servidorHttp, "/mapa-profissional", "mapa-profissional.html");
 
-        servidorHttp.get("/ocorrencias", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_profissional").resolve("ocorrencias.html");
-            ctx.html(Files.readString(arquivo));
-        });
+        registrarPaginaProfissional(
+                servidorHttp, "/ocorrencias", "ocorrencias.html");
 
-        servidorHttp.get("/ordens-servico", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_profissional").resolve("ordens-servico.html");
-            ctx.html(Files.readString(arquivo));
-        });
+        registrarPaginaProfissional(
+                servidorHttp, "/ordens-servico", "ordens-servico.html");
 
-        servidorHttp.get("/relatorio", ctx -> {
-            Path arquivo = pastaFrontend.resolve("perfil_profissional").resolve("relatorio.html");
+        registrarPaginaProfissional(
+                servidorHttp, "/relatorio", "relatorio.html");
+    }
+
+    // VERIFICA SE O USUÁRIO ESTÁ AUTORIZADO COMO FUNCIONÁRIO
+    private boolean funcionarioAutorizado(Context ctx) {
+
+        var sessao = ctx.req().getSession(false);
+
+        if (sessao == null) {
+            return false;
+        }
+
+        Object usuarioId = sessao.getAttribute("usuarioId");
+        Object perfilAtivo = sessao.getAttribute("perfilAtivo");
+        Object perfis = sessao.getAttribute("perfis");
+
+        if (usuarioId == null) {
+            return false;
+        }
+
+        if (!"FUNCIONARIO".equals(perfilAtivo)) {
+            return false;
+        }
+
+        if (!(perfis instanceof java.util.List<?> listaPerfis)) {
+            return false;
+        }
+
+        return listaPerfis.contains("FUNCIONARIO");
+    }
+
+    // REGISTRA UMA PÁGINA PROFISSIONAL COM VERIFICAÇÃO DE ACESSO
+    private void registrarPaginaProfissional(
+            Javalin servidorHttp,
+            String rota,
+            String nomeArquivo) {
+
+        servidorHttp.get(rota, ctx -> {
+
+            if (!funcionarioAutorizado(ctx)) {
+                ctx.redirect("/login");
+                return;
+            }
+
+            Path arquivo = pastaFrontend
+                    .resolve("perfil_profissional")
+                    .resolve(nomeArquivo);
+
             ctx.html(Files.readString(arquivo));
         });
     }

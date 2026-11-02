@@ -252,4 +252,27 @@ public class ContaService {
 
         return conta;
     }
+
+    // Redefine a senha de uma conta
+    public void redefinirSenha(ObjectId contaId, String novaSenha) {
+
+        if (contaId == null) {
+            throw new IllegalArgumentException("A conta é obrigatória.");
+        }
+
+        if (novaSenha == null || novaSenha.isBlank()) {
+            throw new IllegalArgumentException("A nova senha é obrigatória.");
+        }
+
+        if (novaSenha.length() < 8) {
+            throw new IllegalArgumentException(
+                    "A senha deve possuir pelo menos 8 caracteres.");
+        }
+
+        // Criptografa a nova senha
+        String senhaHash = criptografarSenha(novaSenha);
+
+        // Atualiza a senha no MongoDB
+        contaRepository.atualizarSenha(contaId, senhaHash);
+    }
 }

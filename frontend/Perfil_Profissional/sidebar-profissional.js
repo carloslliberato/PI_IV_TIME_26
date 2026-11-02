@@ -3,36 +3,48 @@
 // Cada tela profissional inclui um elemento #sidebar-profissional. Este arquivo
 // carrega seu CSS independente, sem depender dos estilos do Perfil_Publico.
 
-(() => {
+(async () => {
 
-  // Lê os dados da sessão armazenados no navegador.
-  let usuario = null;
+  // Esconde a página enquanto verifica a sessão no backend.
+  document.documentElement.style.visibility = "hidden";
 
   try {
-    usuario = JSON.parse(
-      localStorage.getItem("arborizaUsuario") || "null"
-    );
-  } catch (error) {
-    localStorage.removeItem("arborizaUsuario");
-  }
 
-  // Verifica se existe uma sessão de login.
-  const loginValido =
-    localStorage.getItem("login") === "true" ||
-    usuario?.login === true;
+    // Consulta o backend para verificar a sessão HTTP do usuário.
+    const resposta = await fetch("/api/contas/sessao");
 
-  // Verifica se a conta possui o perfil de funcionário
-  // e se o usuário escolheu acessar como funcionário.
-  const possuiPerfilFuncionario =
-    usuario?.perfilAtivo === "FUNCIONARIO" &&
-    usuario?.perfis?.includes("FUNCIONARIO");
+    // Se não existir uma sessão válida, redireciona para o login.
+    if (!resposta.ok) {
+      window.location.replace("/login");
+      return;
+    }
 
-  // Somente usuários autenticados que escolheram o perfil FUNCIONARIO
-  // podem acessar as páginas profissionais.
-  if (!loginValido || !possuiPerfilFuncionario) {
-    document.documentElement.style.visibility = "hidden";
+    // Recupera os dados enviados pelo backend.
+    const usuario = await resposta.json();
+
+    // Verifica se o usuário possui o perfil de funcionário
+    // e se escolheu acessar o sistema como funcionário.
+    const possuiPerfilFuncionario =
+      usuario.perfilAtivo === "FUNCIONARIO" &&
+      usuario.perfis?.includes("FUNCIONARIO");
+
+    // Impede o acesso caso o perfil ativo não seja FUNCIONARIO.
+    if (!possuiPerfilFuncionario) {
+      window.location.replace("/login");
+      return;
+    }
+
+    // A sessão foi validada. Agora a página pode ser exibida.
+    document.documentElement.style.visibility = "visible";
+
+  } catch (erro) {
+
+    // Se ocorrer algum problema na comunicação com o backend,
+    // o acesso profissional não será liberado.
+    console.error("Erro ao verificar a sessão:", erro);
     window.location.replace("/login");
     return;
+
   }
 
   const container = document.getElementById("sidebar-profissional");
