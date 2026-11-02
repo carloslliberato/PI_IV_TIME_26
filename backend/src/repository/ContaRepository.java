@@ -1,23 +1,22 @@
-
 package repository;
 
-import model.Conta;
-
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.result.DeleteResult;
-import com.mongodb.client.result.UpdateResult;
-
-import org.bson.Document;
-import org.bson.types.ObjectId;
-
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import org.bson.Document;
+import org.bson.types.ObjectId;
+
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
 import static com.mongodb.client.model.Filters.eq;
+import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
+
+import model.Conta;
 
 public class ContaRepository implements Repository<Conta> {
 
@@ -195,5 +194,19 @@ public class ContaRepository implements Repository<Conta> {
             throw new IllegalArgumentException(
                     "Não foi possível encontrar a conta para atualizar a senha.");
         }
+    }
+
+    public Document buscarPorProtocolo(String protocolo) {
+        return colecao.find(Filters.eq("protocolo", protocolo)).first();
+    }
+
+    public boolean atualizarPrioridade(String id, String novaUrgencia) {
+        return colecao.updateOne(
+                Filters.eq("_id", id),
+                Updates.combine(
+                        Updates.set("urgencia", novaUrgencia),
+                        Updates.set("atualizadoEm", Instant.now().toString())
+                )
+        ).getModifiedCount() > 0;
     }
 }

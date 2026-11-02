@@ -1,22 +1,23 @@
 package config;
 
-import service.ConexaoServidor;
-import service.ContaService;
-import service.RecuperacaoSenhaService;
-import service.ServicoEmail;
-
-import io.javalin.Javalin;
-
 import controller.ContaController;
-
+import controller.OcorrenciaController;
+import io.javalin.Javalin;
 import repository.ContaRepository;
 import repository.MunicipioRepository;
+import repository.OcorrenciaRepository;
 import repository.RecuperacaoSenhaRepository;
+import service.ConexaoServidor;
+import service.ContaService;
+import service.OcorrenciaService;
+import service.RecuperacaoSenhaService;
+import service.ServicoEmail;
 
 // configuração das rotas das APIs
 public class ConfiguracaoRotas {
 
     private final ContaController contaController;
+    private final OcorrenciaController ocorrenciaController;
 
     public ConfiguracaoRotas(ConexaoServidor conexaoServidor) {
 
@@ -40,6 +41,12 @@ public class ConfiguracaoRotas {
         this.contaController = new ContaController(
                 contaService,
                 recuperacaoSenhaService);
+
+        // Inicialização do módulo ocorrências
+        OcorrenciaRepository ocorrenciaRepository = new OcorrenciaRepository();
+        OcorrenciaService ocorrenciaService = new OcorrenciaService(ocorrenciaRepository);
+        ocorrenciaService.popularDadosDeTesteSeVazio();
+        this.ocorrenciaController = new OcorrenciaController(ocorrenciaService);
     }
 
     public void registrarRotas(Javalin servidorHttp) {
@@ -74,6 +81,35 @@ public class ConfiguracaoRotas {
         
         servidorHttp.post("/api/contas/recuperacao-senha", ctx -> {
             contaController.solicitarRecuperacao(ctx);
+        });
+
+        // Rotas de Ocorrências e Chamados (Pessoa 3)
+        servidorHttp.post("/api/ocorrencias", ctx -> {
+            ocorrenciaController.abrirChamado(ctx);
+        });
+
+        servidorHttp.get("/api/ocorrencias", ctx -> {
+            ocorrenciaController.listarOcorrencias(ctx);
+        });
+
+        servidorHttp.get("/api/ocorrencias/minhas", ctx -> {
+            ocorrenciaController.listarMinhasOcorrencias(ctx);
+        });
+
+        servidorHttp.get("/api/ocorrencias/protocolo/{protocolo}", ctx -> {
+            ocorrenciaController.consultarPorProtocolo(ctx);
+        });
+
+        servidorHttp.get("/api/ocorrencias/{id}", ctx -> {
+            ocorrenciaController.consultarPorId(ctx);
+        });
+
+        servidorHttp.patch("/api/ocorrencias/{id}/status", ctx -> {
+            ocorrenciaController.atualizarStatus(ctx);
+        });
+
+        servidorHttp.patch("/api/ocorrencias/{id}/prioridade", ctx -> {
+            ocorrenciaController.atualizarPrioridade(ctx);
         });
     }
 }

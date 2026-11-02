@@ -47,7 +47,7 @@ project(':backend') {
         }
     }
 
-    dependencies {
+   dependencies {
         // Bibliotecas úteis caso o backend suba a API REST para o frontend
         implementation 'io.javalin:javalin:6.3.0'
         implementation 'com.google.code.gson:gson:2.11.0'
@@ -55,7 +55,9 @@ project(':backend') {
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.13.4'
         implementation 'org.mindrot:jbcrypt:0.4'
         implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
-        // Envio de e-mails pelo protocolo SMTP
+    
+        // Envio de e-mails pelo protocolo SMTP (API do Jakarta Mail + Provedor Eclipse Angus)
+        implementation 'jakarta.mail:jakarta.mail-api:2.1.3'
         implementation 'org.eclipse.angus:angus-mail:2.0.3'
         implementation 'io.github.cdimascio:dotenv-java:3.2.0'
     }
