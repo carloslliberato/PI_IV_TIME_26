@@ -25,7 +25,10 @@
             <h1 id="serviceOrdersPageTitle">Ordens de serviço</h1>
             <p>Consulte os serviços destinados às equipes do município.</p>
           </div>
-          <span class="service-orders-municipality"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i><span id="serviceOrdersMunicipality">Campinas - SP</span></span>
+          <div class="service-orders-heading-actions">
+            <!-- Abre o formulário para registrar uma ordem antes dos filtros da página. -->
+            <button class="service-orders-create-button" id="openCreateServiceOrderModal" type="button"><i class="bi bi-clipboard-plus" aria-hidden="true"></i>Criar ordem de serviço</button>
+          </div>
         </header>
 
         <!-- Permite pesquisar por diferentes campos, ordenar por data e filtrar pelo status. -->
@@ -92,6 +95,34 @@
     <section class="service-order-modal-card">
       <button class="service-order-modal-close" id="closeServiceOrderModal" type="button" aria-label="Fechar detalhes da ordem"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
       <div id="serviceOrderModalContent"></div>
+    </section>
+  </div>
+
+  <!-- Modal para preencher os dados básicos de uma nova ordem de serviço. -->
+  <div class="service-order-modal-backdrop" id="createServiceOrderModal" role="dialog" aria-modal="true" aria-labelledby="createServiceOrderModalTitle" hidden>
+    <section class="service-order-modal-card service-order-create-card">
+      <button class="service-order-modal-close" id="closeCreateServiceOrderModal" type="button" aria-label="Fechar criação da ordem"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+      <header class="service-order-detail-heading">
+        <span class="service-order-detail-icon"><i class="bi bi-clipboard-plus" aria-hidden="true"></i></span>
+        <div><span class="service-order-detail-eyebrow">NOVA ORDEM · <span id="createServiceOrderMunicipality"></span></span><h2 id="createServiceOrderModalTitle">Criar ordem de serviço</h2></div>
+      </header>
+      <p class="service-order-create-intro">Informe os dados do serviço. A ordem será vinculada ao município exibido acima e ficará apenas nesta demonstração até a integração com a API.</p>
+      <form class="service-order-create-form" id="createServiceOrderForm">
+        <label>Ocorrência vinculada<input name="occurrenceId" maxlength="40" placeholder="Ex.: OC-2026-0242" required></label>
+        <label>Tipo de ocorrência<input name="occurrenceType" maxlength="100" placeholder="Ex.: Galho quebrado" required></label>
+        <label>Equipe designada <span>(opcional)</span><input name="team" maxlength="100" placeholder="Deixe vazio para aguardar equipe"></label>
+        <label>Nível de risco<select name="risk" required><option value="">Selecione o risco</option><option>Baixo</option><option>Médio</option><option>Alto</option><option>Crítico</option></select></label>
+        <label>Árvore<input name="tree" maxlength="100" placeholder="Espécie ou identificação" required></label>
+        <label>ID da árvore<input name="treeId" maxlength="40" placeholder="Ex.: 10234" required></label>
+        <label>Bairro<input name="neighborhood" maxlength="100" required></label>
+        <label>Endereço<input name="address" maxlength="180" required></label>
+        <label class="service-order-create-wide">Descrição do serviço<textarea name="description" rows="4" maxlength="1000" required placeholder="Descreva o trabalho que deverá ser realizado"></textarea></label>
+        <p class="service-order-create-feedback" id="createServiceOrderFeedback" role="status" aria-live="polite"></p>
+        <div class="service-order-create-actions">
+          <button class="service-order-cancel-button" id="cancelCreateServiceOrder" type="button">Cancelar</button>
+          <button class="service-orders-create-button" type="submit"><i class="bi bi-check2-circle" aria-hidden="true"></i>Salvar ordem</button>
+        </div>
+      </form>
     </section>
   </div>
 

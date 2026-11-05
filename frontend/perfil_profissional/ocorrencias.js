@@ -275,7 +275,6 @@ function setupOccurrencePageEvents() {
 // Inicializa município demonstrativo, filtros, tabela e eventos da página.
 // FUTURO API/BD: obter município do perfil autenticado e carregar apenas suas ocorrências.
 function initializeOccurrencePage() {
-  document.getElementById("occurrencesMunicipality").textContent = occurrenceDemoData.municipality.name;
   setupOccurrencePageEvents();
   renderOccurrencesTable();
 }

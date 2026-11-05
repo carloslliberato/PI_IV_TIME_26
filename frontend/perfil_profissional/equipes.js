@@ -48,11 +48,14 @@ const teamsDemoData = {
 
 // Guarda os elementos estáticos que são atualizados durante a navegação pela tela.
 const teamsPage = {
-  municipality: document.getElementById("teamsMunicipality"),
   search: document.getElementById("teamsSearch"),
   tableBody: document.getElementById("teamsTableBody"),
   resultCount: document.getElementById("teamsResultCount"),
   emptyState: document.getElementById("teamsEmpty"),
+  createModal: document.getElementById("createTeamModal"),
+  createForm: document.getElementById("createTeamForm"),
+  createMunicipality: document.getElementById("createTeamMunicipality"),
+  createFeedback: document.getElementById("createTeamFeedback"),
   detailsModal: document.getElementById("teamDetailsModal"),
   detailsContent: document.getElementById("teamDetailsContent"),
   employeeModal: document.getElementById("employeeModal"),
@@ -64,6 +67,7 @@ const teamsPage = {
 let selectedTeamId = null;
 let teamsToastTimer = null;
 let employeeRequestInProgress = false;
+let teamRequestInProgress = false;
 
 // Escapa os dados da demonstração antes de inseri-los como HTML.
 function escapeTeamText(value) {
@@ -105,6 +109,104 @@ function renderTeamsTable() {
 
   teamsPage.resultCount.textContent = `${teams.length} ${teams.length === 1 ? "equipe encontrada" : "equipes encontradas"}`;
   teamsPage.emptyState.hidden = teams.length > 0;
+}
+
+// Abre o cadastro e mostra a qual município a equipe será vinculada.
+function openCreateTeamModal() {
+  teamsPage.createMunicipality.textContent = teamsDemoData.municipality.name;
+  teamsPage.createFeedback.textContent = "";
+  teamsPage.createFeedback.classList.remove("is-error");
+  teamsPage.createForm.reset();
+  teamsPage.createModal.hidden = false;
+  document.body.classList.add("teams-modal-open");
+  teamsPage.createForm.elements.name.focus();
+}
+
+// Fecha o cadastro e devolve o foco ao botão que abriu o modal.
+function closeCreateTeamModal() {
+  teamsPage.createModal.hidden = true;
+  document.body.classList.remove("teams-modal-open");
+  document.getElementById("openCreateTeamModal").focus();
+}
+
+// Envia os dados da nova equipe à API e atualiza a tabela com o registro persistido.
+// PONTO DE INTEGRAÇÃO API/BD: POST /api/equipes deve validar a sessão e gravar municipioId,
+// nome, regiaoAtuacao e gestor; a resposta deve conter a equipe criada e seu ID persistente.
+async function submitTeamCreation(form) {
+  if (teamRequestInProgress) return;
+
+  // Lê os campos, remove espaços extras e associa o município selecionado na sessão.
+  const formData = new FormData(form);
+  const teamPayload = {
+    municipioId: teamsDemoData.municipality.id,
+    nome: String(formData.get("name") || "").trim(),
+    regiaoAtuacao: String(formData.get("region") || "").trim(),
+    gestor: String(formData.get("manager") || "").trim()
+  };
+  const feedback = teamsPage.createFeedback;
+  const saveButton = form.querySelector("button[type='submit']");
+
+  // Verifica campos após trim para não aceitar valores compostos apenas por espaços.
+  if (!teamPayload.nome || !teamPayload.regiaoAtuacao || !teamPayload.gestor) {
+    feedback.textContent = "Preencha o nome, a região de atuação e o gestor da equipe.";
+    feedback.classList.add("is-error");
+    return;
+  }
+
+  // Bloqueia envios repetidos e informa que a solicitação está sendo processada.
+  teamRequestInProgress = true;
+  saveButton.disabled = true;
+  saveButton.innerHTML = '<i class="bi bi-arrow-repeat" aria-hidden="true"></i>Salvando...';
+  feedback.textContent = "Enviando os dados da equipe para o servidor...";
+  feedback.classList.remove("is-error");
+
+  try {
+    // PONTO DE ENVIO AO BANCO: o backend deve persistir o payload desta requisição em POST /api/equipes.
+    const response = await fetch("/api/equipes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(teamPayload)
+    });
+    if (!response.ok) throw new Error(`O servidor respondeu com status ${response.status}.`);
+
+    // Lê o registro persistido que a API retorna para usar o ID oficial na tabela.
+    const responseText = await response.text();
+    let responseData;
+    try {
+      responseData = JSON.parse(responseText);
+    } catch {
+      throw new Error("O servidor não retornou os dados da equipe em formato JSON.");
+    }
+    const savedTeam = responseData.equipe || responseData;
+    if (!savedTeam.id) throw new Error("A resposta do servidor não contém o ID da equipe criada.");
+
+    // Converte os dados da API para o modelo usado nesta tela e atualiza a lista municipal.
+    teamsDemoData.teams.unshift({
+      id: String(savedTeam.id),
+      municipalityId: teamPayload.municipioId,
+      name: savedTeam.nome || teamPayload.nome,
+      region: savedTeam.regiaoAtuacao || teamPayload.regiaoAtuacao,
+      status: savedTeam.status || "Disponível",
+      manager: savedTeam.gestor || teamPayload.gestor,
+      employees: []
+    });
+    teamsPage.search.value = "";
+    renderTeamsTable();
+    closeCreateTeamModal();
+    showTeamsToast("Equipe criada com sucesso.");
+  } catch (error) {
+    // Mantém o modal aberto e apresenta o motivo para permitir corrigir ou tentar novamente.
+    feedback.textContent = `Não foi possível criar a equipe. ${error.message} Verifique a conexão com o servidor e tente novamente.`;
+    feedback.classList.add("is-error");
+  } finally {
+    // Libera o botão mesmo quando a chamada falha.
+    teamRequestInProgress = false;
+    if (saveButton.isConnected) {
+      saveButton.disabled = false;
+      saveButton.innerHTML = '<i class="bi bi-check2-circle" aria-hidden="true"></i>Salvar equipe';
+    }
+  }
 }
 
 // Encontra a equipe atualmente selecionada na lista fictícia local.
@@ -315,9 +417,18 @@ function showTeamsToast(message) {
   teamsToastTimer = window.setTimeout(() => { teamsPage.toast.hidden = true; }, 3600);
 }
 
-// Conecta a tabela, os modais, a submissão do funcionário e o direcionamento de ordens.
+// Conecta a busca, criação da equipe, modais de detalhes e ações existentes.
 function setupTeamsPageEvents() {
   teamsPage.search.addEventListener("input", renderTeamsTable);
+  document.getElementById("openCreateTeamModal").addEventListener("click", openCreateTeamModal);
+  document.getElementById("closeCreateTeamModal").addEventListener("click", closeCreateTeamModal);
+  teamsPage.createModal.addEventListener("click", event => {
+    if (event.target === teamsPage.createModal) closeCreateTeamModal();
+  });
+  teamsPage.createForm.addEventListener("submit", event => {
+    event.preventDefault();
+    submitTeamCreation(event.currentTarget);
+  });
   teamsPage.tableBody.addEventListener("click", event => {
     const trigger = event.target.closest("[data-open-team]");
     if (trigger) openTeamDetails(trigger.dataset.openTeam);
@@ -348,9 +459,10 @@ function setupTeamsPageEvents() {
     if (event.target === teamsPage.ordersModal) teamsPage.ordersModal.hidden = true;
   });
 
-  // A ficha de funcionário não pode ser dispensada sem salvar; a ordem modal tem Escape normal.
+  // Fecha o cadastro comum com Escape, mas preserva o modal obrigatório de funcionário.
   document.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;
+    if (!teamsPage.createModal.hidden) { closeCreateTeamModal(); return; }
     if (!teamsPage.employeeModal.hidden) { event.preventDefault(); return; }
     if (!teamsPage.ordersModal.hidden) { teamsPage.ordersModal.hidden = true; return; }
     if (!teamsPage.detailsModal.hidden) closeTeamDetails();
@@ -360,7 +472,6 @@ function setupTeamsPageEvents() {
 // Prepara o município demonstrativo, instala os eventos e renderiza a tabela inicial.
 // FUTURO API/BD: resolver o município pela sessão autenticada e carregar as equipes relacionadas ao setor.
 function initializeTeamsPage() {
-  teamsPage.municipality.textContent = teamsDemoData.municipality.name;
   setupTeamsPageEvents();
   renderTeamsTable();
 }

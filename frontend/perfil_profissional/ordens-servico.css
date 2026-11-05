@@ -1,10 +1,12 @@
 /* Alinha o cabeçalho da página e apresenta o município dos registros. */
 .service-orders-page { padding-top: 35px; }
-.service-orders-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
-.service-orders-heading h1 { margin: 8px 0 6px; color: #18251e; font-size: clamp(28px, 3vw, 38px); font-weight: 850; letter-spacing: -.04em; }
-.service-orders-heading p { margin: 0; color: #718078; font-size: 14px; }
-.service-orders-municipality { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 9px 12px; border: 1px solid #e1ebe5; border-radius: 999px; background: #f7faf8; color: #557061; font-size: 12px; font-weight: 700; white-space: nowrap; }
-.service-orders-municipality i { color: #28734f; }
+.service-orders-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 25px; }
+.service-orders-heading h1 { margin: 6px 0 0; color: #1d2d24; font-size: 31px; font-weight: 820; letter-spacing: -.04em; }
+.service-orders-heading p { margin: 7px 0 0; color: #718078; font-size: 14px; }
+.service-orders-heading-actions { display: flex; align-items: center; }
+.service-orders-create-button { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 10px 15px; border: 1px solid transparent; border-radius: 10px; background: #176344; color: #fff; box-shadow: 0 4px 10px rgba(22, 97, 67, .12); font: inherit; font-size: 13px; font-weight: 750; cursor: pointer; transition: background .18s, border-color .18s, transform .18s; }
+.service-orders-create-button:hover { transform: translateY(-1px); background: #0f503a; }
+.service-orders-create-button:focus-visible, .service-order-cancel-button:focus-visible { outline: 3px solid rgba(29, 118, 81, .25); outline-offset: 2px; }
 
 /* Organiza o campo de busca, o seletor de data e o filtro por status. */
 .service-orders-toolbar { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(180px, 220px) minmax(190px, 240px); gap: 12px; margin-bottom: 20px; }
@@ -67,15 +69,31 @@
 .service-order-not-completed { display: flex; align-items: flex-start; gap: 8px; margin-top: 16px; padding: 13px 15px; border: 1px solid #e8ede9; border-radius: 10px; color: #75837a; font-size: 11px; line-height: 1.5; }
 .service-order-not-completed i { color: #73917e; }
 
-/* Adapta a apresentação dos filtros e da janela de detalhes para celular. */
+/* Organiza os campos do cadastro da nova ordem e sinaliza o resultado da ação. */
+.service-order-create-intro { margin: 17px 0 0; color: #718078; font-size: 12px; line-height: 1.5; }
+.service-order-create-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px 15px; margin-top: 19px; }
+.service-order-create-form label { display: flex; flex-direction: column; gap: 6px; color: #526158; font-size: 11px; font-weight: 750; }
+.service-order-create-form label span { display: inline; color: #87928b; font-weight: 500; }
+.service-order-create-form input, .service-order-create-form select, .service-order-create-form textarea { width: 100%; min-width: 0; border: 1px solid #dce6df; border-radius: 8px; background: #fff; color: #34443a; font: inherit; font-size: 12px; }
+.service-order-create-form input, .service-order-create-form select { height: 42px; padding: 0 11px; }
+.service-order-create-form textarea { min-height: 98px; padding: 11px; resize: vertical; }
+.service-order-create-form input:focus, .service-order-create-form select:focus, .service-order-create-form textarea:focus { border-color: #91b8a0; outline: 0; box-shadow: 0 0 0 3px rgba(29, 118, 81, .1); }
+.service-order-create-wide { grid-column: 1 / -1; }
+.service-order-create-feedback { grid-column: 1 / -1; margin: 0; color: #28734f; font-size: 12px; }
+.service-order-create-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 9px; }
+.service-order-cancel-button { min-height: 44px; padding: 0 16px; border: 1px solid #dce6df; border-radius: 10px; background: #fff; color: #536258; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.service-order-cancel-button:hover { background: #f5f8f6; }
+
+/* Adapta a apresentação do cabeçalho, filtros e modais para telas menores. */
 @media (max-width: 900px) {
   .service-orders-toolbar { grid-template-columns: minmax(220px, 1fr) minmax(170px, 210px); }
   .service-orders-search { grid-column: 1 / -1; }
 }
 @media (max-width: 720px) {
   .service-orders-page { padding-top: 22px; }
-  .service-orders-heading { flex-direction: column; gap: 10px; }
-  .service-orders-municipality { margin-top: 0; }
+  .service-orders-heading { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .service-orders-heading-actions { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .service-orders-create-button { width: 100%; }
   .service-orders-toolbar { grid-template-columns: 1fr; gap: 9px; }
   .service-orders-search { grid-column: auto; }
   .service-orders-card-heading { align-items: flex-start; flex-direction: column; padding: 15px; }
@@ -84,4 +102,8 @@
   .service-order-detail-heading h2 { font-size: 18px; }
   .service-order-detail-grid { grid-template-columns: 1fr; }
   .service-order-detail-wide { grid-column: auto; }
+  .service-order-create-form { grid-template-columns: 1fr; }
+  .service-order-create-wide { grid-column: auto; }
+  .service-order-create-feedback, .service-order-create-actions { grid-column: auto; }
+  .service-order-create-actions { flex-direction: column-reverse; }
 }

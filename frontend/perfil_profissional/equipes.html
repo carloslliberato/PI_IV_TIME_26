@@ -25,10 +25,13 @@
             <h1 id="teamsPageTitle">Equipes</h1>
             <p>Consulte as equipes, seus integrantes e as ordens de serviço destinadas ao município.</p>
           </div>
-          <span class="teams-municipality"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i><span id="teamsMunicipality">Campinas - SP</span></span>
+          <div class="teams-heading-actions">
+            <!-- Abre o formulário de criação de equipe antes da busca. -->
+            <button class="teams-create-button" id="openCreateTeamModal" type="button"><i class="bi bi-people-fill" aria-hidden="true"></i>Criar equipe</button>
+          </div>
         </header>
 
-        <!-- A busca filtra as equipes por identificação, nome, região ou gestor. -->
+        <!-- A busca funciona como filtro das equipes por identificação, nome, região ou gestor. -->
         <label class="teams-search" for="teamsSearch">
           <i class="bi bi-search" aria-hidden="true"></i>
           <span class="visually-hidden">Buscar equipe</span>
@@ -66,6 +69,24 @@
     <section class="teams-modal-card">
       <button class="teams-modal-close" id="closeTeamDetails" type="button" aria-label="Fechar detalhes da equipe"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
       <div id="teamDetailsContent"></div>
+    </section>
+  </div>
+
+  <!-- Modal para informar os dados básicos de uma equipe municipal. -->
+  <div class="teams-modal-backdrop" id="createTeamModal" role="dialog" aria-modal="true" aria-labelledby="createTeamModalTitle" hidden>
+    <section class="teams-modal-card create-team-modal-card">
+      <button class="teams-modal-close" id="closeCreateTeamModal" type="button" aria-label="Fechar criação de equipe"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+      <header class="create-team-heading">
+        <span class="create-team-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
+        <div><span>EQUIPE MUNICIPAL</span><h2 id="createTeamModalTitle">Criar equipe</h2><p>Informe os dados para cadastrar uma equipe em <strong id="createTeamMunicipality"></strong>.</p></div>
+      </header>
+      <form id="createTeamForm" novalidate>
+        <label>Nome da equipe<input name="name" required maxlength="100" placeholder="Ex.: Equipe Leste"></label>
+        <label>Região de atuação<input name="region" required maxlength="160" placeholder="Ex.: bairros da região Leste"></label>
+        <label>Gestor responsável<input name="manager" required maxlength="120" placeholder="Nome completo do gestor"></label>
+        <p class="create-team-feedback" id="createTeamFeedback" role="status" aria-live="polite"></p>
+        <button class="team-primary-button create-team-submit" type="submit"><i class="bi bi-check2-circle" aria-hidden="true"></i>Salvar equipe</button>
+      </form>
     </section>
   </div>
 
