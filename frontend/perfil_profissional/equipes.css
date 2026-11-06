@@ -1,10 +1,12 @@
 /* Estrutura geral, cabeçalho da página e identificação do município. */
 .teams-page { padding-top: 35px; }
-.teams-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 23px; }
-.teams-heading h1 { margin: 8px 0 6px; color: #18251e; font-size: clamp(28px, 3vw, 38px); font-weight: 850; letter-spacing: -.04em; }
-.teams-heading p { margin: 0; color: #718078; font-size: 14px; }
-.teams-municipality { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 9px 12px; border: 1px solid #e1ebe5; border-radius: 999px; background: #f7faf8; color: #557061; font-size: 12px; font-weight: 700; white-space: nowrap; }
-.teams-municipality i { color: #28734f; }
+.teams-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 25px; }
+.teams-heading h1 { margin: 6px 0 0; color: #1d2d24; font-size: 31px; font-weight: 820; letter-spacing: -.04em; }
+.teams-heading p { margin: 7px 0 0; color: #718078; font-size: 14px; }
+.teams-heading-actions { display: flex; align-items: center; }
+.teams-create-button { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 10px 15px; border: 1px solid transparent; border-radius: 10px; background: #176344; color: #fff; box-shadow: 0 4px 10px rgba(22, 97, 67, .12); font: inherit; font-size: 13px; font-weight: 750; cursor: pointer; transition: background .18s, border-color .18s, transform .18s; }
+.teams-create-button:hover { transform: translateY(-1px); background: #0f503a; }
+.teams-create-button:focus-visible { outline: 3px solid rgba(29, 118, 81, .25); outline-offset: 2px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
 
 /* Campo de busca para localizar equipes pelo ID, nome, região ou gestor. */
@@ -46,6 +48,22 @@
 .teams-modal-close { position: absolute; z-index: 2; top: 15px; right: 15px; width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid #e7ece9; border-radius: 50%; background: #fff; color: #64716a; cursor: pointer; }
 .teams-modal-close:hover { border-color: #bdd2c4; background: #f4f8f5; color: #176344; }
 .teams-nested-modal { z-index: 1300; }
+
+/* Organiza o formulário de criação e os estados de envio/erro da equipe. */
+.create-team-modal-card { width: min(560px, 100%); }
+.create-team-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-right: 42px; }
+.create-team-icon { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; border-radius: 12px; background: #e8f3ee; color: #176344; font-size: 18px; }
+.create-team-heading > div > span { color: #7b8a80; font-size: 9px; font-weight: 800; letter-spacing: .06em; }
+.create-team-heading h2 { margin: 3px 0; color: #27372e; font-size: 19px; }
+.create-team-heading p { margin: 0; color: #7b8880; font-size: 11px; line-height: 1.5; }
+.create-team-heading p strong { color: #526158; }
+#createTeamForm { display: grid; gap: 12px; }
+#createTeamForm > label { display: grid; gap: 6px; color: #58675e; font-size: 11px; font-weight: 700; }
+#createTeamForm input { width: 100%; min-width: 0; height: 42px; padding: 0 11px; border: 1px solid #dce6df; border-radius: 8px; background: #fff; color: #3f4d45; font: inherit; font-size: 12px; }
+#createTeamForm input:focus { border-color: #91b8a0; outline: 3px solid rgba(29, 118, 81, .1); }
+.create-team-feedback { min-height: 15px; margin: 0; color: #38724e; font-size: 11px; line-height: 1.45; }
+.create-team-feedback.is-error { color: #b63127; }
+.create-team-submit { width: 100%; min-height: 44px; font-size: 12px; }
 
 /* Resumo e identidade da equipe selecionada. */
 .team-detail-heading { display: flex; align-items: center; gap: 14px; padding: 1px 48px 18px 0; }
@@ -119,8 +137,9 @@
 /* Ajusta tabela e modais para tablets e celulares. */
 @media (max-width: 760px) {
   .teams-page { padding-top: 22px; }
-  .teams-heading { flex-direction: column; gap: 10px; }
-  .teams-municipality { margin-top: 0; }
+  .teams-heading { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .teams-heading-actions { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .teams-create-button { width: 100%; }
   .teams-card-heading { align-items: flex-start; flex-direction: column; padding: 15px; }
   .teams-modal-backdrop { align-items: flex-start; padding: 10px; }
   .teams-modal-card { max-height: calc(100vh - 20px); padding: 21px 16px; }

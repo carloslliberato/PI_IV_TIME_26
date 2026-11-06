@@ -51,7 +51,6 @@ const serviceOrdersDemoData = {
 
 // Guarda os elementos da página usados por filtros, tabela e modal.
 const serviceOrdersPage = {
-  municipality: document.getElementById("serviceOrdersMunicipality"),
   search: document.getElementById("serviceOrdersSearch"),
   sort: document.getElementById("serviceOrdersSort"),
   statusFilter: document.getElementById("serviceOrdersStatusFilter"),
@@ -59,7 +58,11 @@ const serviceOrdersPage = {
   resultCount: document.getElementById("serviceOrdersResultCount"),
   emptyState: document.getElementById("serviceOrdersEmpty"),
   modal: document.getElementById("serviceOrderModal"),
-  modalContent: document.getElementById("serviceOrderModalContent")
+  modalContent: document.getElementById("serviceOrderModalContent"),
+  createModal: document.getElementById("createServiceOrderModal"),
+  createForm: document.getElementById("createServiceOrderForm"),
+  createFeedback: document.getElementById("createServiceOrderFeedback"),
+  createMunicipality: document.getElementById("createServiceOrderMunicipality")
 };
 
 // Escapa texto antes de inserir conteúdo dinâmico na tabela ou na janela de detalhes.
@@ -169,7 +172,85 @@ function closeServiceOrderDetails() {
   document.body.classList.remove("service-order-modal-open");
 }
 
-// Liga busca, ordenação, filtro de status e abertura/fechamento dos detalhes.
+// Mostra o formulário de criação e identifica o município ao qual a ordem ficará vinculada.
+function openCreateServiceOrderModal() {
+  serviceOrdersPage.createMunicipality.textContent = serviceOrdersDemoData.municipality.name;
+  serviceOrdersPage.createFeedback.textContent = "";
+  serviceOrdersPage.createModal.hidden = false;
+  document.body.classList.add("service-order-modal-open");
+  serviceOrdersPage.createForm.elements.occurrenceId.focus();
+}
+
+// Fecha o formulário e devolve o foco ao botão que o abriu.
+function closeCreateServiceOrderModal() {
+  serviceOrdersPage.createModal.hidden = true;
+  document.body.classList.remove("service-order-modal-open");
+  document.getElementById("openCreateServiceOrderModal").focus();
+}
+
+// Gera um identificador sequencial para manter o formato das ordens demonstrativas.
+function createServiceOrderId() {
+  const year = new Date().getFullYear();
+  const yearPrefix = `OS-${year}-`;
+  const highestNumber = serviceOrdersDemoData.orders.reduce((highest, order) => {
+    if (!order.id.startsWith(yearPrefix)) return highest;
+    return Math.max(highest, Number(order.id.slice(yearPrefix.length)) || 0);
+  }, 0);
+  return `${yearPrefix}${String(highestNumber + 1).padStart(4, "0")}`;
+}
+
+// Valida os campos e prepara os dados da nova ordem no formato usado pela interface.
+function createServiceOrderFromForm(form) {
+  const formData = new FormData(form);
+  const orderData = {
+    occurrenceId: String(formData.get("occurrenceId") || "").trim(),
+    occurrenceType: String(formData.get("occurrenceType") || "").trim(),
+    team: String(formData.get("team") || "").trim(),
+    risk: String(formData.get("risk") || "").trim(),
+    tree: String(formData.get("tree") || "").trim(),
+    treeId: String(formData.get("treeId") || "").trim(),
+    neighborhood: String(formData.get("neighborhood") || "").trim(),
+    address: String(formData.get("address") || "").trim(),
+    description: String(formData.get("description") || "").trim()
+  };
+  const requiredValues = [
+    orderData.occurrenceId, orderData.occurrenceType, orderData.risk, orderData.tree,
+    orderData.treeId, orderData.neighborhood, orderData.address, orderData.description
+  ];
+
+  // Impede que campos obrigatórios preenchidos apenas com espaços sejam aceitos.
+  if (requiredValues.some(value => !value)) {
+    serviceOrdersPage.createFeedback.textContent = "Preencha todos os campos obrigatórios.";
+    return;
+  }
+
+  // Define a data, o identificador e o status inicial conforme haja equipe designada.
+  const order = {
+    id: createServiceOrderId(),
+    municipalityId: serviceOrdersDemoData.municipality.id,
+    ...orderData,
+    team: orderData.team || "Aguardando equipe",
+    status: orderData.team ? "Pendente" : "Aguardando equipe",
+    createdAt: new Date().toISOString().slice(0, 10),
+    startedAt: null,
+    completedAt: null,
+    completionComment: ""
+  };
+
+  // PONTO DE INTEGRAÇÃO API/BD: enviar os dados de order em POST /api/ordens-servico
+  // quando o endpoint existir, convertendo a equipe informada em equipeId; a lista é demonstrativa.
+  serviceOrdersDemoData.orders.unshift(order);
+
+  // Limpa os filtros para que a ordem recém-adicionada apareça imediatamente na tabela.
+  serviceOrdersPage.search.value = "";
+  serviceOrdersPage.statusFilter.value = "all";
+  serviceOrdersPage.sort.value = "recent";
+  renderServiceOrdersTable();
+  closeCreateServiceOrderModal();
+  serviceOrdersPage.resultCount.textContent = `Ordem ${order.id} criada nesta demonstração local.`;
+}
+
+// Liga filtros, abertura/fechamento dos detalhes e todos os controles do formulário de criação.
 function setupServiceOrdersEvents() {
   serviceOrdersPage.search.addEventListener("input", renderServiceOrdersTable);
   serviceOrdersPage.sort.addEventListener("change", renderServiceOrdersTable);
@@ -184,15 +265,25 @@ function setupServiceOrdersEvents() {
   serviceOrdersPage.modal.addEventListener("click", event => {
     if (event.target === serviceOrdersPage.modal) closeServiceOrderDetails();
   });
+  document.getElementById("openCreateServiceOrderModal").addEventListener("click", openCreateServiceOrderModal);
+  document.getElementById("closeCreateServiceOrderModal").addEventListener("click", closeCreateServiceOrderModal);
+  document.getElementById("cancelCreateServiceOrder").addEventListener("click", closeCreateServiceOrderModal);
+  serviceOrdersPage.createModal.addEventListener("click", event => {
+    if (event.target === serviceOrdersPage.createModal) closeCreateServiceOrderModal();
+  });
+  serviceOrdersPage.createForm.addEventListener("submit", event => {
+    event.preventDefault();
+    createServiceOrderFromForm(event.currentTarget);
+  });
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && !serviceOrdersPage.modal.hidden) closeServiceOrderDetails();
+    if (event.key === "Escape" && !serviceOrdersPage.createModal.hidden) closeCreateServiceOrderModal();
   });
 }
 
 // Inicializa o município demonstrativo, instala os eventos e apresenta os registros recentes.
 // FUTURO API/BD: buscar o município vinculado ao setor da sessão autenticada antes de carregar a lista.
 function initializeServiceOrdersPage() {
-  serviceOrdersPage.municipality.textContent = serviceOrdersDemoData.municipality.name;
   setupServiceOrdersEvents();
   renderServiceOrdersTable();
 }
