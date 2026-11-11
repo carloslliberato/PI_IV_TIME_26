@@ -1,94 +1,117 @@
-# 1. O que cada pasta em backend representa?
-    - src/ Reúne o código-fonte Java do backend
-    - controller/ Recebe e interpreta as requisições feitas à API
-    - service/ Contém as regras de negócios, como as validações para cadastrar uma árvore.
-    - repository/ Responsável pelo acesso e pela persistência dos dados no MongoDB.
-    - model/ Representa os objetos principais do domínio, como uma árvore ou uma ocorrência
-    - dto/ Define os dados usados para receber requisições e devolver respostas pela API
+# Estrutura e execução do projeto Arboriza
 
-# 2. Como compilar os arquivos Java
+## 1. Organização do Backend
 
-Os arquivos Java estão organizados da seguinte forma:
+O backend está organizado em pacotes, cada um com uma responsabilidade específica:
+
+- **src/**: reúne os arquivos-fonte Java do backend.
+- **controller/**: recebe e interpreta as requisições HTTP feitas à API, encaminhando as operações para a camada de serviço.
+- **service/**: contém as regras de negócio da aplicação, como validações e operações relacionadas ao cadastro de árvores e ocorrências.
+- **repository/**: é responsável pelo acesso e pela persistência dos dados no MongoDB.
+- **model/**: representa as entidades e os objetos principais do sistema, como árvores e ocorrências.
+- **dto/**: define os objetos utilizados para transportar dados entre o cliente e o backend, tanto no recebimento de requisições quanto no envio de respostas.
+
+## 2. Organização do projeto com Gradle
+
+O projeto utiliza o Gradle para gerenciar a compilação, as dependências e a execução dos módulos.
+
+A estrutura principal é composta por:
 
 ```text
 PI_IV_TIME_26/
 ├── backend/
-│   ├── bin/ 
 │   └── src/
-│       ├── Main.java
-│       └── service/
-│           └── ConexaoServidor.java
-└── servidor/
-    └── ...
+│       └── ...
+├── servidor/
+│   └── src/
+│       └── ...
+├── frontend/
+│   └── ...
+├── gradlew
+├── gradlew.bat
+├── settings.gradle
+└── build.gradle
 ```
 
-- `src/`: contém os arquivos-fonte Java.
-- `bin/`: recebe os arquivos `.class` gerados durante a compilação.
-- `Main.java`: contém o método `main`, responsável por iniciar a aplicação e configurar os parâmetros da conexão.
-- `service/ConexaoServidor.java`: implementa o estabelecimento e o encerramento da conexão com o servidor.
+- **backend/**: contém a aplicação Java responsável pelas funcionalidades do sistema, pela conexão com o MongoDB e pelo servidor HTTP Javalin.
+- **servidor/**: contém a implementação do servidor Java desenvolvido pelo professor, responsável por aceitar as conexões dos clientes.
+- **frontend/**: contém as páginas HTML, folhas de estilo CSS, scripts JavaScript e demais recursos visuais da aplicação.
+- **gradlew / gradlew.bat**: são os arquivos do Gradle Wrapper, utilizados para executar tarefas do Gradle sem precisar instalar uma versão específica manualmente.
+- **settings.gradle**: configura os módulos que fazem parte do projeto.
+- **build.gradle**: contém as configurações de compilação, dependências e tarefas do Gradle.
 
--> Compilação
+## 3. Como executar o projeto
 
-Abra o terminal na pasta `backend` e execute:
+A execução é realizada pelo Gradle Wrapper, que automatiza a compilação e a inicialização das aplicações.
 
-```bash
-javac -d bin src\Main.java src\service\ConexaoServidor.java
-```
+**Importante:** abra o terminal na pasta raiz do projeto (`PI_IV_TIME_26`), onde estão localizados os arquivos `gradlew` e `gradlew.bat`.
 
-O comando compila os dois arquivos Java e grava os arquivos compilados no diretório `bin/`, respeitando a estrutura definida pelos pacotes (`package`) das classes.
+### 3.1. Iniciar o servidor
 
-Caso existam erros de compilação, eles deverão ser corrigidos antes de executar a aplicação.
-
-##Para compilar todos os arquivos Java do backend de uma vez, abra o terminal na pasta `backend` e execute:
+Abra o primeiro terminal e execute:
 
 ```powershell
-javac -d bin (Get-ChildItem -Recurse -Filter *.java src).FullName
+.\gradlew.bat :servidor:run
 ```
 
-Esse comando procura todos os arquivos `.java` dentro da pasta `src` e de suas subpastas, compilando-os de uma só vez. Os arquivos compilados (`.class`) serão salvos na pasta `bin`, respeitando a organização dos pacotes definidos no código.
+Esse comando inicia o servidor Java do projeto, que ficará aguardando conexões na porta configurada.
 
-Após a compilação, execute a aplicação com:
+Mantenha esse terminal aberto enquanto estiver utilizando a aplicação.
+
+### 3.2. Iniciar o backend
+
+Abra um segundo terminal, também na pasta raiz do projeto, e execute:
 
 ```powershell
-java -cp bin backend.src.Main
+.\gradlew.bat :backend:run
 ```
 
-Sempre que houver alterações nos arquivos `.java`, é necessário compilar novamente antes de executar a aplicação.
+Esse comando executa o backend e realiza automaticamente as etapas necessárias de compilação.
 
-A pasta `bin` contém apenas os arquivos gerados durante a compilação e não precisa ser enviada ao GitHub. Os arquivos `.class` também devem ser ignorados pelo `.gitignore`.
+Durante a inicialização, o backend:
 
--> Execução
+1. Estabelece uma conexão com o servidor Java do projeto.
+2. Conecta-se ao MongoDB.
+3. Inicia o servidor HTTP utilizando o Javalin.
 
-Ainda na pasta `backend`, execute:
+Após a inicialização, o servidor HTTP ficará disponível na porta **8080**.
 
-```bash
-java -cp bin backend.src.Main
+### 3.3. Acessar a aplicação
+
+Com o backend em execução, abra o navegador e acesse:
+
+```text
+http://localhost:8080/
 ```
 
-O comando utiliza `bin/` como caminho para localizar as classes compiladas e inicia a classe `Main`, identificada pelo pacote `backend.src`.
+As demais páginas podem ser acessadas por suas respectivas rotas, como:
 
-Por padrão, a aplicação tenta se conectar ao servidor em `localhost`, na porta `3000`.
+- `http://localhost:8080/login`
+- `http://localhost:8080/abrir-chamado`
+- `http://localhost:8080/perfil-profissional`
 
-Também é possível informar o endereço do servidor e a porta como argumentos:
+O Javalin é responsável por disponibilizar as páginas HTML e os arquivos estáticos do frontend, como CSS, JavaScript e imagens.
 
-```bash
-java -cp bin backend.src.Main localhost 3000
+## 4. Compilação e atualização do projeto
+
+Não é necessário realizar a compilação manualmente com `javac`.
+
+O Gradle executa automaticamente a compilação necessária ao iniciar as tarefas de execução dos módulos.
+
+Caso queira apenas compilar e verificar se os módulos estão compilando corretamente, execute na raiz do projeto:
+
+```powershell
+.\gradlew.bat build
 ```
 
-A ordem dos argumentos é:
+Sempre que houver alterações nos arquivos Java, basta executar novamente a tarefa correspondente ao módulo para iniciar a aplicação com as alterações.
 
-1. Endereço ou host do servidor.
-2. Porta em que o servidor está aguardando conexões.
+## 5. Ordem de inicialização
 
-Ambos são opcionais, desde que sejam informados na ordem correta. Se nenhum argumento for fornecido, serão utilizados os valores padrão definidos em `Main.java`.
+Para executar o projeto corretamente, siga esta ordem:
 
-### Ordem de inicialização
+1. Iniciar o servidor Java utilizando `:servidor:run`.
+2. Iniciar o backend utilizando `:backend:run`.
+3. Acessar a aplicação pelo navegador em `http://localhost:8080/`.
 
-1. Iniciar o servidor Java do projeto, que ficará aguardando conexões na porta configurada.
-2. Compilar os arquivos do backend.
-3. Executar a classe `Main`.
-4. Verificar se a conexão com o servidor foi estabelecida.
-
-**Importante:** o servidor deve estar em execução antes de iniciar o backend. Caso contrário, a conexão poderá falhar.
-
-Sempre que houver alterações nos arquivos `.java`, é necessário recompilar o código antes de executar novamente a aplicação.
+**Observação:** os dois primeiros comandos devem permanecer em execução em terminais separados. O servidor precisa estar ativo para que o backend consiga estabelecer a conexão com ele.

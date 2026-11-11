@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <!-- Define o idioma, a escala responsiva e o título da página de equipes. -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Arboriza | Equipes</title>
+
+  <!-- Carrega os ícones, o estilo profissional compartilhado e os estilos desta página. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/perfil_profissional/styles-profissional.css" data-professional-sidebar-styles="true">
+  <link rel="stylesheet" href="/perfil_profissional/equipes.css">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- O sidebar valida login/setor, destaca Equipes e carrega equipes.js após autorizar o acesso. -->
+    <div id="sidebar-profissional" data-script="/perfil_profissional/equipes.js"></div>
+
+    <main class="main professional-main">
+      <!-- Identifica a tela e o município dos registros. -->
+      <section class="teams-page professional-content" aria-labelledby="teamsPageTitle">
+        <header class="teams-heading">
+          <div>
+            <span class="professional-eyebrow">GESTÃO MUNICIPAL</span>
+            <h1 id="teamsPageTitle">Equipes</h1>
+            <p>Consulte as equipes, seus integrantes e as ordens de serviço destinadas ao município.</p>
+          </div>
+          <div class="teams-heading-actions">
+            <!-- Abre o formulário de criação de equipe antes da busca. -->
+            <button class="teams-create-button" id="openCreateTeamModal" type="button"><i class="bi bi-people-fill" aria-hidden="true"></i>Criar equipe</button>
+          </div>
+        </header>
+
+        <!-- A busca funciona como filtro das equipes por identificação, nome, região ou gestor. -->
+        <label class="teams-search" for="teamsSearch">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <span class="visually-hidden">Buscar equipe</span>
+          <input id="teamsSearch" type="search" placeholder="Buscar por ID, equipe, região ou gestor..." autocomplete="off">
+        </label>
+
+        <!-- A tabela resume todas as equipes vinculadas ao município. -->
+        <section class="teams-card" aria-labelledby="teamsTableTitle">
+          <header class="teams-card-heading">
+            <div><h2 id="teamsTableTitle">Equipes cadastradas</h2><p id="teamsResultCount" aria-live="polite">Carregando equipes...</p></div>
+          </header>
+          <div class="teams-table-wrap">
+            <table class="teams-table">
+              <thead>
+                <tr>
+                  <th scope="col">ID</th>
+                  <th scope="col">Nome da equipe</th>
+                  <th scope="col">Região de atuação</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Gestor</th>
+                  <th scope="col">Integrantes</th>
+                </tr>
+              </thead>
+              <tbody id="teamsTableBody"></tbody>
+            </table>
+            <div class="teams-empty" id="teamsEmpty" hidden><i class="bi bi-people" aria-hidden="true"></i><strong>Nenhuma equipe encontrada</strong><span>Tente buscar por outro termo.</span></div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <!-- O modal principal reúne integrantes e ações da equipe selecionada. -->
+  <div class="teams-modal-backdrop" id="teamDetailsModal" role="dialog" aria-modal="true" aria-labelledby="teamDetailsTitle" hidden>
+    <section class="teams-modal-card">
+      <button class="teams-modal-close" id="closeTeamDetails" type="button" aria-label="Fechar detalhes da equipe"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+      <div id="teamDetailsContent"></div>
+    </section>
+  </div>
+
+  <!-- Modal para informar os dados básicos de uma equipe municipal. -->
+  <div class="teams-modal-backdrop" id="createTeamModal" role="dialog" aria-modal="true" aria-labelledby="createTeamModalTitle" hidden>
+    <section class="teams-modal-card create-team-modal-card">
+      <button class="teams-modal-close" id="closeCreateTeamModal" type="button" aria-label="Fechar criação de equipe"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+      <header class="create-team-heading">
+        <span class="create-team-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
+        <div><span>EQUIPE MUNICIPAL</span><h2 id="createTeamModalTitle">Criar equipe</h2><p>Informe os dados para cadastrar uma equipe em <strong id="createTeamMunicipality"></strong>.</p></div>
+      </header>
+      <form id="createTeamForm" novalidate>
+        <label>Nome da equipe<input name="name" required maxlength="100" placeholder="Ex.: Equipe Leste"></label>
+        <label>Região de atuação<input name="region" required maxlength="160" placeholder="Ex.: bairros da região Leste"></label>
+        <label>Gestor responsável<input name="manager" required maxlength="120" placeholder="Nome completo do gestor"></label>
+        <p class="create-team-feedback" id="createTeamFeedback" role="status" aria-live="polite"></p>
+        <button class="team-primary-button create-team-submit" type="submit"><i class="bi bi-check2-circle" aria-hidden="true"></i>Salvar equipe</button>
+      </form>
+    </section>
+  </div>
+
+  <!-- O formulário de funcionário é obrigatório: não há X, cancelamento, clique externo ou Escape antes de salvar. -->
+  <div class="teams-modal-backdrop teams-nested-modal" id="employeeModal" role="dialog" aria-modal="true" aria-labelledby="employeeModalTitle" hidden>
+    <section class="teams-modal-card employee-modal-card">
+      <div id="employeeModalContent"></div>
+    </section>
+  </div>
+
+  <!-- O modal lista as ordens abertas sem equipe para direcionamento à equipe atual. -->
+  <div class="teams-modal-backdrop teams-nested-modal" id="teamOrdersModal" role="dialog" aria-modal="true" aria-labelledby="teamOrdersTitle" hidden>
+    <section class="teams-modal-card team-orders-modal-card">
+      <button class="teams-modal-close" id="closeTeamOrders" type="button" aria-label="Fechar ordens abertas"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+      <div id="teamOrdersModalContent"></div>
+    </section>
+  </div>
+
+  <!-- Exibe confirmações de cadastro ou direcionamento sem recarregar a página. -->
+  <div class="teams-toast" id="teamsToast" role="status" aria-live="polite" hidden></div>
+
+  <!-- O sidebar só injeta equipes.js depois de validar login=true e setor não nulo. -->
+  <script src="/perfil_profissional/sidebar-profissional.js"></script>
+</body>
+</html>

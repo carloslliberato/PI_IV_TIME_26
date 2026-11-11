@@ -39,16 +39,36 @@ project(':servidor') {
 
 // Configuração específica da pasta backend/
 project(':backend') {
+    sourceSets {
+        test {
+            java {
+                srcDirs = ['test']
+            }
+        }
+    }
+
     dependencies {
         // Bibliotecas úteis caso o backend suba a API REST para o frontend
         implementation 'io.javalin:javalin:6.3.0'
         implementation 'com.google.code.gson:gson:2.11.0'
+        testImplementation 'org.junit.jupiter:junit-jupiter:5.13.4'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.13.4'
+        implementation 'org.mindrot:jbcrypt:0.4'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+        // Envio de e-mails pelo protocolo SMTP
+        implementation 'org.eclipse.angus:angus-mail:2.0.3'
+        implementation 'io.github.cdimascio:dotenv-java:3.2.0'
+    }
+
+    tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+    
     }
 
     application {
         // ATENÇÃO: Se no topo do seu Main.java estiver escrito "package backend.src;",
         // mantenha 'backend.src.Main'. Se você apagar o package do Main.java, mude para 'Main'.
-        mainClass = 'backend.src.Main'
+        mainClass = 'Main'
     }
 
     tasks.named('run', JavaExec) {

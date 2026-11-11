@@ -1,5 +1,7 @@
 import java.util.*;
 
+import protocolo.Parceiro;
+
 public class Servidor
 {
 	public static String PORTA_PADRAO = "3000";

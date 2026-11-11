@@ -1,57 +1,104 @@
-package backend.src;
+import service.ConexaoServidor;
+import repository.ConexaoMongo;
+import service.ServidorHttp;
 
-import backend.src.service.ConexaoServidor;
-
-import java.io.IOException;
-
-import backend.src.http.ServidorHttp;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Main {
+
     public static final String HOST_PADRAO = "localhost";
     public static final int PORTA_PADRAO = 3000;
 
+    private static ConexaoServidor conexaoServidor;
+    private static ServidorHttp servidorHttp;
+
+    private static boolean mongoConectado = false;
+
+    private static final AtomicBoolean ENCERRADO = new AtomicBoolean(false);
+
     public static void main(String[] args) {
 
-        if (args.length > 2) {
-            System.err.println("Uso esperado: java backend.src.Main [HOST [PORTA]]\n");
-            return;
-        }
+        // Registra o procedimento de encerramento da aplicação.
+        Runtime.getRuntime().addShutdownHook(
+                new Thread(Main::fecharRecursos));
 
-        ConexaoServidor conexaoServidor = null;
         try {
-            String host = Main.HOST_PADRAO;
-            int porta = Main.PORTA_PADRAO;
 
-            if (args.length > 0)
-                host = args[0];
+            // 1. Conexão com o servidor Socket do professor.
+            conexaoServidor = new ConexaoServidor(
+                    HOST_PADRAO,
+                    PORTA_PADRAO);
 
-            if (args.length == 2)
-                porta = Integer.parseInt(args[1]);
+            if (!conexaoServidor.conectar()) {
+                throw new RuntimeException(
+                        "Não foi possível conectar ao servidor Socket.");
+            }
 
-            conexaoServidor = new ConexaoServidor(host, porta);
+            System.out.println(
+                    "Conexão com o servidor Socket estabelecida!");
+
+            // 2. Conexão com o MongoDB.
+            ConexaoMongo.getDatabase();
+            mongoConectado = true;
+
+            System.out.println(
+                    "Conexão com o banco de dados estabelecida!");
+
+            // 3. Inicialização do servidor HTTP.
+            servidorHttp = new ServidorHttp(conexaoServidor);
+            servidorHttp.iniciar();
+
+            System.out.println("Arboriza iniciado com sucesso!");
+
         } catch (Exception erro) {
-            System.err.println("Indique o servidor e a porta corretos!\n");
-            return;
-        }
 
-        boolean conectado = conexaoServidor.conectar();
-        if (conectado) {
-            System.out.println("Conexão servidor-cliente estabelecida com sucesso!");
-        } else {
-            System.err.println("Não foi possível iniciar a conexão.");
-            return;
-        }
-
-        try {
-            ServidorHttp.conectar();
-        } catch (IOException erro) {
             System.err.println(
-                    "Não foi possível iniciar o servidor HTTP: "
-                            + erro.getMessage());
+                    "Erro ao iniciar o Arboriza: " + erro.getMessage());
+
+            fecharRecursos();
+        }
+    }
+
+    private static void fecharRecursos() {
+        System.out.println(">>> SHUTDOWN HOOK EXECUTADO!");
+        // Evita que os recursos sejam fechados duas vezes.
+        if (!ENCERRADO.compareAndSet(false, true)) {
             return;
         }
 
-        repository.ConexaoMongo.getDatabase();
+        System.out.println("\nEncerrando Arboriza...");
 
+        // Fecha o servidor HTTP.
+        try {
+            if (servidorHttp != null) {
+                servidorHttp.fechar();
+            }
+        } catch (Exception erro) {
+            System.err.println(
+                    "Erro ao encerrar servidor HTTP: " + erro.getMessage());
+        }
+
+        // Fecha o MongoDB.
+        try {
+            if (mongoConectado) {
+                ConexaoMongo.fechar();
+                mongoConectado = false;
+            }
+        } catch (Exception erro) {
+            System.err.println(
+                    "Erro ao encerrar MongoDB: " + erro.getMessage());
+        }
+
+        // Fecha o servidor Socket.
+        try {
+            if (conexaoServidor != null) {
+                conexaoServidor.fechar();
+            }
+        } catch (Exception erro) {
+            System.err.println(
+                    "Erro ao encerrar servidor Socket: " + erro.getMessage());
+        }
+
+        System.out.println("Arboriza encerrado!");
     }
 }
