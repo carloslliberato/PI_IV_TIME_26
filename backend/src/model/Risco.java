@@ -1,8 +1,8 @@
-package backend.src.model;
+package model;
 
 public enum Risco {
     BAIXO,
     MODERADO,
     ALTO,
-    CRITICO    
+    CRITICO
 }

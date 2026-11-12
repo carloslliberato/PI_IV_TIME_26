@@ -9,14 +9,9 @@ const professionalMapDemo = {
     longitude: -47.0608,
     zoom: 13
   },
-  trees: [
-    { id: "10234", nome: "Ipê-amarelo", especie: "Handroanthus chrysotrichus", bairro: "Taquaral", endereco: "R. Dr. Alberto Sarmento, 123", lat: -22.8768, lng: -47.0594, risco: "Baixo" },
-    { id: "10456", nome: "Pau-brasil", especie: "Paubrasilia echinata", bairro: "Cambuí", endereco: "Av. Orosimbo Maia, 456", lat: -22.8953, lng: -47.0517, risco: "Moderado" },
-    { id: "10876", nome: "Flamboyant", especie: "Delonix regia", bairro: "Vila Nogueira", endereco: "R. Maria Monteiro, 789", lat: -22.8995, lng: -47.0402, risco: "Alto" },
-    { id: "10901", nome: "Resedá", especie: "Lagerstroemia indica", bairro: "Centro", endereco: "Av. Heitor Penteado, 1000", lat: -22.9055, lng: -47.0602, risco: "Baixo" },
-    { id: "11110", nome: "Jatobá", especie: "Hymenaea courbaril", bairro: "Jardim Chapadão", endereco: "Av. Imperatriz Leopoldina, 300", lat: -22.8716, lng: -47.0830, risco: "Crítico" },
-    { id: "11220", nome: "Quaresmeira", especie: "Tibouchina granulosa", bairro: "Ponte Preta", endereco: "Av. das Amoreiras, 121", lat: -22.9192, lng: -47.0738, risco: "Moderado" }
-  ],
+  // As árvores virão da API. Não exibir exemplos como se fossem cadastros reais.
+  trees: [],
+  // Ocorrências e ordens permanecem demonstrativas por serem de outros módulos.
   occurrences: [
     { id: "OC-2048", latitude: -22.8860, longitude: -47.0682, descricao: "Galho quebrado após chuva forte.", bairro: "Jardim Chapadão", status: "Em andamento" }
   ],
@@ -24,6 +19,10 @@ const professionalMapDemo = {
     { id: "OS-2026-041", latitude: -22.9104, longitude: -47.0525, titulo: "Poda preventiva", descricao: "Poda de galhos próximos à rede elétrica.", bairro: "Cambuí", status: "Em andamento" }
   ]
 };
+
+// Referência de Campinas usada somente na demonstração atual.
+// A API ainda não permite recuperar o municipioId da sessão do funcionário.
+const MUNICIPIO_ID_MAPA = "6ae666a7680e8a4330a1ab66";
 
 // Guarda o mapa, as camadas e os marcadores para os controles desta página.
 let professionalMap;
@@ -43,42 +42,54 @@ function converterRisco(risco) {
     CRITICO: "Crítico"
   };
 
-  return riscos[risco] || "Baixo";
+  return riscos[risco] || "Não informado";
 }
 
 async function carregarArvores() {
-  const resposta = await fetch("/api/arvores");
-  const arvoresApi = await resposta.json();
+  const resposta = await fetch("/api/arvores", { credentials: "same-origin" });
+  if (!resposta.ok) throw new Error(`A consulta de árvores falhou (HTTP ${resposta.status}).`);
+  const dados = await resposta.json();
+  if (!Array.isArray(dados)) throw new Error("Resposta inesperada da API de árvores.");
 
-  professionalMapDemo.trees = arvoresApi.map(arvore => ({
-    id: String(arvore.id),
-    nome: arvore.especie,
-    especie: arvore.especie,
-    bairro: "Não informado",
-    endereco: "Não informado",
-    lat: arvore.latitude,
-    lng: arvore.longitude,
-    risco: converterRisco(arvore.risco)
-  }));
+  professionalMapDemo.trees = dados
+    .filter(arvore => arvore.municipioId === MUNICIPIO_ID_MAPA)
+    .filter(arvore => arvore.ativa !== false)
+    .filter(arvore => Number.isFinite(arvore.latitude) &&
+      Number.isFinite(arvore.longitude) &&
+      Math.abs(arvore.latitude) <= 90 && Math.abs(arvore.longitude) <= 180)
+    .map(arvore => ({
+      id: String(arvore.id),
+      nome: arvore.nomePopular || arvore.especie || "Árvore sem nome",
+      especie: arvore.nomeCientifico || arvore.especie || "Não informado",
+      bairro: arvore.bairro || "Não informado",
+      endereco: arvore.endereco || "Não informado",
+      lat: arvore.latitude,
+      lng: arvore.longitude,
+      risco: converterRisco(arvore.risco)
+    }));
 }
 
-// Carrega a tela depois que o sidebar profissional autorizou o acesso e inseriu seus estilos.
+// Monta o Leaflet primeiro, para que uma falha na API não apague o mapa.
 async function initializeProfessionalMap() {
-  await carregarArvores();
-
-  document.getElementById("mapScopeName").textContent = professionalMapDemo.municipality.nome;
+  document.getElementById("mapScopeName").textContent = professionalMapDemo.municipality.nome + " (teste)";
   updateProfessionalMapListHeading();
-
-  // Futura origem do município: GET do perfil/cadastro profissional.
-  // Futuras árvores: resposta filtrada pelo ID do município do profissional.
-  // No momento, os exemplos abaixo já pertencem exclusivamente a Campinas - SP.
   if (!initializeLeafletMap()) return;
-
-  renderProfessionalActiveList();
   setupProfessionalMapEvents();
+  renderProfessionalActiveList();
+  try {
+    await carregarArvores();
+    renderProfessionalActiveList();
+    updateProfessionalMapToast(professionalMapDemo.trees.length
+      ? `${professionalMapDemo.trees.length} árvores ativas carregadas do MongoDB.`
+      : "Nenhuma árvore ativa com coordenadas válidas para este município.");
+  } catch (erro) {
+    console.error("Falha ao carregar árvores do mapa:", erro);
+    professionalMapDemo.trees = [];
+    renderProfessionalActiveList();
+    updateProfessionalMapToast("Não foi possível consultar as árvores. Verifique o backend.");
+  }
 }
 
-// Aguarda o momento seguro para consultar os elementos da página.
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initializeProfessionalMap, { once: true });
 } else {
@@ -106,7 +117,7 @@ function initializeLeafletMap() {
   professionalMap = L.map("professionalMap", { zoomControl: false })
     .setView([municipality.latitude, municipality.longitude], municipality.zoom);
 
-  // Camada visual de ruas; os dados de árvores e ocorrências continuam sendo mock local.
+  // Camada visual de ruas; árvores são dados reais, outras camadas ainda são demonstrativas.
   L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
     {
@@ -133,7 +144,7 @@ function professionalRiskClass(risk) {
     "Alto": "high",
     "Crítico": "critical"
   };
-  return riskClasses[risk] || "low";
+  return riskClasses[risk] || "unknown";
 }
 
 // Escapa texto dinâmico antes de inseri-lo em conteúdo HTML dos pop-ups e da lista.
@@ -312,7 +323,8 @@ function activateProfessionalMapLayer(layer) {
   document.getElementById("treeSearch").value = "";
   renderProfessionalActiveList();
   const messages = { trees: "Camada de árvores cadastradas ativada.", occurrences: "Camada de ocorrências ativada.", serviceOrders: "Camada de ordens de serviço ativada." };
-  updateProfessionalMapToast(messages[layer]);
+  updateProfessionalMapToast(layer === "trees" ? messages[layer]
+    : `${messages[layer]} Registros demonstrativos (integração pendente).`);
 }
 
 function fitProfessionalMapToActiveRecords() {
@@ -347,7 +359,7 @@ function addProfessionalOccurrenceExamples() {
       fillColor: "#d84836",
       fillOpacity: .78
     }).bindPopup(`
-      <strong>Ocorrência ${escapeProfessionalMapText(occurrence.id)}</strong><br>
+      <strong>Ocorrência ${escapeProfessionalMapText(occurrence.id)} (exemplo)</strong><br>
       ${escapeProfessionalMapText(occurrence.descricao)}<br>
       ${escapeProfessionalMapText(occurrence.bairro)}<br>
       Status: ${escapeProfessionalMapText(occurrence.status)}
@@ -368,7 +380,7 @@ function addProfessionalServiceOrderExamples() {
       fillColor: "#398ec2",
       fillOpacity: .82
     }).bindPopup(`
-      <strong>Ordem de serviço ${escapeProfessionalMapText(order.id)}</strong><br>
+      <strong>Ordem de serviço ${escapeProfessionalMapText(order.id)} (exemplo)</strong><br>
       ${escapeProfessionalMapText(order.titulo)}<br>
       ${escapeProfessionalMapText(order.descricao)}<br>
       ${escapeProfessionalMapText(order.bairro)}<br>
@@ -411,49 +423,62 @@ function setupProfessionalMapEvents() {
   });
 }
 
-// Preenche a ficha com dados da árvore e uma linha do tempo ilustrativa.
-function openProfessionalTreeDetails(tree) {
-  // Ponto de integração: substituir os campos fictícios pela consulta da árvore pelo ID.
-  // O histórico abaixo deverá vir da consulta de vistorias, ocorrências e manutenções
-  // vinculadas à mesma árvore e ao município do profissional.
-  const sampleHistory = [
-    { data: "12/06/2026", titulo: "Vistoria realizada", descricao: "Avaliação demonstrativa da copa e do tronco." },
-    { data: "20/04/2026", titulo: "Poda preventiva", descricao: "Registro fictício de manutenção da árvore." },
-    { data: "18/02/2026", titulo: "Ocorrência registrada", descricao: "Exemplo de ocorrência associada a este exemplar." }
-  ];
+// Consulta a ficha completa pelo ID real, sem inserir dados ou históricos fictícios.
+async function openProfessionalTreeDetails(tree) {
   const modal = document.getElementById("professionalTreeModal");
-
-  // Atualiza o título e o ID, garantindo que o modal represente a árvore selecionada.
-  document.getElementById("professionalTreeModalId").textContent = `ID ${tree.id} · ${professionalMapDemo.municipality.nome}`;
-  document.getElementById("professionalTreeModalTitle").textContent = `Ficha da árvore — ${tree.nome}`;
-
-  // Renderiza os dados de exemplo; os valores serão substituídos pela resposta da API.
-  document.getElementById("professionalTreeModalBody").innerHTML = `
-    <h3 class="professional-tree-modal-section-title">Identificação e localização</h3>
-    <div class="professional-tree-details-grid">
-      <div class="professional-tree-detail"><span>Nome popular</span><strong>${escapeProfessionalMapText(tree.nome)}</strong></div>
-      <div class="professional-tree-detail"><span>Nome científico</span><strong><em>${escapeProfessionalMapText(tree.especie)}</em></strong></div>
-      <div class="professional-tree-detail"><span>Espécie</span><strong>Espécie arbórea urbana (exemplo)</strong></div>
-      <div class="professional-tree-detail professional-tree-detail-wide"><span>Localização e bairro</span><strong>${escapeProfessionalMapText(tree.endereco)}, ${escapeProfessionalMapText(tree.bairro)} · ${escapeProfessionalMapText(professionalMapDemo.municipality.nome)}</strong></div>
-      <div class="professional-tree-detail"><span>Idade estimada</span><strong>Aproximadamente 24 anos (fictício)</strong></div>
-      <div class="professional-tree-detail"><span>Altura e diâmetro</span><strong>12,5 m · 58 cm (fictícios)</strong></div>
-      <div class="professional-tree-detail"><span>Estado</span><strong>Saudável — avaliação demonstrativa</strong></div>
-      <div class="professional-tree-detail"><span>Nível de risco</span><strong>${escapeProfessionalMapText(tree.risco)}</strong></div>
-      <div class="professional-tree-detail"><span>Última vistoria</span><strong>12/06/2026 (fictícia)</strong></div>
-      <div class="professional-tree-detail"><span>Última poda</span><strong>20/04/2026 (fictícia)</strong></div>
-      <div class="professional-tree-detail professional-tree-detail-wide"><span>Próxima manutenção</span><strong>15/12/2026 — vistoria preventiva (fictícia)</strong></div>
-    </div>
-    <h3 class="professional-tree-modal-section-title">Histórico da árvore</h3>
-    <ol class="professional-tree-history">
-      ${sampleHistory.map(item => `
-        <li><time>${escapeProfessionalMapText(item.data)}</time><strong>${escapeProfessionalMapText(item.titulo)}</strong><p>${escapeProfessionalMapText(item.descricao)}</p></li>
-      `).join("")}
-    </ol>
-  `;
-
-  // Exibe o modal e move o foco para o botão de fechar para navegação acessível.
+  const corpo = document.getElementById("professionalTreeModalBody");
+  const titulo = document.getElementById("professionalTreeModalTitle");
+  document.getElementById("professionalTreeModalId").textContent = `ID ${tree.id}`;
+  titulo.textContent = `Ficha da árvore — ${tree.nome}`;
+  corpo.textContent = "Carregando ficha...";
   modal.hidden = false;
   document.getElementById("closeProfessionalTreeModal").focus();
+
+  try {
+    const resposta = await fetch(`/api/arvores/${encodeURIComponent(tree.id)}`, {
+      credentials: "same-origin"
+    });
+    if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
+    const arvore = await resposta.json();
+    // Não reabre o modal caso o usuário tenha fechado enquanto carregava.
+    if (modal.hidden) return;
+    const texto = escapeProfessionalMapText;
+    const data = valor => {
+      if (!valor) return "Não registrada";
+      const d = new Date(valor);
+      return Number.isNaN(d.getTime()) ? "Não registrada" : d.toLocaleDateString("pt-BR");
+    };
+    const campo = (rotulo, valor, amplo = false) => `
+      <div class="professional-tree-detail ${amplo ? "professional-tree-detail-wide" : ""}">
+        <span>${texto(rotulo)}</span><strong>${texto(valor ?? "Não informado")}</strong>
+      </div>`;
+    const risco = converterRisco(arvore.risco);
+    titulo.textContent = `Ficha da árvore — ${arvore.nomePopular || arvore.especie || "Sem nome"}`;
+    corpo.innerHTML = `
+      <h3 class="professional-tree-modal-section-title">Identificação e localização</h3>
+      <div class="professional-tree-details-grid">
+        ${campo("Nome popular", arvore.nomePopular)}
+        ${campo("Nome científico", arvore.nomeCientifico)}
+        ${campo("Espécie", arvore.especie)}
+        ${campo("Endereço e bairro", `${arvore.endereco || "Não informado"} · ${arvore.bairro || "Não informado"}`, true)}
+        ${campo("Latitude", arvore.latitude)}
+        ${campo("Longitude", arvore.longitude)}
+        ${campo("Idade estimada", arvore.idade)}
+        ${campo("Altura", arvore.alturaMetros == null ? null : `${arvore.alturaMetros} m`)}
+        ${campo("Diâmetro", arvore.diametroCm == null ? null : `${arvore.diametroCm} cm`)}
+        ${campo("Estado", arvore.estado)}
+        ${campo("Risco", risco)}
+        ${campo("Última vistoria", data(arvore.ultimaInspecao))}
+        ${campo("Última poda", data(arvore.ultimaPoda))}
+        ${campo("Próxima manutenção", data(arvore.proximaManutencao))}
+      </div>
+      <h3 class="professional-tree-modal-section-title">Histórico da árvore</h3>
+      <p>Histórico de intervenções ainda não disponibilizado pela API.</p>
+    `;
+  } catch (erro) {
+    console.error("Erro ao consultar ficha da árvore:", erro);
+    if (!modal.hidden) corpo.textContent = "Não foi possível carregar a ficha desta árvore.";
+  }
 }
 
 // Fecha a ficha da árvore selecionada.
