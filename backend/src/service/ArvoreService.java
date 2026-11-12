@@ -1,18 +1,19 @@
-
 package service;
 
 import model.Arvore;
 import repository.ArvoreRepository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 public class ArvoreService {
 
     private final ArvoreRepository repository;
 
-    // Recebe o Repository pelo construtor
-    public ArvoreService(ArvoreRepository repository) {
+    public ArvoreService(
+            ArvoreRepository repository) {
+
         this.repository = repository;
     }
 
@@ -20,6 +21,53 @@ public class ArvoreService {
 
     public List<Arvore> listar() {
         return repository.buscarTodas();
+    }
+
+    // LISTAR COM FILTROS OPCIONAIS
+
+    public List<Arvore> listar(
+            Map<String, String> filtros) {
+
+        return repository.buscarFiltradas(filtros);
+    }
+
+    // BUSCA GEOGRAFICA
+
+    public List<Arvore> buscarProximas(
+            double latitude,
+            double longitude,
+            double raioKm,
+            String municipioId) {
+
+        if (!Double.isFinite(latitude) ||
+                latitude < -90 ||
+                latitude > 90) {
+
+            throw new IllegalArgumentException(
+                    "Latitude invalida.");
+        }
+
+        if (!Double.isFinite(longitude) ||
+                longitude < -180 ||
+                longitude > 180) {
+
+            throw new IllegalArgumentException(
+                    "Longitude invalida.");
+        }
+
+        if (!Double.isFinite(raioKm) ||
+                raioKm <= 0 ||
+                raioKm > 50) {
+
+            throw new IllegalArgumentException(
+                    "O raioKm deve ser maior que 0 e ate 50 km.");
+        }
+
+        return repository.buscarProximas(
+                latitude,
+                longitude,
+                raioKm,
+                municipioId);
     }
 
     // BUSCAR ARVORE POR ID
@@ -40,19 +88,17 @@ public class ArvoreService {
 
         validarDados(arvore);
 
-        // Impede o cadastro com ID ja existente
         if (arvore.getId() != null &&
                 !arvore.getId().isBlank()) {
 
-            if (repository.buscarPorId(arvore.getId())
-                    .isPresent()) {
+            if (repository.buscarPorId(
+                    arvore.getId()).isPresent()) {
 
                 throw new IllegalArgumentException(
                         "Ja existe uma arvore com esse ID.");
             }
         }
 
-        // Uma nova arvore sempre comeca ativa
         arvore.setAtiva(true);
 
         repository.salvar(arvore);
@@ -62,22 +108,25 @@ public class ArvoreService {
 
     // ATUALIZAR ARVORE EXISTENTE
 
-    public Arvore atualizar(String id, Arvore novosDados) {
+    public Arvore atualizar(
+            String id,
+            Arvore novosDados) {
 
         validarId(id);
         validarDados(novosDados);
 
-        // Verifica se a arvore existe
         Arvore arvoreAtual = buscarPorId(id);
 
-        // Mantem o ID original
-        novosDados.setId(arvoreAtual.getId());
+        // Preserva o ID e o status
+        novosDados.setId(
+                arvoreAtual.getId());
 
-        // Mantem o status atual
-        novosDados.setAtiva(arvoreAtual.isAtiva());
+        novosDados.setAtiva(
+                arvoreAtual.isAtiva());
 
         boolean atualizou = repository.atualizar(
-                id.trim(), novosDados);
+                id.trim(),
+                novosDados);
 
         if (!atualizou) {
             throw new NoSuchElementException(
@@ -89,13 +138,16 @@ public class ArvoreService {
 
     // ATIVAR OU ARQUIVAR ARVORE
 
-    public Arvore alterarStatus(String id, boolean ativa) {
+    public Arvore alterarStatus(
+            String id,
+            boolean ativa) {
 
-        // Verifica se a arvore existe
         Arvore arvore = buscarPorId(id);
 
-        boolean atualizou = repository.alterarStatus(
-                id.trim(), ativa);
+        boolean atualizou =
+                repository.alterarStatus(
+                        id.trim(),
+                        ativa);
 
         if (!atualizou) {
             throw new NoSuchElementException(
@@ -107,7 +159,7 @@ public class ArvoreService {
         return arvore;
     }
 
-    // VALIDAR IDENTIFICADOR
+    // VALIDAR ID
 
     private void validarId(String id) {
 
@@ -117,7 +169,7 @@ public class ArvoreService {
         }
     }
 
-    // VALIDACOES DOS DADOS DA ARVORE
+    // VALIDAR DADOS CADASTRAIS
 
     private void validarDados(Arvore arvore) {
 
@@ -152,14 +204,15 @@ public class ArvoreService {
                     "O nivel de risco e obrigatorio.");
         }
 
-        // Verificar coordenadas geograficas
+        // COORDENADAS
 
         Double latitude = arvore.getLatitude();
         Double longitude = arvore.getLongitude();
 
         if (latitude == null ||
                 !Double.isFinite(latitude) ||
-                latitude < -90 || latitude > 90) {
+                latitude < -90 ||
+                latitude > 90) {
 
             throw new IllegalArgumentException(
                     "Latitude invalida.");
@@ -167,21 +220,27 @@ public class ArvoreService {
 
         if (longitude == null ||
                 !Double.isFinite(longitude) ||
-                longitude < -180 || longitude > 180) {
+                longitude < -180 ||
+                longitude > 180) {
 
             throw new IllegalArgumentException(
                     "Longitude invalida.");
         }
 
-        // Verificar medidas fisicas, quando informadas
+        // MEDIDAS
 
-        validarMedida(arvore.getAlturaMetros(), "Altura");
-        validarMedida(arvore.getDiametroCm(), "Diametro");
+        validarMedida(
+                arvore.getAlturaMetros(),
+                "Altura");
+
+        validarMedida(
+                arvore.getDiametroCm(),
+                "Diametro");
     }
 
-    // VALIDAR MEDIDAS NUMERICAS
-
-    private void validarMedida(Double valor, String campo) {
+    private void validarMedida(
+            Double valor,
+            String campo) {
 
         if (valor == null) {
             return;
@@ -189,7 +248,8 @@ public class ArvoreService {
 
         if (!Double.isFinite(valor) || valor < 0) {
             throw new IllegalArgumentException(
-                    campo + " deve ser um numero valido e nao negativo.");
+                    campo +
+                    " deve ser um numero valido e nao negativo.");
         }
     }
 }
