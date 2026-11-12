@@ -1,41 +1,7 @@
-// Registros de demonstração para visualizar as equipes do município sem depender do backend.
-// FUTURO API/BD: carregar município, equipes, gestores e funcionários por GET /api/municipios/{id}/equipes.
-// Campos da equipe: id, nome, região, status, gestor e funcionários com id, nome, função, disponibilidade e contato.
-const teamsDemoData = {
+// Mantém as equipes retornadas pela API; ordens ainda pertencem ao fluxo demonstrativo.
+const teamsData = {
   municipality: { id: "campinas-demo", name: "Campinas - SP" },
-  teams: [
-    {
-      id: "EQ-001", name: "Equipe Norte", region: "Taquaral e região Norte", status: "Indisponível", manager: "Mariana Costa",
-      employees: [
-        { id: "FUN-001", name: "Rafael Almeida", role: "Engenheiro florestal", available: false, contact: "(19) 98821-3401" },
-        { id: "FUN-002", name: "Camila Souza", role: "Podadora", available: false, contact: "(19) 98821-3402" },
-        { id: "FUN-003", name: "Lucas Ferreira", role: "Auxiliar de arborização", available: false, contact: "(19) 98821-3403" }
-      ]
-    },
-    {
-      id: "EQ-002", name: "Equipe Central", region: "Centro e Cambuí", status: "Disponível", manager: "André Martins",
-      employees: [
-        { id: "FUN-004", name: "Paula Ribeiro", role: "Técnica ambiental", available: true, contact: "(19) 98821-3410" },
-        { id: "FUN-005", name: "Diego Santos", role: "Podador", available: true, contact: "(19) 98821-3411" }
-      ]
-    },
-    {
-      id: "EQ-003", name: "Equipe Sul", region: "Ponte Preta e região Sul", status: "Indisponível", manager: "Juliana Nogueira",
-      employees: [
-        { id: "FUN-006", name: "Bruno Lima", role: "Engenheiro agrônomo", available: false, contact: "(19) 98821-3420" },
-        { id: "FUN-007", name: "Aline Carvalho", role: "Técnica de campo", available: false, contact: "(19) 98821-3421" },
-        { id: "FUN-008", name: "Pedro Oliveira", role: "Auxiliar de arborização", available: false, contact: "(19) 98821-3422" },
-        { id: "FUN-009", name: "Fernanda Melo", role: "Podadora", available: false, contact: "(19) 98821-3423" }
-      ]
-    },
-    {
-      id: "EQ-004", name: "Equipe de poda", region: "Atendimento municipal", status: "Disponível", manager: "Roberto Dias",
-      employees: [
-        { id: "FUN-010", name: "Sofia Mendes", role: "Supervisora de poda", available: true, contact: "(19) 98821-3430" },
-        { id: "FUN-011", name: "Gabriel Rocha", role: "Podador", available: true, contact: "(19) 98821-3431" }
-      ]
-    }
-  ],
+  teams: [],
   // Apenas ordens abertas sem equipe podem ser escolhidas no fluxo de direcionamento.
   // FUTURO API/BD: consultar GET /api/municipios/{id}/ordens-servico?status=aberta&semEquipe=true.
   serviceOrders: [
@@ -49,12 +15,12 @@ const teamsDemoData = {
 // Guarda os elementos estáticos que são atualizados durante a navegação pela tela.
 const teamsPage = {
   search: document.getElementById("teamsSearch"),
+  statusFilter: document.getElementById("teamsStatusFilter"),
   tableBody: document.getElementById("teamsTableBody"),
   resultCount: document.getElementById("teamsResultCount"),
   emptyState: document.getElementById("teamsEmpty"),
   createModal: document.getElementById("createTeamModal"),
   createForm: document.getElementById("createTeamForm"),
-  createMunicipality: document.getElementById("createTeamMunicipality"),
   createFeedback: document.getElementById("createTeamFeedback"),
   detailsModal: document.getElementById("teamDetailsModal"),
   detailsContent: document.getElementById("teamDetailsContent"),
@@ -68,52 +34,122 @@ let selectedTeamId = null;
 let teamsToastTimer = null;
 let employeeRequestInProgress = false;
 let teamRequestInProgress = false;
+let teamsSearchTimer = null;
+let teamsLoadRequest = 0;
+const teamDeletionsInProgress = new Set();
 
-// Escapa os dados da demonstração antes de inseri-los como HTML.
+// Escapa os dados da API antes de inseri-los como HTML.
 function escapeTeamText(value) {
   return String(value ?? "—").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   })[character]);
 }
 
-// Normaliza os termos de pesquisa para ignorar caixa e acentos.
-function normalizeTeamText(value) {
-  return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+// Valida o formato de e-mail também nas telas que usam validação personalizada.
+function isValidTeamEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
-// Busca as equipes do município atual que correspondem ao texto digitado.
-// FUTURO API/BD: aplicar o município e o termo no backend e paginar se houver muitos resultados.
-function getVisibleTeams() {
-  const municipalityId = teamsDemoData.municipality.id;
-  const query = normalizeTeamText(teamsPage.search.value.trim());
-  return teamsDemoData.teams.filter(team => {
-    const matchesMunicipality = team.municipalityId === undefined || team.municipalityId === municipalityId;
-    const searchable = [team.id, team.name, team.region, team.status, team.manager];
-    return matchesMunicipality && (!query || searchable.some(value => normalizeTeamText(value).includes(query)));
-  });
-}
-
-// Desenha o resumo das equipes e disponibiliza o ID para abrir os detalhes.
+// Desenha somente os registros que o backend retornou para os filtros atuais.
 function renderTeamsTable() {
-  const teams = getVisibleTeams();
+  const teams = teamsData.teams;
   teamsPage.tableBody.innerHTML = teams.map(team => `
     <tr>
-      <td><button class="team-id-link" type="button" data-open-team="${escapeTeamText(team.id)}">${escapeTeamText(team.id)}</button></td>
-      <td><strong>${escapeTeamText(team.name)}</strong></td>
+      <td><button class="team-name-link" type="button" data-open-team="${escapeTeamText(team.id)}">${escapeTeamText(team.name)}</button></td>
       <td>${escapeTeamText(team.region)}</td>
       <td><span class="team-status-badge ${team.status === "Disponível" ? "available" : "unavailable"}">${escapeTeamText(team.status)}</span></td>
       <td>${escapeTeamText(team.manager)}</td>
       <td>${team.employees.length}</td>
+      <td><button class="team-delete-button" type="button" data-delete-team="${escapeTeamText(team.id)}" aria-label="Excluir equipe ${escapeTeamText(team.name)}" title="Excluir equipe"><i class="bi bi-trash3" aria-hidden="true"></i></button></td>
     </tr>
   `).join("");
 
   teamsPage.resultCount.textContent = `${teams.length} ${teams.length === 1 ? "equipe encontrada" : "equipes encontradas"}`;
   teamsPage.emptyState.hidden = teams.length > 0;
+  if (teams.length === 0) {
+    document.getElementById("teamsEmptyTitle").textContent = "Nenhuma equipe encontrada";
+    const filtrosAtivos = teamsPage.search.value.trim() || teamsPage.statusFilter.value;
+    document.getElementById("teamsEmptyMessage").textContent = filtrosAtivos
+      ? "Nenhuma equipe corresponde aos filtros informados."
+      : "Ainda não há equipes cadastradas para esta conta.";
+  }
 }
 
-// Abre o cadastro e mostra a qual município a equipe será vinculada.
+// Consulta a API autenticada enviando texto e status para pesquisa no MongoDB.
+async function loadTeams() {
+  const requestId = ++teamsLoadRequest;
+  const busca = teamsPage.search.value.trim();
+  const status = teamsPage.statusFilter.value;
+  const parametros = new URLSearchParams();
+  if (busca) parametros.set("busca", busca);
+  if (status) parametros.set("status", status);
+  const queryString = parametros.toString();
+
+  teamsPage.resultCount.textContent = "Carregando equipes...";
+  try {
+    const response = await fetch(`/api/equipes${queryString ? `?${queryString}` : ""}`, {
+      method: "GET",
+      credentials: "same-origin"
+    });
+    const responseText = await response.text();
+    if (requestId !== teamsLoadRequest) return;
+
+    let responseData;
+    try {
+      responseData = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      const resposta = responseText.trim();
+      const dica = response.status === 404
+        ? "Confirme se o backend foi reiniciado e se a rota GET /api/equipes está ativa."
+        : "A resposta do backend não está em formato JSON.";
+      throw new Error(`${dica} Resposta recebida: ${resposta.slice(0, 180)}`);
+    }
+
+    if (!response.ok) {
+      throw new Error(responseData.erro || `O servidor respondeu com status ${response.status}.`);
+    }
+    if (!Array.isArray(responseData.equipes)) {
+      throw new Error("A resposta do servidor não contém uma lista de equipes.");
+    }
+
+    // Adapta o formato da API aos campos consumidos pela tabela e pelos detalhes.
+    teamsData.teams = responseData.equipes.map(equipe => ({
+      id: String(equipe.id),
+      name: equipe.nome,
+      region: equipe.regiaoAtuacao,
+      status: equipe.status,
+      manager: equipe.gestor,
+      employees: (equipe.colaboradores || []).map(colaborador => ({
+        id: String(colaborador.id),
+        name: colaborador.nomeCompleto,
+        role: colaborador.funcao,
+        available: colaborador.disponivel,
+        email: colaborador.email
+          || (isValidTeamEmail(colaborador.contato) ? colaborador.contato : "")
+      }))
+    }));
+    renderTeamsTable();
+  } catch (error) {
+    if (requestId !== teamsLoadRequest) return;
+
+    // Informa o erro de leitura sem exibir os registros de demonstração como se fossem reais.
+    console.error("Erro ao carregar equipes:", error);
+    teamsPage.tableBody.innerHTML = "";
+    teamsPage.resultCount.textContent = "Não foi possível carregar as equipes.";
+    teamsPage.emptyState.hidden = false;
+    document.getElementById("teamsEmptyTitle").textContent = "Erro ao carregar equipes";
+    document.getElementById("teamsEmptyMessage").textContent = error.message;
+  }
+}
+
+// Aguarda uma pausa curta na digitação antes de consultar novamente o banco.
+function agendarBuscaDeEquipes() {
+  window.clearTimeout(teamsSearchTimer);
+  teamsSearchTimer = window.setTimeout(() => loadTeams(), 300);
+}
+
+// Abre o cadastro, que será vinculado ao município da conta autenticada.
 function openCreateTeamModal() {
-  teamsPage.createMunicipality.textContent = teamsDemoData.municipality.name;
   teamsPage.createFeedback.textContent = "";
   teamsPage.createFeedback.classList.remove("is-error");
   teamsPage.createForm.reset();
@@ -129,16 +165,13 @@ function closeCreateTeamModal() {
   document.getElementById("openCreateTeamModal").focus();
 }
 
-// Envia os dados da nova equipe à API e atualiza a tabela com o registro persistido.
-// PONTO DE INTEGRAÇÃO API/BD: POST /api/equipes deve validar a sessão e gravar municipioId,
-// nome, regiaoAtuacao e gestor; a resposta deve conter a equipe criada e seu ID persistente.
+// Envia os campos do formulário; o backend obtém os IDs pela sessão autenticada.
 async function submitTeamCreation(form) {
   if (teamRequestInProgress) return;
 
-  // Lê os campos, remove espaços extras e associa o município selecionado na sessão.
+  // Lê os campos e remove espaços extras antes de enviar a requisição.
   const formData = new FormData(form);
   const teamPayload = {
-    municipioId: teamsDemoData.municipality.id,
     nome: String(formData.get("name") || "").trim(),
     regiaoAtuacao: String(formData.get("region") || "").trim(),
     gestor: String(formData.get("manager") || "").trim()
@@ -148,7 +181,12 @@ async function submitTeamCreation(form) {
 
   // Verifica campos após trim para não aceitar valores compostos apenas por espaços.
   if (!teamPayload.nome || !teamPayload.regiaoAtuacao || !teamPayload.gestor) {
-    feedback.textContent = "Preencha o nome, a região de atuação e o gestor da equipe.";
+    feedback.textContent = "Preencha o nome, a região de atuação e o e-mail do gestor.";
+    feedback.classList.add("is-error");
+    return;
+  }
+  if (!isValidTeamEmail(teamPayload.gestor)) {
+    feedback.textContent = "Informe um e-mail válido para o gestor da equipe.";
     feedback.classList.add("is-error");
     return;
   }
@@ -161,43 +199,42 @@ async function submitTeamCreation(form) {
   feedback.classList.remove("is-error");
 
   try {
-    // PONTO DE ENVIO AO BANCO: o backend deve persistir o payload desta requisição em POST /api/equipes.
+    // Envia o cadastro; a sessão HTTP acompanha a requisição para identificar o funcionário.
     const response = await fetch("/api/equipes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "same-origin",
       body: JSON.stringify(teamPayload)
     });
-    if (!response.ok) throw new Error(`O servidor respondeu com status ${response.status}.`);
-
-    // Lê o registro persistido que a API retorna para usar o ID oficial na tabela.
+    // Lê a resposta uma única vez para apresentar erros enviados pela API.
     const responseText = await response.text();
     let responseData;
     try {
-      responseData = JSON.parse(responseText);
+      responseData = responseText ? JSON.parse(responseText) : {};
     } catch {
-      throw new Error("O servidor não retornou os dados da equipe em formato JSON.");
+      throw new Error("O servidor retornou uma resposta inválida.");
     }
+    if (!response.ok) {
+      throw new Error(responseData.erro || `O servidor respondeu com status ${response.status}.`);
+    }
+
+    // Usa o ID e os dados confirmados pelo backend para atualizar a tabela.
     const savedTeam = responseData.equipe || responseData;
     if (!savedTeam.id) throw new Error("A resposta do servidor não contém o ID da equipe criada.");
 
-    // Converte os dados da API para o modelo usado nesta tela e atualiza a lista municipal.
-    teamsDemoData.teams.unshift({
-      id: String(savedTeam.id),
-      municipalityId: teamPayload.municipioId,
-      name: savedTeam.nome || teamPayload.nome,
-      region: savedTeam.regiaoAtuacao || teamPayload.regiaoAtuacao,
-      status: savedTeam.status || "Disponível",
-      manager: savedTeam.gestor || teamPayload.gestor,
-      employees: []
-    });
+    // Limpa os filtros para mostrar a nova equipe consultada do banco.
     teamsPage.search.value = "";
-    renderTeamsTable();
+    teamsPage.statusFilter.value = "";
     closeCreateTeamModal();
+    await loadTeams();
     showTeamsToast("Equipe criada com sucesso.");
   } catch (error) {
     // Mantém o modal aberto e apresenta o motivo para permitir corrigir ou tentar novamente.
-    feedback.textContent = `Não foi possível criar a equipe. ${error.message} Verifique a conexão com o servidor e tente novamente.`;
+    const erroDeValidacao = error.message === "Já existe uma equipe cadastrada com esse nome."
+      || error.message === "Informe um e-mail válido para o gestor da equipe.";
+    feedback.textContent = erroDeValidacao
+      ? error.message
+      : `Não foi possível criar a equipe. ${error.message} Verifique a conexão com o servidor e tente novamente.`;
     feedback.classList.add("is-error");
   } finally {
     // Libera o botão mesmo quando a chamada falha.
@@ -209,9 +246,9 @@ async function submitTeamCreation(form) {
   }
 }
 
-// Encontra a equipe atualmente selecionada na lista fictícia local.
+// Encontra a equipe atualmente selecionada entre os dados carregados da API.
 function getSelectedTeam() {
-  return teamsDemoData.teams.find(team => team.id === selectedTeamId) || null;
+  return teamsData.teams.find(team => team.id === selectedTeamId) || null;
 }
 
 // Retorna uma etiqueta de disponibilidade para integrantes.
@@ -229,10 +266,11 @@ function renderTeamDetails(team) {
         <td><strong>${escapeTeamText(employee.name)}</strong></td>
         <td>${escapeTeamText(employee.role)}</td>
         <td>${renderEmployeeAvailability(employee)}</td>
-        <td><a class="team-contact-link" href="tel:${escapeTeamText(employee.contact.replace(/[^\d+]/g, ""))}">${escapeTeamText(employee.contact)}</a></td>
+        <td>${isValidTeamEmail(employee.email) ? `<a class="team-email-link" href="mailto:${escapeTeamText(employee.email)}">${escapeTeamText(employee.email)}</a>` : escapeTeamText(employee.email || "—")}</td>
+        <td><button class="team-delete-collaborator-button" type="button" data-remove-collaborator="${escapeTeamText(employee.id)}" aria-label="Excluir ${escapeTeamText(employee.name)}" title="${team.status === "Indisponível" ? "Não é possível excluir colaboradores de uma equipe indisponível." : "Excluir colaborador"}" ${team.status === "Indisponível" ? "disabled" : ""}><i class="bi bi-trash3" aria-hidden="true"></i></button></td>
       </tr>
     `).join("")
-    : '<tr><td class="team-members-empty-cell" colspan="4">Ainda não há funcionários cadastrados nesta equipe.</td></tr>';
+    : '<tr><td class="team-members-empty-cell" colspan="5">Ainda não há colaboradores cadastrados nessa equipe.</td></tr>';
 
   teamsPage.detailsContent.innerHTML = `
     <header class="team-detail-heading">
@@ -243,11 +281,11 @@ function renderTeamDetails(team) {
       <div><span>Status</span><strong><span class="team-status-badge ${team.status === "Disponível" ? "available" : "unavailable"}">${escapeTeamText(team.status)}</span></strong></div>
       <div><span>Gestor</span><strong>${escapeTeamText(team.manager)}</strong></div>
       <div><span>Região de atuação</span><strong>${escapeTeamText(team.region)}</strong></div>
-      <div><span>Integrantes</span><strong>${team.employees.length}</strong></div>
+      <div><span>Colaboradores</span><strong>${team.employees.length}</strong></div>
     </div>
     <section class="team-members-section">
-      <div class="team-section-heading"><div><h3>Funcionários da equipe</h3><p>Nome, função, disponibilidade e contato.</p></div><button class="team-primary-button" type="button" data-add-employee><i class="bi bi-person-plus" aria-hidden="true"></i>Cadastrar funcionário</button></div>
-      <div class="team-members-table-wrap"><table class="team-members-table"><thead><tr><th>Nome</th><th>Cargo/função</th><th>Disponibilidade</th><th>Contato</th></tr></thead><tbody>${employeeRows}</tbody></table></div>
+      <div class="team-section-heading"><div><h3>Colaboradores da equipe</h3><p>Nome, função, disponibilidade e e-mail.</p></div><button class="team-primary-button" type="button" data-add-employee><i class="bi bi-person-plus" aria-hidden="true"></i>Cadastrar colaborador</button></div>
+      <div class="team-members-table-wrap"><table class="team-members-table"><thead><tr><th>Nome</th><th>Cargo/função</th><th>Disponibilidade</th><th>E-mail</th><th>Ações</th></tr></thead><tbody>${employeeRows}</tbody></table></div>
     </section>
     <section class="team-orders-action">
       <div><h3>Ordens de serviço</h3><p>Direcione uma ordem aberta e ainda sem equipe.</p></div>
@@ -258,7 +296,7 @@ function renderTeamDetails(team) {
 
 // Abre os detalhes da equipe escolhida e prepara sua lista de integrantes.
 function openTeamDetails(teamId) {
-  const team = teamsDemoData.teams.find(item => item.id === teamId);
+  const team = teamsData.teams.find(item => item.id === teamId);
   if (!team) return;
   selectedTeamId = team.id;
   renderTeamDetails(team);
@@ -274,20 +312,29 @@ function closeTeamDetails() {
   document.body.classList.remove("teams-modal-open");
 }
 
-// Preenche o cadastro com equipe/região e deixa editáveis os dados do funcionário.
+// Fecha o formulário de colaborador e devolve o foco ao botão que o abriu.
+function closeEmployeeForm() {
+  teamsPage.employeeModal.hidden = true;
+  document.body.classList.remove("teams-employee-modal-open");
+  const addButton = teamsPage.detailsContent.querySelector("[data-add-employee]");
+  if (addButton) addButton.focus();
+}
+
+// Preenche o formulário do colaborador com os dados da equipe selecionada.
 function openEmployeeForm() {
   const team = getSelectedTeam();
   if (!team) return;
   teamsPage.employeeContent.innerHTML = `
-    <header class="employee-form-heading"><span class="employee-form-icon"><i class="bi bi-person-plus-fill" aria-hidden="true"></i></span><div><span>INTEGRANTE DA EQUIPE</span><h2 id="employeeModalTitle">Cadastrar funcionário</h2><p>Preencha os dados para enviar o cadastro.</p></div></header>
+    <button class="teams-modal-close employee-form-close" type="button" data-close-employee aria-label="Fechar cadastro de colaborador"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+    <header class="employee-form-heading"><span class="employee-form-icon"><i class="bi bi-person-plus-fill" aria-hidden="true"></i></span><div><span>COLABORADOR DA EQUIPE</span><h2 id="employeeModalTitle">Cadastrar colaborador</h2><p>Preencha os dados para enviar o cadastro.</p></div></header>
     <form id="employeeRegistrationForm" novalidate>
       <label>Equipe<select name="teamName" readonly disabled><option>${escapeTeamText(team.name)}</option></select></label>
       <label>Região de atuação<input name="region" value="${escapeTeamText(team.region)}" readonly></label>
       <label>Nome completo<input name="fullName" autocomplete="name" required maxlength="120" placeholder="Nome e sobrenome"></label>
       <label>Função<input name="role" required maxlength="80" placeholder="Ex.: Podador"></label>
-      <label>Contato<input name="contact" type="tel" autocomplete="tel" required maxlength="40" placeholder="Telefone ou e-mail"></label>
+      <label>E-mail<input name="email" type="email" autocomplete="email" required maxlength="254" placeholder="colaborador@exemplo.com"></label>
       <p class="employee-form-feedback" id="employeeFormFeedback" role="status" aria-live="polite"></p>
-      <button class="team-primary-button employee-save-button" type="submit"><i class="bi bi-check2-circle" aria-hidden="true"></i>Salvar funcionário</button>
+      <button class="team-primary-button employee-save-button" type="submit"><i class="bi bi-check2-circle" aria-hidden="true"></i>Salvar colaborador</button>
     </form>
   `;
   teamsPage.employeeModal.hidden = false;
@@ -295,9 +342,7 @@ function openEmployeeForm() {
   teamsPage.employeeContent.querySelector("[name='fullName']").focus();
 }
 
-// Envia os dados ao endpoint previsto; só fecha o modal depois de uma resposta de sucesso.
-// FUTURO BACK-END: POST /api/equipes/{equipeId}/funcionarios, com nomeCompleto, funcao, contato e regiaoAtuacao.
-// A API deverá validar permissões e campos, persistir o funcionário e retornar seu ID/disponibilidade.
+// Envia os dados ao backend e só fecha o formulário após confirmar a gravação.
 async function submitEmployeeRegistration(form) {
   if (employeeRequestInProgress) return;
   const team = getSelectedTeam();
@@ -305,15 +350,18 @@ async function submitEmployeeRegistration(form) {
   const saveButton = form.querySelector("button[type='submit']");
   const formData = new FormData(form);
   const employeePayload = {
-    equipeId: team?.id,
-    regiaoAtuacao: team?.region,
     nomeCompleto: String(formData.get("fullName") || "").trim(),
     funcao: String(formData.get("role") || "").trim(),
-    contato: String(formData.get("contact") || "").trim()
+    email: String(formData.get("email") || "").trim()
   };
 
-  if (!team || !employeePayload.nomeCompleto || !employeePayload.funcao || !employeePayload.contato) {
+  if (!team || !employeePayload.nomeCompleto || !employeePayload.funcao || !employeePayload.email) {
     feedback.textContent = "Preencha todos os campos para salvar o funcionário.";
+    feedback.classList.add("is-error");
+    return;
+  }
+  if (!isValidTeamEmail(employeePayload.email)) {
+    feedback.textContent = "Informe um e-mail válido para o colaborador.";
     feedback.classList.add("is-error");
     return;
   }
@@ -325,42 +373,153 @@ async function submitEmployeeRegistration(form) {
   feedback.classList.remove("is-error");
 
   try {
-    // A chamada usa o endpoint planejado; enquanto a API não existir, o modal permanece aberto e informa a falha.
-    const response = await fetch(`/api/equipes/${encodeURIComponent(team.id)}/funcionarios`, {
+    // Grava o colaborador como subdocumento da equipe selecionada.
+    const response = await fetch(`/api/equipes/${encodeURIComponent(team.id)}/colaboradores`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "same-origin",
       body: JSON.stringify(employeePayload)
     });
-    if (!response.ok) throw new Error(`O servidor respondeu com status ${response.status}.`);
+    // Lê uma única vez a resposta para mostrar mensagens úteis do backend.
+    const responseText = await response.text();
+    let result;
+    try {
+      result = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      throw new Error("O servidor retornou uma resposta inválida.");
+    }
+    if (!response.ok) {
+      throw new Error(result.erro || `O servidor respondeu com status ${response.status}.`);
+    }
 
-    // Usa os dados devolvidos pelo servidor e atualiza a visualização local da equipe.
-    const result = await response.json().catch(() => ({}));
-    const savedEmployee = result.funcionario || result;
+    // Converte a resposta confirmada para o formato usado na interface.
+    const savedEmployee = result.colaborador;
+    if (!savedEmployee?.id) throw new Error("O servidor não retornou o ID do colaborador.");
     team.employees.push({
-      id: savedEmployee.id || `FUN-${String(Date.now()).slice(-6)}`,
+      id: String(savedEmployee.id),
       name: savedEmployee.nomeCompleto || employeePayload.nomeCompleto,
       role: savedEmployee.funcao || employeePayload.funcao,
       available: savedEmployee.disponivel ?? true,
-      contact: savedEmployee.contato || employeePayload.contato
+      email: savedEmployee.email || employeePayload.email
     });
 
     employeeRequestInProgress = false;
-    teamsPage.employeeModal.hidden = true;
-    document.body.classList.remove("teams-employee-modal-open");
+    closeEmployeeForm();
     renderTeamDetails(team);
     renderTeamsTable();
     showTeamsToast("Funcionário cadastrado com sucesso.");
   } catch (error) {
     // Mantém o formulário aberto para correção/tentativa novamente quando o servidor falhar.
-    feedback.textContent = `Não foi possível salvar. ${error.message} Verifique a conexão com o servidor e tente novamente.`;
+    const erroDeEmail = error.message === "Informe um e-mail válido para o colaborador."
+      || error.message === "Já existe um colaborador cadastrado com este e-mail.";
+    feedback.textContent = erroDeEmail
+      ? error.message
+      : `Não foi possível salvar. ${error.message} Verifique a conexão com o servidor e tente novamente.`;
     feedback.classList.add("is-error");
   } finally {
     employeeRequestInProgress = false;
     if (saveButton.isConnected) {
       saveButton.disabled = false;
-      saveButton.innerHTML = '<i class="bi bi-check2-circle" aria-hidden="true"></i>Salvar funcionário';
+      saveButton.innerHTML = '<i class="bi bi-check2-circle" aria-hidden="true"></i>Salvar colaborador';
     }
+  }
+}
+
+// Pede confirmação antes de remover o colaborador do documento no MongoDB.
+async function removeCollaborator(collaboratorId) {
+  const team = getSelectedTeam();
+  if (!team || team.status === "Indisponível") return;
+
+  const collaborator = team.employees.find(item => item.id === collaboratorId);
+  if (!collaborator) return;
+
+  // Mantém a lista e o banco sem alterações se a pessoa cancelar.
+  const confirmou = window.confirm(
+    `Deseja realmente excluir ${collaborator.name} desta equipe?`);
+  if (!confirmou) return;
+
+  try {
+    // Solicita ao backend excluir apenas o subdocumento selecionado.
+    const response = await fetch(
+      `/api/equipes/${encodeURIComponent(team.id)}/colaboradores/${encodeURIComponent(collaboratorId)}`,
+      { method: "DELETE", credentials: "same-origin" }
+    );
+    const responseText = await response.text();
+    let result;
+    try {
+      result = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      throw new Error("O servidor retornou uma resposta inválida.");
+    }
+    if (!response.ok) {
+      throw new Error(result.erro || `O servidor respondeu com status ${response.status}.`);
+    }
+
+    // Atualiza a lista local somente depois da confirmação do banco.
+    team.employees = team.employees.filter(item => item.id !== collaboratorId);
+    renderTeamDetails(team);
+    renderTeamsTable();
+    showTeamsToast("Colaborador excluído da equipe.");
+  } catch (error) {
+    // Informa falhas sem remover o colaborador da visualização local.
+    showTeamsToast(`Não foi possível excluir o colaborador. ${error.message}`);
+  }
+}
+
+// Exclui a equipe somente após confirmação e validação no servidor.
+async function removeTeam(teamId) {
+  const team = teamsData.teams.find(item => item.id === teamId);
+  if (!team || teamDeletionsInProgress.has(teamId)) return;
+
+  if (team.employees.length > 0 || team.status !== "Disponível") {
+    showTeamsToast(
+      "Não é possível excluir a equipe: ela possui colaboradores ou está indisponível."
+    );
+    return;
+  }
+
+  if (!window.confirm(`Deseja realmente excluir a equipe "${team.name}"?`)) return;
+
+  const deleteButton = Array.from(
+    teamsPage.tableBody.querySelectorAll("[data-delete-team]")
+  ).find(button => button.dataset.deleteTeam === teamId);
+  teamDeletionsInProgress.add(teamId);
+  if (deleteButton) deleteButton.disabled = true;
+
+  try {
+    const response = await fetch(`/api/equipes/${encodeURIComponent(teamId)}`, {
+      method: "DELETE",
+      credentials: "same-origin"
+    });
+    const responseText = await response.text();
+    let result;
+    try {
+      result = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      if (response.status === 404) {
+        throw new Error(
+          "A rota de exclusão não está ativa. Pare e reinicie o backend para carregar a nova versão."
+        );
+      }
+      throw new Error(`O servidor respondeu com status ${response.status} sem JSON válido.`);
+    }
+
+    if (response.status === 409) {
+      showTeamsToast(result.erro || "Não é possível excluir esta equipe.");
+      return;
+    }
+    if (!response.ok) {
+      throw new Error(result.erro || `O servidor respondeu com status ${response.status}.`);
+    }
+
+    teamsData.teams = teamsData.teams.filter(item => item.id !== teamId);
+    renderTeamsTable();
+    showTeamsToast("Equipe excluída com sucesso.");
+  } catch (error) {
+    showTeamsToast(`Não foi possível excluir a equipe. ${error.message}`);
+  } finally {
+    teamDeletionsInProgress.delete(teamId);
+    if (deleteButton && deleteButton.isConnected) deleteButton.disabled = false;
   }
 }
 
@@ -368,8 +527,8 @@ async function submitEmployeeRegistration(form) {
 function openTeamOrdersSelector() {
   const team = getSelectedTeam();
   if (!team) return;
-  const openOrders = teamsDemoData.serviceOrders.filter(order =>
-    order.municipalityId === teamsDemoData.municipality.id &&
+  const openOrders = teamsData.serviceOrders.filter(order =>
+    order.municipalityId === teamsData.municipality.id &&
     !order.teamId && ["Pendente", "Aguardando equipe"].includes(order.status)
   );
 
@@ -395,7 +554,7 @@ function openTeamOrdersSelector() {
 // FUTURO API/BD: PATCH /api/ordens-servico/{id}/equipe com equipeId; atualizar status e auditoria da atribuição.
 function assignServiceOrder(orderId) {
   const team = getSelectedTeam();
-  const order = teamsDemoData.serviceOrders.find(item => item.id === orderId);
+  const order = teamsData.serviceOrders.find(item => item.id === orderId);
   if (!team || !order || order.teamId || !["Pendente", "Aguardando equipe"].includes(order.status)) return;
 
   order.teamId = team.id;
@@ -419,7 +578,10 @@ function showTeamsToast(message) {
 
 // Conecta a busca, criação da equipe, modais de detalhes e ações existentes.
 function setupTeamsPageEvents() {
-  teamsPage.search.addEventListener("input", renderTeamsTable);
+  // Consulta o backend com cada busca após a pausa da digitação.
+  teamsPage.search.addEventListener("input", agendarBuscaDeEquipes);
+  // Aplica o status escolhido imediatamente no filtro do backend.
+  teamsPage.statusFilter.addEventListener("change", loadTeams);
   document.getElementById("openCreateTeamModal").addEventListener("click", openCreateTeamModal);
   document.getElementById("closeCreateTeamModal").addEventListener("click", closeCreateTeamModal);
   teamsPage.createModal.addEventListener("click", event => {
@@ -432,11 +594,18 @@ function setupTeamsPageEvents() {
   teamsPage.tableBody.addEventListener("click", event => {
     const trigger = event.target.closest("[data-open-team]");
     if (trigger) openTeamDetails(trigger.dataset.openTeam);
+    const deleteButton = event.target.closest("[data-delete-team]");
+    if (deleteButton) removeTeam(deleteButton.dataset.deleteTeam);
   });
 
   teamsPage.detailsContent.addEventListener("click", event => {
     if (event.target.closest("[data-add-employee]")) openEmployeeForm();
     if (event.target.closest("[data-assign-order]")) openTeamOrdersSelector();
+    const deleteButton = event.target.closest("[data-remove-collaborator]");
+    if (deleteButton) removeCollaborator(deleteButton.dataset.removeCollaborator);
+  });
+  teamsPage.employeeContent.addEventListener("click", event => {
+    if (event.target.closest("[data-close-employee]")) closeEmployeeForm();
   });
   teamsPage.employeeContent.addEventListener("submit", event => {
     if (event.target.id !== "employeeRegistrationForm") return;
@@ -459,21 +628,20 @@ function setupTeamsPageEvents() {
     if (event.target === teamsPage.ordersModal) teamsPage.ordersModal.hidden = true;
   });
 
-  // Fecha o cadastro comum com Escape, mas preserva o modal obrigatório de funcionário.
+  // Fecha o cadastro de colaborador com Escape sem fechar os detalhes por trás.
   document.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;
     if (!teamsPage.createModal.hidden) { closeCreateTeamModal(); return; }
-    if (!teamsPage.employeeModal.hidden) { event.preventDefault(); return; }
+    if (!teamsPage.employeeModal.hidden) { closeEmployeeForm(); return; }
     if (!teamsPage.ordersModal.hidden) { teamsPage.ordersModal.hidden = true; return; }
     if (!teamsPage.detailsModal.hidden) closeTeamDetails();
   });
 }
 
-// Prepara o município demonstrativo, instala os eventos e renderiza a tabela inicial.
-// FUTURO API/BD: resolver o município pela sessão autenticada e carregar as equipes relacionadas ao setor.
+// Instala os eventos da tela e busca as equipes associadas na API.
 function initializeTeamsPage() {
   setupTeamsPageEvents();
-  renderTeamsTable();
+  loadTeams();
 }
 
 initializeTeamsPage();
