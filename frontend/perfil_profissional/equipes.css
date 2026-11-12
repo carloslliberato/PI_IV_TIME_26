@@ -9,12 +9,16 @@
 .teams-create-button:focus-visible { outline: 3px solid rgba(29, 118, 81, .25); outline-offset: 2px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
 
-/* Campo de busca para localizar equipes pelo ID, nome, região ou gestor. */
-.teams-search { height: 52px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding: 0 16px; border: 1px solid #dfe8e2; border-radius: 12px; background: #fff; color: #638071; box-shadow: 0 3px 12px rgba(20, 60, 40, .025); }
+/* Filtros de texto e status, alinhados antes da listagem de equipes. */
+.teams-filters { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 12px; margin-bottom: 20px; }
+.teams-search { height: 52px; display: flex; align-items: center; gap: 12px; padding: 0 16px; border: 1px solid #dfe8e2; border-radius: 12px; background: #fff; color: #638071; box-shadow: 0 3px 12px rgba(20, 60, 40, .025); }
 .teams-search:focus-within { border-color: #91b8a0; box-shadow: 0 0 0 3px rgba(29, 118, 81, .1); }
 .teams-search > i { font-size: 17px; }
 .teams-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: #34443a; font: inherit; font-size: 13px; }
 .teams-search input::placeholder { color: #9aa49e; }
+.teams-status-filter { min-width: 0; display: flex; align-items: center; gap: 10px; padding: 0 13px; border: 1px solid #dfe8e2; border-radius: 12px; background: #fff; color: #748179; font-size: 12px; font-weight: 700; }
+.teams-status-filter select { width: 100%; min-width: 0; height: 50px; border: 0; outline: 0; background: transparent; color: #34443a; font: inherit; cursor: pointer; }
+.teams-status-filter:focus-within { border-color: #91b8a0; box-shadow: 0 0 0 3px rgba(29, 118, 81, .1); }
 
 /* Cartão e tabela responsiva das equipes cadastradas. */
 .teams-card { overflow: hidden; border: 1px solid #e1eae4; border-radius: 16px; background: #fff; box-shadow: 0 8px 26px rgba(22, 59, 40, .04); }
@@ -29,8 +33,12 @@
 .teams-table td { padding: 15px 17px; border-top: 1px solid #edf1ee; color: #57645d; font-size: 12px; vertical-align: middle; }
 .teams-table tbody tr:hover { background: #fbfdfb; }
 .teams-table td strong { color: #2d3b33; font-size: 12px; font-weight: 750; }
-.team-id-link { padding: 0; border: 0; background: transparent; color: #176344; font: inherit; font-size: 12px; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-.team-id-link:hover { color: #0e4934; }
+.team-name-link { padding: 0; border: 0; background: transparent; color: #176344; font: inherit; font-size: 12px; font-weight: 800; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.team-name-link:hover { color: #0e4934; }
+.team-name-link:focus-visible, .team-delete-button:focus-visible { outline: 3px solid rgba(29, 118, 81, .25); outline-offset: 2px; }
+.team-delete-button { width: 32px; height: 32px; display: inline-grid; place-items: center; border: 1px solid #f0d7d4; border-radius: 8px; background: #fff; color: #a63a32; cursor: pointer; }
+.team-delete-button:hover:not(:disabled) { border-color: #d9a09b; background: #fff5f4; }
+.team-delete-button:disabled { border-color: #e7eae8; background: #f5f6f5; color: #aeb5b0; cursor: wait; }
 .team-status-badge { display: inline-flex; align-items: center; padding: 5px 9px; border-radius: 999px; font-size: 10px; font-weight: 800; white-space: nowrap; }
 .team-status-badge.available { background: #e8f4e8; color: #43833c; }
 .team-status-badge.unavailable { background: #fff0df; color: #a75b20; }
@@ -74,19 +82,22 @@
 .team-detail-summary > div > span { display: block; margin-bottom: 5px; color: #829087; font-size: 10px; }
 .team-detail-summary > div > strong { display: block; color: #3d4b43; font-size: 12px; font-weight: 700; }
 
-/* Lista de funcionários com disponibilidade e links de contato. */
+/* Lista de colaboradores com disponibilidade, e-mail e ação de exclusão. */
 .team-members-section { margin-top: 22px; }
 .team-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 12px; }
 .team-section-heading h3, .team-orders-action h3 { margin: 0; color: #2c3d33; font-size: 15px; font-weight: 800; }
 .team-section-heading p, .team-orders-action p { margin: 5px 0 0; color: #7c8981; font-size: 11px; }
 .team-members-table-wrap { overflow-x: auto; border: 1px solid #e8eeea; border-radius: 10px; }
-.team-members-table { width: 100%; min-width: 620px; border-collapse: collapse; text-align: left; }
+.team-members-table { width: 100%; min-width: 700px; border-collapse: collapse; text-align: left; }
 .team-members-table th { padding: 11px 13px; background: #f7faf8; color: #748179; font-size: 10px; font-weight: 750; white-space: nowrap; }
 .team-members-table td { padding: 12px 13px; border-top: 1px solid #edf1ee; color: #57645d; font-size: 11px; }
 .team-members-table td strong { color: #34443a; font-size: 11px; }
 .team-members-empty-cell { padding: 24px !important; color: #87928b !important; text-align: center; }
-.team-contact-link { color: #176344; font-size: 11px; text-decoration: none; }
-.team-contact-link:hover { text-decoration: underline; }
+.team-email-link { color: #176344; font-size: 11px; text-decoration: none; }
+.team-email-link:hover { text-decoration: underline; }
+.team-delete-collaborator-button { width: 32px; height: 32px; display: inline-grid; place-items: center; border: 1px solid #f0d7d4; border-radius: 8px; background: #fff; color: #a63a32; cursor: pointer; }
+.team-delete-collaborator-button:hover:not(:disabled) { border-color: #d9a09b; background: #fff5f4; }
+.team-delete-collaborator-button:disabled { border-color: #e7eae8; background: #f5f6f5; color: #aeb5b0; cursor: not-allowed; }
 
 /* Ações disponíveis na ficha: cadastrar pessoa e encaminhar OS aberta. */
 .team-orders-action { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 18px; padding: 15px 16px; border: 1px solid #e8eeea; border-radius: 11px; background: #fbfdfb; }
@@ -97,8 +108,9 @@
 .team-secondary-button { border: 1px solid #cfe0d4; background: #f3f8f4; color: #176344; }
 .team-secondary-button:hover { border-color: #a9c5b2; background: #eaf3ec; }
 
-/* Formulário obrigatório de cadastro de funcionário, incluindo estado de erro/envio. */
+/* Formulário de cadastro de colaborador, incluindo botão para fechar e estado de erro/envio. */
 .employee-modal-card { width: min(560px, 100%); }
+.employee-form-close { top: 13px; right: 13px; }
 .employee-form-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
 .employee-form-icon { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; border-radius: 12px; background: #e8f3ee; color: #176344; font-size: 18px; }
 .employee-form-heading > div > span { color: #7b8a80; font-size: 9px; font-weight: 800; letter-spacing: .06em; }
@@ -140,6 +152,8 @@
   .teams-heading { align-items: flex-start; flex-direction: column; gap: 10px; }
   .teams-heading-actions { align-items: flex-start; flex-direction: column; gap: 10px; }
   .teams-create-button { width: 100%; }
+  .teams-filters { grid-template-columns: 1fr; }
+  .teams-status-filter { min-height: 48px; }
   .teams-card-heading { align-items: flex-start; flex-direction: column; padding: 15px; }
   .teams-modal-backdrop { align-items: flex-start; padding: 10px; }
   .teams-modal-card { max-height: calc(100vh - 20px); padding: 21px 16px; }

@@ -19,3 +19,34 @@ Atributos:
 | preferenciasNotificacao | Array de String | Não | Categorias de notificações selecionadas pelo cidadão. |
 | dataCadastro | Date | Sim | Data e horário de criação da conta. |
 | dataAtualizacao | Date | Não | Data e horário da última atualização dos dados da conta. |
+
+### 2. Equipe
+Descrição: Armazena equipes municipais criadas por funcionários autenticados.
+
+Atributos:
+
+| Nome | Tipo | Obrigatoriedade | Descrição |
+| --- | --- | --- | --- |
+| _id | ObjectId | Sim | Identificador único da equipe. |
+| nome | String | Sim | Nome da equipe. |
+| regiao | String | Sim | Região de atuação informada no cadastro. |
+| status | String | Sim | Situação inicial da equipe, definida como "Disponível". |
+| municipioId | ObjectId | Sim | Município obtido da conta do funcionário autenticado. |
+| municipioNome | String | Sim | Nome do município obtido do cadastro de municípios no banco. |
+| usuarioId | ObjectId | Sim | Conta do funcionário autenticado que criou a equipe. |
+| usuarioNome | String | Sim | Nome do funcionário obtido da conta autenticada no banco. |
+| gestor | Documento | Sim | Nome do gestor responsável, armazenado no campo `gestor.nome`. |
+| dataCadastro | Date | Sim | Data e horário de criação da equipe. |
+| colaboradores | Array de documentos | Sim | Colaboradores armazenados dentro do próprio documento da equipe. O array começa vazio. Os nomes de equipe são únicos (sem diferenciar maiúsculas de minúsculas). |
+
+Cada elemento de `colaboradores` contém:
+
+| Nome | Tipo | Obrigatoriedade | Descrição |
+| --- | --- | --- | --- |
+| _id | ObjectId | Sim | Identificador do colaborador dentro da equipe. |
+| nomeCompleto | String | Sim | Nome completo informado no cadastro. |
+| funcao | String | Sim | Função exercida pelo colaborador. |
+| contato | String | Sim | Telefone ou e-mail de contato. |
+| regiaoAtuacao | String | Sim | Região herdada da equipe no momento do cadastro. |
+| disponivel | Boolean | Sim | Disponibilidade inicial do colaborador. |
+| dataCadastro | Date | Sim | Data e horário em que foi adicionado à equipe. |
