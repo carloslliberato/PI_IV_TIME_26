@@ -275,7 +275,7 @@ function renderTeamDetails(team) {
   teamsPage.detailsContent.innerHTML = `
     <header class="team-detail-heading">
       <span class="team-detail-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
-      <div><span class="team-detail-eyebrow">${escapeTeamText(team.id)} · ${escapeTeamText(team.region)}</span><h2 id="teamDetailsTitle">${escapeTeamText(team.name)}</h2></div>
+      <div><span class="team-detail-eyebrow">${escapeTeamText(team.region)}</span><h2 id="teamDetailsTitle">${escapeTeamText(team.name)}</h2></div>
     </header>
     <div class="team-detail-summary">
       <div><span>Status</span><strong><span class="team-status-badge ${team.status === "Disponível" ? "available" : "unavailable"}">${escapeTeamText(team.status)}</span></strong></div>
