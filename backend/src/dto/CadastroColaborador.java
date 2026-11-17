@@ -3,7 +3,7 @@ package dto;
 public class CadastroColaborador {
     private String nomeSobrenome;
     private String funcao;
-    private String contato;
+    private String email;
     private String equipe;
     private String regiaoAtuacao;
 
@@ -27,12 +27,12 @@ public class CadastroColaborador {
         this.funcao = funcao;
     }
 
-    public String getContato() {
-        return contato;
+    public String getEmail() {
+        return email;
     }
 
-    public void setContato(String contato) {
-        this.contato = contato;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getEquipe() {

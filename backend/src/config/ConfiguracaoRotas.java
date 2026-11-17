@@ -6,12 +6,14 @@ import io.javalin.Javalin;
 import controller.ContaController;
 import controller.ArvoreController;
 import controller.EspecieController;
+import controller.EquipeController;
 
 import repository.ContaRepository;
 import repository.MunicipioRepository;
 import repository.RecuperacaoSenhaRepository;
 import repository.ArvoreRepository;
 import repository.EspecieRepository;
+import repository.EquipeRepository;
 
 import service.ConexaoServidor;
 import service.ContaService;
@@ -19,12 +21,14 @@ import service.RecuperacaoSenhaService;
 import service.ServicoEmail;
 import service.ArvoreService;
 import service.EspecieService;
+import service.EquipeService;
 
 public class ConfiguracaoRotas {
 
     private final ContaController contaController;
     private final ArvoreController arvoreController;
     private final EspecieController especieController;
+    private final EquipeController equipeController;
 
     public ConfiguracaoRotas(
             ConexaoServidor conexaoServidor) {
@@ -77,6 +81,15 @@ public class ConfiguracaoRotas {
 
         this.especieController =
                 new EspecieController(especieService);
+
+        EquipeService equipeService =
+                new EquipeService(
+                        contaRepository,
+                        new EquipeRepository(),
+                        municipioRepository);
+
+        this.equipeController =
+                new EquipeController(equipeService);
     }
 
     public void registrarRotas(Javalin servidorHttp) {
@@ -144,5 +157,25 @@ public class ConfiguracaoRotas {
         servidorHttp.post(
                 "/api/especies",
                 ctx -> especieController.cadastrar(ctx));
+
+        servidorHttp.get(
+                "/api/equipes",
+                ctx -> equipeController.listar(ctx));
+
+        servidorHttp.post(
+                "/api/equipes",
+                ctx -> equipeController.cadastrar(ctx));
+
+        servidorHttp.delete(
+                "/api/equipes/{equipeId}",
+                ctx -> equipeController.excluir(ctx));
+
+        servidorHttp.post(
+                "/api/equipes/{equipeId}/colaboradores",
+                ctx -> equipeController.cadastrarColaborador(ctx));
+
+        servidorHttp.delete(
+                "/api/equipes/{equipeId}/colaboradores/{colaboradorId}",
+                ctx -> equipeController.excluirColaborador(ctx));
     }
 }
