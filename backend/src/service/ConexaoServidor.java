@@ -1,3 +1,4 @@
+
 package service;
 
 import java.net.Socket;
@@ -7,6 +8,8 @@ import java.io.ObjectOutputStream;
 import protocolo.Parceiro;
 import protocolo.PedidoDeValidacaoCadastro;
 import protocolo.ResultadoValidacaoCadastro;
+import protocolo.PedidoDeValidacaoArvore;
+import protocolo.ResultadoValidacaoArvore;
 import protocolo.Comunicado;
 
 public class ConexaoServidor {
@@ -61,7 +64,9 @@ public class ConexaoServidor {
                 receptor = null;
             }
         } catch (Exception erro) {
-            System.err.println("Erro ao fechar receptor: " + erro.getMessage());
+            System.err.println(
+                    "Erro ao fechar receptor: "
+                            + erro.getMessage());
         }
 
         try {
@@ -70,7 +75,9 @@ public class ConexaoServidor {
                 transmissor = null;
             }
         } catch (Exception erro) {
-            System.err.println("Erro ao fechar transmissor: " + erro.getMessage());
+            System.err.println(
+                    "Erro ao fechar transmissor: "
+                            + erro.getMessage());
         }
 
         boolean conexaoFechada = false;
@@ -82,13 +89,16 @@ public class ConexaoServidor {
                 conexaoFechada = true;
             }
         } catch (Exception erro) {
-            System.err.println("Erro ao fechar Socket: " + erro.getMessage());
+            System.err.println(
+                    "Erro ao fechar Socket: "
+                            + erro.getMessage());
         }
 
         parceiro = null;
 
         if (conexaoFechada) {
-            System.out.println("Conexão com o servidor Socket encerrada!");
+            System.out.println(
+                    "Conexão com o servidor Socket encerrada!");
         }
     }
 
@@ -96,21 +106,43 @@ public class ConexaoServidor {
         return parceiro;
     }
 
-    public ResultadoValidacaoCadastro validarCadastro(PedidoDeValidacaoCadastro pedido) throws Exception {
+    public synchronized ResultadoValidacaoCadastro validarCadastro(
+            PedidoDeValidacaoCadastro pedido) throws Exception {
 
         if (parceiro == null) {
-            throw new Exception("Não existe conexão com o servidor Socket.");
+            throw new Exception(
+                    "Não existe conexão com o servidor Socket.");
         }
+
         parceiro.receba(pedido);
 
         Comunicado resposta = parceiro.envie();
 
         if (!(resposta instanceof ResultadoValidacaoCadastro)) {
-            throw new Exception("Resposta inesperada do servidor.");
-
+            throw new Exception(
+                    "Resposta inesperada do servidor.");
         }
-        return (ResultadoValidacaoCadastro) resposta;
 
+        return (ResultadoValidacaoCadastro) resposta;
     }
 
+    public synchronized ResultadoValidacaoArvore validarArvore(
+            PedidoDeValidacaoArvore pedido) throws Exception {
+
+        if (parceiro == null) {
+            throw new Exception(
+                    "Não existe conexão com o servidor Socket.");
+        }
+
+        parceiro.receba(pedido);
+
+        Comunicado resposta = parceiro.envie();
+
+        if (!(resposta instanceof ResultadoValidacaoArvore)) {
+            throw new Exception(
+                    "Resposta inesperada na validacao da arvore.");
+        }
+
+        return (ResultadoValidacaoArvore) resposta;
+    }
 }

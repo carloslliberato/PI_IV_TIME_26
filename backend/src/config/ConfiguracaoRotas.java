@@ -29,8 +29,6 @@ public class ConfiguracaoRotas {
     public ConfiguracaoRotas(
             ConexaoServidor conexaoServidor) {
 
-        // REPOSITORIES DE CONTAS
-
         ContaRepository contaRepository =
                 new ContaRepository();
 
@@ -39,8 +37,6 @@ public class ConfiguracaoRotas {
 
         RecuperacaoSenhaRepository recuperacaoSenhaRepository =
                 new RecuperacaoSenhaRepository();
-
-        // SERVICES DE CONTAS
 
         ContaService contaService = new ContaService(
                 contaRepository,
@@ -57,25 +53,21 @@ public class ConfiguracaoRotas {
                         servicoEmail,
                         contaService);
 
-        // CONTROLLER DE CONTAS
-
         this.contaController =
                 new ContaController(
                         contaService,
                         recuperacaoSenhaService);
 
-        // MODULO DE ARVORES
-
         ArvoreRepository arvoreRepository =
                 new ArvoreRepository();
 
         ArvoreService arvoreService =
-                new ArvoreService(arvoreRepository);
+                new ArvoreService(
+                        arvoreRepository,
+                        conexaoServidor);
 
         this.arvoreController =
                 new ArvoreController(arvoreService);
-
-        // MODULO DE ESPECIES
 
         EspecieRepository especieRepository =
                 new EspecieRepository();
@@ -88,10 +80,6 @@ public class ConfiguracaoRotas {
     }
 
     public void registrarRotas(Javalin servidorHttp) {
-
-        // ==================================
-        // ROTAS DE CONTAS
-        // ==================================
 
         servidorHttp.post(
                 "/api/contas/cidadaos",
@@ -125,15 +113,9 @@ public class ConfiguracaoRotas {
                 "/api/contas/recuperacao-senha",
                 ctx -> contaController.solicitarRecuperacao(ctx));
 
-        // ==================================
-        // ROTAS DE ARVORES
-        // ==================================
-
         servidorHttp.get(
                 "/api/arvores",
                 ctx -> arvoreController.listar(ctx));
-
-        // Rota fixa antes da rota com {id}
 
         servidorHttp.get(
                 "/api/arvores/proximas",
@@ -154,10 +136,6 @@ public class ConfiguracaoRotas {
         servidorHttp.patch(
                 "/api/arvores/{id}/status",
                 ctx -> arvoreController.alterarStatus(ctx));
-
-        // ==================================
-        // ROTAS DE ESPECIES
-        // ==================================
 
         servidorHttp.get(
                 "/api/especies",

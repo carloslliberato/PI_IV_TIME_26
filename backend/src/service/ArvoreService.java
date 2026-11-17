@@ -1,7 +1,10 @@
+
 package service;
 
 import model.Arvore;
 import repository.ArvoreRepository;
+import protocolo.PedidoDeValidacaoArvore;
+import protocolo.ResultadoValidacaoArvore;
 
 import java.util.List;
 import java.util.Map;
@@ -10,28 +13,57 @@ import java.util.NoSuchElementException;
 public class ArvoreService {
 
     private final ArvoreRepository repository;
+    private final ConexaoServidor conexaoServidor;
 
     public ArvoreService(
-            ArvoreRepository repository) {
+            ArvoreRepository repository,
+            ConexaoServidor conexaoServidor) {
 
         this.repository = repository;
+        this.conexaoServidor = conexaoServidor;
     }
 
-    // LISTAR TODAS AS ARVORES
+    private void validarNoServidor(Arvore arvore) {
+
+        if (arvore == null) {
+            throw new IllegalArgumentException(
+                    "Os dados da arvore sao obrigatorios.");
+        }
+
+        PedidoDeValidacaoArvore pedido =
+                new PedidoDeValidacaoArvore(
+                        arvore.getLatitude(),
+                        arvore.getLongitude(),
+                        arvore.getAlturaMetros(),
+                        arvore.getDiametroCm());
+
+        ResultadoValidacaoArvore resultado;
+
+        try {
+
+            resultado = conexaoServidor.validarArvore(pedido);
+
+        } catch (Exception e) {
+
+            throw new IllegalStateException(
+                    "Servidor de validacao indisponivel.", e);
+        }
+
+        if (!resultado.isValido()) {
+            throw new IllegalArgumentException(
+                    String.join(" ", resultado.getErros()));
+        }
+    }
 
     public List<Arvore> listar() {
         return repository.buscarTodas();
     }
-
-    // LISTAR COM FILTROS OPCIONAIS
 
     public List<Arvore> listar(
             Map<String, String> filtros) {
 
         return repository.buscarFiltradas(filtros);
     }
-
-    // BUSCA GEOGRAFICA
 
     public List<Arvore> buscarProximas(
             double latitude,
@@ -70,8 +102,6 @@ public class ArvoreService {
                 municipioId);
     }
 
-    // BUSCAR ARVORE POR ID
-
     public Arvore buscarPorId(String id) {
 
         validarId(id);
@@ -82,10 +112,9 @@ public class ArvoreService {
                                 "Arvore nao encontrada."));
     }
 
-    // CADASTRAR NOVA ARVORE
-
     public Arvore cadastrar(Arvore arvore) {
 
+        validarNoServidor(arvore);
         validarDados(arvore);
 
         if (arvore.getId() != null &&
@@ -106,18 +135,16 @@ public class ArvoreService {
         return arvore;
     }
 
-    // ATUALIZAR ARVORE EXISTENTE
-
     public Arvore atualizar(
             String id,
             Arvore novosDados) {
 
         validarId(id);
+        validarNoServidor(novosDados);
         validarDados(novosDados);
 
         Arvore arvoreAtual = buscarPorId(id);
 
-        // Preserva o ID e o status
         novosDados.setId(
                 arvoreAtual.getId());
 
@@ -135,8 +162,6 @@ public class ArvoreService {
 
         return novosDados;
     }
-
-    // ATIVAR OU ARQUIVAR ARVORE
 
     public Arvore alterarStatus(
             String id,
@@ -159,8 +184,6 @@ public class ArvoreService {
         return arvore;
     }
 
-    // VALIDAR ID
-
     private void validarId(String id) {
 
         if (id == null || id.isBlank()) {
@@ -168,8 +191,6 @@ public class ArvoreService {
                     "O ID da arvore e obrigatorio.");
         }
     }
-
-    // VALIDAR DADOS CADASTRAIS
 
     private void validarDados(Arvore arvore) {
 
@@ -204,8 +225,6 @@ public class ArvoreService {
                     "O nivel de risco e obrigatorio.");
         }
 
-        // COORDENADAS
-
         Double latitude = arvore.getLatitude();
         Double longitude = arvore.getLongitude();
 
@@ -226,8 +245,6 @@ public class ArvoreService {
             throw new IllegalArgumentException(
                     "Longitude invalida.");
         }
-
-        // MEDIDAS
 
         validarMedida(
                 arvore.getAlturaMetros(),
