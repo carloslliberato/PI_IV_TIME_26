@@ -42,21 +42,6 @@ public class OcorrenciaService {
         nova.setLatitude(dto.latitude);
         nova.setLongitude(dto.longitude);
 
-        if (dto.urgencia != null && !dto.urgencia.isBlank()) {
-            if (!URGENCIAS_VALIDAS.contains(dto.urgencia)) {
-                throw new IllegalArgumentException("Prioridade/Urgência inválida. Use: " + URGENCIAS_VALIDAS);
-            }
-            nova.setUrgencia(dto.urgencia);
-        }
-
-        if (dto.municipioId != null && !dto.municipioId.isBlank()) {
-            nova.setMunicipioId(dto.municipioId);
-        }
-
-        // Define um ID padrão caso não seja informado (permite testes isolados sem depender da Pessoa 1)
-        nova.setCidadaoId((dto.cidadaoId != null && !dto.cidadaoId.isBlank()) ? dto.cidadaoId : "cid_001");
-        nova.setArvoreId(dto.arvoreId);
-
         return repository.criar(nova);
     }
 
