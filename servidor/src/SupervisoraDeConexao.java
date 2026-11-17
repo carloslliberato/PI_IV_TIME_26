@@ -8,8 +8,11 @@ import protocolo.Parceiro;
 import protocolo.PedidoParaSair;
 import protocolo.PedidoDeValidacaoCadastro;
 import protocolo.ResultadoValidacaoCadastro;
+import protocolo.PedidoDeValidacaoArvore;
+import protocolo.ResultadoValidacaoArvore;
 
 import service.ValidadorCadastro;
+import service.ValidadorArvore;
 
 public class SupervisoraDeConexao extends Thread {
 
@@ -61,9 +64,31 @@ public class SupervisoraDeConexao extends Thread {
 
                 else if (comunicado instanceof PedidoDeValidacaoCadastro) {
 
-                    PedidoDeValidacaoCadastro pedido = (PedidoDeValidacaoCadastro) comunicado;
+                    PedidoDeValidacaoCadastro pedido =
+                            (PedidoDeValidacaoCadastro) comunicado;
 
-                    ResultadoValidacaoCadastro resultado = ValidadorCadastro.validar(pedido);
+                    ResultadoValidacaoCadastro resultado =
+                            ValidadorCadastro.validar(pedido);
+
+                    this.usuario.receba(resultado);
+                }
+
+                else if (comunicado instanceof PedidoDeValidacaoArvore) {
+
+                    PedidoDeValidacaoArvore pedido =
+                            (PedidoDeValidacaoArvore) comunicado;
+
+                    ResultadoValidacaoArvore resultado =
+                            ValidadorArvore.validar(pedido);
+
+                    System.out.println(
+                            "Validacao de arvore via Socket: "
+                            + (resultado.isValido()
+                                ? "APROVADA"
+                                : "REPROVADA")
+                            + (resultado.isValido()
+                                ? ""
+                                : " - " + resultado.getErros()));
 
                     this.usuario.receba(resultado);
                 }
