@@ -1,84 +1,45 @@
 // ===============================
-// Arboriza - Front-end demonstrativo
+// Arboriza - Mapa público com árvores da API
 // ===============================
+// Os outros módulos públicos continuam com os comportamentos originais.
 
-// Em uma próxima etapa, as funções de busca e CRUD podem trocar
-// os dados locais por chamadas fetch() para a API Java.
+// Inventário público alimentado pela API de árvores.
+// Apenas Campinas possui identificador conhecido nesta integração inicial.
+const MUNICIPIO_ID_PUBLICO_CAMPINAS = "6ae666a7680e8a4330a1ab66";
+let trees = [];
 
-const trees = [
-  {
-    id: "10234",
-    nome: "Ipê-amarelo",
-    especie: "Handroanthus chrysotrichus",
-    bairro: "Taquaral",
-    endereco: "R. Dr. Alberto Sarmento, 123",
-    lat: -22.8768, lng: -47.0594,
-    risco: "Baixo",
-    frutifera: false, manutencao: false, floracao: true, clima: false,
-    distancia: "120 m",
-    imagem: "https://images.unsplash.com/photo-1599557626384-36efbcd7f77a?auto=format&fit=crop&w=300&q=80"
-  },
-  {
-    id: "10456",
-    nome: "Pau-brasil",
-    especie: "Paubrasilia echinata",
-    bairro: "Cambuí",
-    endereco: "Av. Orosimbo Maia, 456",
-    lat: -22.8953, lng: -47.0517,
-    risco: "Moderado",
-    frutifera: true, manutencao: true, floracao: false, clima: false,
-    distancia: "340 m",
-    imagem: "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=300&q=80"
-  },
-  {
-    id: "10876",
-    nome: "Flamboyant",
-    especie: "Delonix regia",
-    bairro: "Vila Nogueira",
-    endereco: "R. Maria Monteiro, 789",
-    lat: -22.8995, lng: -47.0402,
-    risco: "Alto",
-    frutifera: false, manutencao: true, floracao: false, clima: true,
-    distancia: "520 m",
-    imagem: "https://images.unsplash.com/photo-1522442676585-6f7f3a37c2c5?auto=format&fit=crop&w=300&q=80"
-  },
-  {
-    id: "10901",
-    nome: "Resedá",
-    especie: "Lagerstroemia indica",
-    bairro: "Centro",
-    endereco: "Av. Heitor Penteado, 1000",
-    lat: -22.9055, lng: -47.0602,
-    risco: "Baixo",
-    frutifera: false, manutencao: false, floracao: true, clima: false,
-    distancia: "680 m",
-    imagem: "https://images.unsplash.com/photo-1497250681960-ef046c08a56e?auto=format&fit=crop&w=300&q=80"
-  },
-  {
-    id: "11110",
-    nome: "Jatobá",
-    especie: "Hymenaea courbaril",
-    bairro: "Jardim Chapadão",
-    endereco: "Av. Imperatriz Leopoldina, 300",
-    lat: -22.8716, lng: -47.0830,
-    risco: "Crítico",
-    frutifera: true, manutencao: true, floracao: false, clima: true,
-    distancia: "890 m",
-    imagem: "https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=300&q=80"
-  },
-  {
-    id: "11220",
-    nome: "Quaresmeira",
-    especie: "Tibouchina granulosa",
-    bairro: "Ponte Preta",
-    endereco: "Av. das Amoreiras, 121",
-    lat: -22.9192, lng: -47.0738,
-    risco: "Moderado",
-    frutifera: false, manutencao: false, floracao: true, clima: false,
-    distancia: "1,1 km",
-    imagem: "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=300&q=80"
-  }
-];
+function riscoPublico(valor) {
+  return ({ BAIXO: "Baixo", MODERADO: "Moderado", ALTO: "Alto", CRITICO: "Crítico" })[valor] || "Não informado";
+}
+
+function municipioPublicoAtual() {
+  return document.getElementById("municipioSelect").value;
+}
+
+function arvoresDoMunicipio() {
+  // Não mostramos árvores de Campinas como se pertencessem a outro município.
+  return municipioPublicoAtual() === "campinas" ? trees : [];
+}
+
+async function carregarArvoresPublicas() {
+  const resposta = await fetch("/api/arvores");
+  if (!resposta.ok) throw new Error(`Falha ao consultar árvores (HTTP ${resposta.status})`);
+  const dados = await resposta.json();
+  if (!Array.isArray(dados)) throw new Error("Resposta inesperada da API de árvores");
+  trees = dados
+    .filter(a => a.ativa !== false && a.municipioId === MUNICIPIO_ID_PUBLICO_CAMPINAS)
+    .filter(a => Number.isFinite(a.latitude) && Number.isFinite(a.longitude)
+      && Math.abs(a.latitude) <= 90 && Math.abs(a.longitude) <= 180)
+    .map(a => ({
+      id: String(a.id), nome: a.nomePopular || a.especie || "Árvore",
+      especie: a.nomeCientifico || a.especie || "Não informado",
+      bairro: a.bairro || "Não informado", endereco: a.endereco || "Não informado",
+      lat: a.latitude, lng: a.longitude, risco: riscoPublico(a.risco),
+      frutifera: Boolean(a.frutifera), manutencao: Boolean(a.manutencao),
+      floracao: Boolean(a.floracao), clima: Boolean(a.alertaClimatico)
+    }));
+  applyPublicFilters();
+}
 
 const municipalityCenters = {
   campinas: { name: "Campinas - SP", lat: -22.9056, lng: -47.0608, zoom: 13 },
@@ -88,15 +49,22 @@ const municipalityCenters = {
 
 // variaveis do mapa que serão usadas em várias funções, como a instância do mapa, camadas de marcadores e ocorrências, e um mapa para associar IDs de árvores aos seus respectivos marcadores.
 let map;                                   //mapa
-let markerLayer = L.layerGroup();          //camada de marcadores das árvores
-let occurrenceLayer = L.layerGroup();      //camada de marcadores de ocorrências
+let markerLayer;                           //camada de marcadores das árvores
+let occurrenceLayer;                       //camada de marcadores de ocorrências
 let markersById = new Map();               //map que permite lovalizar rapidamente o marcador de uma árvore pelo seu ID
 
 // inicializa depois que o html carregar
 function initializePublicMap() {
   initMap();
-  renderTreeList(trees);
+  renderTreeList([]);
   setupEvents();
+  carregarArvoresPublicas().catch(erro => {
+    console.error("Não foi possível carregar o mapa público:", erro);
+    trees = [];
+    applyPublicFilters();
+    const toast = document.getElementById("mapToast");
+    if (toast) toast.textContent = "Não foi possível carregar as árvores do banco.";
+  });
 }
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initializePublicMap, { once: true });
@@ -124,6 +92,8 @@ function initMap() {
     return;
   }
 
+  markerLayer = L.layerGroup();
+  occurrenceLayer = L.layerGroup();
   map = L.map("map", { zoomControl: false }).setView(
     [municipalityCenters.campinas.lat, municipalityCenters.campinas.lng],
     municipalityCenters.campinas.zoom
@@ -151,7 +121,7 @@ function riskClass(risco) {
     "Alto": "high",
     "Crítico": "critical"
   };
-  return mapClass[risco] || "low";
+  return mapClass[risco] || "unknown";
 }
 
 // transforma as arvores em marcadores no mapa, com ícones personalizados de acordo com o risco da árvore. Cada marcador exibe um popup com informações detalhadas sobre a árvore, incluindo ID, nome, espécie, endereço e bairro. Além disso, adiciona um link para ver detalhes adicionais da árvore.
@@ -166,6 +136,7 @@ function makeTreeIcon(risco) {
 }
 
 function buildTreeMarkers(source = trees) {
+  if (!markerLayer) return;
   markerLayer.clearLayers();
   markersById.clear();
 
@@ -177,21 +148,21 @@ function buildTreeMarkers(source = trees) {
     // quando clica na arvore abre um popup com as informações da arvore e um link para ver detalhes adicionais
     marker.bindPopup(`
       <div class="popup-card">
-        <div class="popup-id">ID: ${tree.id}</div>
-        <div class="popup-name">${tree.nome}</div>
-        <div class="popup-species">${tree.especie}</div>
+        <div class="popup-id">ID: ${escapeTreeDetail(tree.id)}</div>
+        <div class="popup-name">${escapeTreeDetail(tree.nome)}</div>
+        <div class="popup-species">${escapeTreeDetail(tree.especie)}</div>
         <div class="popup-address">
-          ${tree.endereco}<br>
-          ${tree.bairro} - Campinas/SP
+          ${escapeTreeDetail(tree.endereco)}<br>
+          ${escapeTreeDetail(tree.bairro)} - Campinas/SP
         </div>
-        <div class="popup-link" data-tree-id="${tree.id}">
+        <div class="popup-link" data-tree-id="${escapeTreeDetail(tree.id)}">
           Ver detalhes <span aria-hidden="true">→</span>
         </div>
       </div>
     `);
 
-    marker.on("popupopen", () => {
-      const link = document.querySelector(`[data-tree-id="${tree.id}"]`);
+    marker.on("popupopen", event => {
+      const link = event.popup.getElement()?.querySelector("[data-tree-id]");
       if (link) link.addEventListener("click", () => showTreeDetails(tree));
     });
 
@@ -207,25 +178,27 @@ function renderTreeList(list) {
   if (!list.length) {
     container.innerHTML = `
       <div class="alert alert-light border">
-        Nenhuma árvore encontrada para a busca informada.
+        Nenhuma árvore cadastrada para esta busca ou município.
       </div>
     `;
     return;
   }
 
   container.innerHTML = list.map(tree => `
-    <article class="tree-card" data-tree-card="${tree.id}">
-      <img class="tree-photo" src="${tree.imagem}" alt="${tree.nome}">
+    <article class="tree-card" data-tree-card="${escapeTreeDetail(tree.id)}">
+      <div class="tree-photo d-flex align-items-center justify-content-center bg-success-subtle" aria-hidden="true">
+        <i class="bi bi-tree-fill fs-3 text-success"></i>
+      </div>
       <div class="tree-info">
         <div class="tree-top">
-          <h3 class="tree-name">${tree.nome}</h3>
+          <h3 class="tree-name">${escapeTreeDetail(tree.nome)}</h3>
           <span class="tree-badge badge-${riskClass(tree.risco)}">
-            <i class="bi bi-tree-fill me-1"></i>${tree.risco}
+            <i class="bi bi-tree-fill me-1"></i>${escapeTreeDetail(tree.risco)}
           </span>
         </div>
-        <div class="tree-meta">ID: ${tree.id}</div>
-        <div class="tree-address">${tree.endereco}</div>
-        <div class="tree-distance">${tree.distancia}</div>
+        <div class="tree-meta">ID: ${escapeTreeDetail(tree.id)}</div>
+        <div class="tree-address">${escapeTreeDetail(tree.endereco)}</div>
+        <div class="tree-distance">${escapeTreeDetail(tree.distancia || "")}</div>
       </div>
     </article>
   `).join("");
@@ -249,18 +222,28 @@ function setupEvents() {
     if (!selected) return;
     if (map) map.flyTo([selected.lat, selected.lng], selected.zoom, { duration: 0.8 });
     updateHeaderForMunicipality(selected.name);
+    applyPublicFilters();
   });
   document.getElementById("searchInput").addEventListener("input", applyPublicFilters);
   document.getElementById("btnVerTodas").addEventListener("click", () => {
-    document.getElementById("searchInput").value = ""; clearFilterInputs(); renderTreeList(trees); buildTreeMarkers();
-    if (map) map.fitBounds(trees.map(tree => [tree.lat, tree.lng]), { padding: [50,50] });
+    document.getElementById("searchInput").value = "";
+    clearFilterInputs();
+    applyPublicFilters();
+    const registros = arvoresDoMunicipio();
+    if (map && registros.length) {
+      map.fitBounds(registros.map(tree => [tree.lat, tree.lng]), { padding: [50,50], maxZoom: 16 });
+    }
   });
   document.getElementById("treesLayer").addEventListener("change", event => {
-    if (!map) return; if (event.target.checked) map.addLayer(markerLayer); else map.removeLayer(markerLayer);
+    if (!map || !markerLayer) return;
+    if (event.target.checked) map.addLayer(markerLayer);
+    else map.removeLayer(markerLayer);
   });
-  document.getElementById("riskLayer").addEventListener("change", event => markerLayer.eachLayer(marker => marker.setOpacity(event.target.checked ? 1 : 0.18)));
+  document.getElementById("riskLayer").addEventListener("change", event => {
+    if (markerLayer) markerLayer.eachLayer(marker => marker.setOpacity(event.target.checked ? 1 : 0.18));
+  });
   document.getElementById("occurrencesLayer").addEventListener("change", event => {
-    if (!map) return;
+    if (!map || !occurrenceLayer) return;
     if (event.target.checked) { if (!map.hasLayer(occurrenceLayer)) occurrenceLayer.addTo(map); addOccurrenceExample(); }
     else { map.removeLayer(occurrenceLayer); occurrenceLayer.clearLayers(); }
   });
@@ -290,7 +273,7 @@ function setupEvents() {
 function clearFilterInputs(){document.getElementById("filterFruitBearing").checked=false;document.getElementById("filterRisk").value="";document.getElementById("filterMaintenance").checked=false;document.getElementById("filterFlowering").checked=false;document.getElementById("filterWeather").checked=false;}
 function applyPublicFilters(){
   const term=document.getElementById("searchInput").value.trim().toLowerCase(), fruit=document.getElementById("filterFruitBearing").checked, risk=document.getElementById("filterRisk").value, maintenance=document.getElementById("filterMaintenance").checked, flowering=document.getElementById("filterFlowering").checked, weather=document.getElementById("filterWeather").checked;
-  const filtered=trees.filter(tree=>{
+  const filtered=arvoresDoMunicipio().filter(tree=>{
     const textMatch=!term||[tree.nome,tree.especie,tree.id,tree.bairro,tree.endereco].some(v=>v.toLowerCase().includes(term));
     return textMatch&&(!fruit||tree.frutifera)&&(!risk||tree.risco===risk)&&(!maintenance||tree.manutencao)&&(!flowering||tree.floracao)&&(!weather||tree.clima);
   });
@@ -298,7 +281,7 @@ function applyPublicFilters(){
 }
 
 function addOccurrenceExample() {
-  if (occurrenceLayer.getLayers().length) return;
+  if (!occurrenceLayer || occurrenceLayer.getLayers().length) return;
 
   const occurrenceMarker = L.circleMarker([-22.8860, -47.0682], {
     radius: 8,
@@ -307,7 +290,7 @@ function addOccurrenceExample() {
     fillColor: "#d84836",
     fillOpacity: 0.75
   }).bindPopup(`
-    <strong>Ocorrência #OC-2048</strong><br>
+    <strong>Ocorrência #OC-2048 (exemplo)</strong><br>
     Galho quebrado após chuva forte.
   `);
 
@@ -332,132 +315,54 @@ function escapeTreeDetail(value) {
   })[character]);
 }
 
-// Dados de demonstração para completar os registros locais enquanto o backend não
-// disponibiliza a ficha. Substitua esta função pelo objeto retornado pela API.
-function getTreeDetailsData(tree) {
-  return {
-    nomePopular: tree.nome,
-    nomeCientifico: tree.especie,
-    especie: "Angiosperma — espécie arbórea urbana (dado fictício)",
-    localizacao: `${tree.endereco}, ${tree.bairro}, Campinas/SP`,
-    idade: "Aproximadamente 24 anos (fictício)",
-    altura: "12,5 m (fictício)",
-    diametro: "58 cm (fictício)",
-    fotos: [tree.imagem, "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=900&q=80"],
-    estado: "Saudável — avaliação demonstrativa",
-    risco: tree.risco,
-    ultimaVistoria: "12/08/2025 (fictícia)",
-    ultimaPoda: "03/03/2025 (fictícia)",
-    proximaManutencao: "15/12/2026 — vistoria preventiva (fictícia)"
-  };
-}
-
-// Histórico fictício para a demonstração, separado por ID para cada árvore ter
-// uma linha do tempo própria. Os tipos possíveis incluem vistoria, manutenção e ocorrência.
-function getTreeHistoryData(tree) {
-  // Integração com backend: substituir o retorno abaixo por uma consulta como
-  // GET /api/arvores/${tree.id}/historico (ou rota equivalente do projeto).
-  // A resposta do banco deve trazer data, tipo, título e descrição de cada evento.
-  const demoHistoryByTreeId = {
-    "11110": [
-      { data: "12/06/2026", tipo: "Vistoria", titulo: "Vistoria realizada", descricao: "Avaliação visual da copa e do tronco concluída." },
-      { data: "20/04/2026", tipo: "Manutenção", titulo: "Poda preventiva", descricao: "Remoção de galhos secos e adequação da copa." },
-      { data: "18/02/2026", tipo: "Ocorrência", titulo: "Ocorrência registrada", descricao: "Munícipe relatou galho próximo à calçada; equipe orientada." },
-      { data: "05/11/2025", tipo: "Vistoria", titulo: "Vistoria anterior", descricao: "Árvore mantida em acompanhamento preventivo." }
-    ],
-    "10234": [
-      { data: "08/07/2026", tipo: "Vistoria", titulo: "Vistoria realizada", descricao: "Condição geral considerada estável." },
-      { data: "16/05/2026", tipo: "Ocorrência", titulo: "Ocorrência registrada", descricao: "Solicitação de avaliação de raiz junto ao passeio." },
-      { data: "10/12/2025", tipo: "Manutenção", titulo: "Manutenção preventiva", descricao: "Inspeção e limpeza do entorno realizadas." }
-    ],
-    "10456": [
-      { data: "25/08/2026", tipo: "Ocorrência", titulo: "Ocorrência registrada", descricao: "Relato de galhos baixos sobre a calçada." },
-      { data: "28/06/2026", tipo: "Manutenção", titulo: "Poda de condução", descricao: "Poda leve para liberar a passagem de pedestres." },
-      { data: "14/01/2026", tipo: "Vistoria", titulo: "Vistoria realizada", descricao: "Acompanhamento do desenvolvimento da copa." }
-    ],
-    "10876": [
-      { data: "30/09/2026", tipo: "Vistoria", titulo: "Vistoria prioritária", descricao: "Equipe avaliou inclinação e estabilidade do exemplar." },
-      { data: "11/07/2026", tipo: "Ocorrência", titulo: "Ocorrência registrada", descricao: "Morador relatou queda de pequenos galhos." },
-      { data: "02/03/2026", tipo: "Manutenção", titulo: "Manejo preventivo", descricao: "Área isolada para avaliação técnica." }
-    ],
-    "10901": [
-      { data: "19/08/2026", tipo: "Manutenção", titulo: "Poda de limpeza", descricao: "Retirada de ramos secos conforme planejamento." },
-      { data: "06/05/2026", tipo: "Vistoria", titulo: "Vistoria realizada", descricao: "Condição fitossanitária considerada boa." },
-      { data: "22/11/2025", tipo: "Ocorrência", titulo: "Ocorrência registrada", descricao: "Pedido de inspeção preventiva atendido." }
-    ],
-    "11220": [
-      { data: "02/09/2026", tipo: "Vistoria", titulo: "Vistoria realizada", descricao: "Exemplar avaliado após período de floração." },
-      { data: "17/06/2026", tipo: "Ocorrência", titulo: "Ocorrência registrada", descricao: "Relato de interferência de galhos na iluminação." },
-      { data: "09/02/2026", tipo: "Manutenção", titulo: "Poda preventiva", descricao: "Poda de adequação realizada pela equipe municipal." }
-    ]
-  };
-
-  // Se surgir um novo ID de demonstração, exibe um histórico ilustrativo padrão.
-  return demoHistoryByTreeId[tree.id] || [
-    { data: "12/06/2026", tipo: "Vistoria", titulo: "Vistoria realizada", descricao: `Avaliação demonstrativa da árvore ${tree.nome}.` },
-    { data: "20/04/2026", tipo: "Manutenção", titulo: "Manutenção preventiva", descricao: "Serviço demonstrativo registrado para visualização." },
-    { data: "18/02/2026", tipo: "Ocorrência", titulo: "Ocorrência registrada", descricao: "Registro demonstrativo aguardando integração com o banco." }
-  ];
-}
-
-// Abre a ficha da árvore escolhida no mapa ou na lista.
-// Integração com backend: buscar aqui pelo ID (ex.: GET /api/arvores/{id}) e
-// mapear a resposta do banco para os campos usados abaixo; hoje usamos dados fictícios.
-function showTreeDetails(tree) {
-  const details = getTreeDetailsData(tree);
-  const history = getTreeHistoryData(tree);
+// Ficha pública consultada por ID na API; sem histórico ou fotos inventadas.
+async function showTreeDetails(tree) {
   const modalElement = document.getElementById("treeDetailsModal");
   const body = document.getElementById("treeDetailsBody");
-
-  // Preenche título e identificador com a árvore específica selecionada pelo usuário.
-  document.getElementById("treeDetailsId").textContent = `ID ${tree.id} · Dados demonstrativos`;
-  document.getElementById("treeDetailsTitle").textContent = `Ficha da árvore — ${details.nomePopular}`;
-
-  // Renderiza a galeria e os campos da ficha. Estes nomes correspondem às informações
-  // que deverão ser entregues pelo backend/banco de dados quando a integração existir.
-  body.innerHTML = `
-    <section class="tree-details-identity" aria-label="Identificação da árvore">
-      <div><span>Nome popular</span><strong>${escapeTreeDetail(details.nomePopular)}</strong></div>
-      <div><span>Nome científico</span><strong><em>${escapeTreeDetail(details.nomeCientifico)}</em></strong></div>
-    </section>
-    <h3 class="tree-details-section-title">Localização e características</h3>
-    <div class="tree-details-grid">
-      <div class="tree-detail-field"><span>Espécie</span><strong>${escapeTreeDetail(details.especie)}</strong></div>
-      <div class="tree-detail-field tree-detail-field-wide"><span>Localização e bairro</span><strong>${escapeTreeDetail(details.localizacao)}</strong></div>
-      <div class="tree-detail-field"><span>Idade estimada</span><strong>${escapeTreeDetail(details.idade)}</strong></div>
-      <div class="tree-detail-field"><span>Altura</span><strong>${escapeTreeDetail(details.altura)}</strong></div>
-      <div class="tree-detail-field"><span>Diâmetro</span><strong>${escapeTreeDetail(details.diametro)}</strong></div>
-      <div class="tree-detail-field"><span>Estado</span><strong>${escapeTreeDetail(details.estado)}</strong></div>
-      <div class="tree-detail-field"><span>Nível de risco</span><strong class="tree-detail-risk ${riskClass(details.risco)}">${escapeTreeDetail(details.risco)}</strong></div>
-      <div class="tree-detail-field"><span>Última vistoria</span><strong>${escapeTreeDetail(details.ultimaVistoria)}</strong></div>
-      <div class="tree-detail-field"><span>Última poda</span><strong>${escapeTreeDetail(details.ultimaPoda)}</strong></div>
-      <div class="tree-detail-field tree-detail-field-wide"><span>Próxima manutenção</span><strong>${escapeTreeDetail(details.proximaManutencao)}</strong></div>
-    </div>
-    <h3 class="tree-details-section-title">Fotos</h3>
-    <div class="tree-details-gallery">
-      ${details.fotos.map((photo, index) => `
-        <img src="${escapeTreeDetail(photo)}" alt="Foto ${index + 1} da árvore ${escapeTreeDetail(details.nomePopular)}">
-      `).join("")}
-    </div>
-    <h3 class="tree-details-section-title">Histórico da árvore</h3>
-    <p class="tree-history-caption">Vistorias, ocorrências e serviços de manutenção · registros fictícios</p>
-    <ol class="tree-history-list" aria-label="Histórico de vistorias, ocorrências e manutenções">
-      ${history.map(event => `
-        <li class="tree-history-item">
-          <span class="tree-history-marker ${event.tipo === "Ocorrência" ? "occurrence" : event.tipo === "Manutenção" ? "maintenance" : "inspection"}" aria-hidden="true"></span>
-          <div class="tree-history-content">
-            <div class="tree-history-meta">
-              <time>${escapeTreeDetail(event.data)}</time>
-              <span class="tree-history-type ${event.tipo === "Ocorrência" ? "occurrence" : event.tipo === "Manutenção" ? "maintenance" : "inspection"}">${escapeTreeDetail(event.tipo)}</span>
-            </div>
-            <strong>${escapeTreeDetail(event.titulo)}</strong>
-            <p>${escapeTreeDetail(event.descricao)}</p>
-          </div>
-        </li>
-      `).join("")}
-    </ol>
-  `;
-
-  // Bootstrap controla abertura, animação, foco e fechamento pelo botão X ou Escape.
+  document.getElementById("treeDetailsId").textContent = `ID ${tree.id}`;
+  document.getElementById("treeDetailsTitle").textContent = `Ficha da árvore — ${tree.nome}`;
+  body.textContent = "Carregando ficha...";
   bootstrap.Modal.getOrCreateInstance(modalElement).show();
+
+  try {
+    const resposta = await fetch(`/api/arvores/${encodeURIComponent(tree.id)}`);
+    if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
+    const arvore = await resposta.json();
+    const t = escapeTreeDetail;
+    const data = valor => {
+      if (!valor) return "Não registrada";
+      const d = new Date(valor);
+      return Number.isNaN(d.getTime()) ? "Não registrada" : d.toLocaleDateString("pt-BR");
+    };
+    const campo = (nome, valor, amplo = false) => `
+      <div class="tree-detail-field ${amplo ? "tree-detail-field-wide" : ""}">
+        <span>${t(nome)}</span><strong>${t(valor ?? "Não informado")}</strong>
+      </div>`;
+    document.getElementById("treeDetailsTitle").textContent =
+      `Ficha da árvore — ${arvore.nomePopular || arvore.especie || "Árvore"}`;
+    body.innerHTML = `
+      <section class="tree-details-identity" aria-label="Identificação da árvore">
+        <div><span>Nome popular</span><strong>${t(arvore.nomePopular)}</strong></div>
+        <div><span>Nome científico</span><strong>${t(arvore.nomeCientifico)}</strong></div>
+      </section>
+      <h3 class="tree-details-section-title">Localização e características</h3>
+      <div class="tree-details-grid">
+        ${campo("Espécie", arvore.especie)}
+        ${campo("Localização", `${arvore.endereco || "Não informado"}, ${arvore.bairro || "Não informado"}`, true)}
+        ${campo("Idade estimada", arvore.idade)}
+        ${campo("Altura", arvore.alturaMetros == null ? null : `${arvore.alturaMetros} m`)}
+        ${campo("Diâmetro", arvore.diametroCm == null ? null : `${arvore.diametroCm} cm`)}
+        ${campo("Estado", arvore.estado)}
+        ${campo("Nível de risco", riscoPublico(arvore.risco))}
+        ${campo("Última vistoria", data(arvore.ultimaInspecao))}
+        ${campo("Última poda", data(arvore.ultimaPoda))}
+        ${campo("Próxima manutenção", data(arvore.proximaManutencao), true)}
+      </div>
+      <h3 class="tree-details-section-title">Fotos e histórico</h3>
+      <p>Fotos e histórico individual aguardam integração com a API.</p>
+    `;
+  } catch (erro) {
+    console.error("Falha ao abrir ficha pública:", erro);
+    body.textContent = "Não foi possível consultar esta ficha.";
+  }
 }
