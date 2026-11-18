@@ -23,12 +23,17 @@ import service.ArvoreService;
 import service.EspecieService;
 import service.EquipeService;
 
+import controller.OrdemDeServicoController;
+import repository.OrdemDeServicoRepository;
+import service.OrdemDeServicoService;
+
 public class ConfiguracaoRotas {
 
     private final ContaController contaController;
     private final ArvoreController arvoreController;
     private final EspecieController especieController;
     private final EquipeController equipeController;
+    private final OrdemDeServicoController ordemDeServicoController;    
 
     public ConfiguracaoRotas(
             ConexaoServidor conexaoServidor) {
@@ -90,6 +95,17 @@ public class ConfiguracaoRotas {
 
         this.equipeController =
                 new EquipeController(equipeService);
+
+        OrdemDeServicoRepository ordemRepository =
+                new OrdemDeServicoRepository();
+
+        OrdemDeServicoService ordemService =
+                new OrdemDeServicoService(
+                        ordemRepository,
+                        contaRepository);
+
+        this.ordemDeServicoController =
+                new OrdemDeServicoController(ordemService);        
     }
 
     public void registrarRotas(Javalin servidorHttp) {
@@ -177,5 +193,14 @@ public class ConfiguracaoRotas {
         servidorHttp.delete(
                 "/api/equipes/{equipeId}/colaboradores/{colaboradorId}",
                 ctx -> equipeController.excluirColaborador(ctx));
+
+        servidorHttp.get(
+                "/api/ordens-servico",
+                ctx -> ordemDeServicoController.listar(ctx));
+
+        servidorHttp.get(
+                "/api/ordens-servico/{id}",
+                ctx -> ordemDeServicoController.consultar(ctx));               
+        
     }
 }
