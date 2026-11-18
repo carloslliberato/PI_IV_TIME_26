@@ -1,7 +1,8 @@
 package model;
 
-import org.bson.types.ObjectId;
 import java.time.Instant;
+
+import org.bson.types.ObjectId;
 
 public class OrdemDeServico {
 
@@ -56,9 +57,10 @@ public class OrdemDeServico {
             this.dataConclusao = dataConclusao;
         }
     
-    private void verificarSeEditavel(){ //**mudar caso entre novos status (ex: "cancelada")
-        if ("Concluída".equals(this.status)){
-            throw new IllegalStateException("Não é permitido alterar uma ordem de serviço concluída.");
+    private void verificarSeEditavel() {
+        if ("Concluída".equals(this.status) || "Cancelada".equals(this.status)) {
+
+            throw new IllegalStateException("Não é permitido alterar uma ordem de serviço concluída ou cancelada.");
         }
     }
 
@@ -118,6 +120,18 @@ public class OrdemDeServico {
         this.status = "Concluída";
         this.dataConclusao = Instant.now();
         this.dataAtualizacao = this.dataConclusao;
+    }
+
+    // Cancela uma OS aberta ou em andamento.
+    public void cancelar(){
+        verificarSeEditavel();
+
+        if (!"Aberta".equals(this.status) && !"Em andamento".equals(this.status)){
+            throw new IllegalStateException("Somente ordens de serviço abertas ou em andamento podem ser canceladas.");
+        }
+
+        this.status = "Cancelada";
+        this.dataAtualizacao = Instant.now();
     }
 
     public String getTitulo(){

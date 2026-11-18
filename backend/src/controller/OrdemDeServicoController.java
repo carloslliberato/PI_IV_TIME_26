@@ -10,9 +10,12 @@ import model.OrdemDeServico;
 import service.OrdemDeServicoService;
 import io.javalin.http.Context;
 import jakarta.servlet.http.HttpSession;
+import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
 
 public class OrdemDeServicoController {
     private final OrdemDeServicoService ordemService;
+    private final Gson gson = new Gson();
 
     public OrdemDeServicoController(OrdemDeServicoService ordemService){
         if (ordemService == null){
@@ -84,6 +87,54 @@ public class OrdemDeServicoController {
             erro.printStackTrace();
 
             ctx.status(500).json(Map.of("erro", "Erro interno ao consultar a ordem de serviço."));
+        }
+    }
+
+    // Recebe o pedido de cancelamento de uma OS.
+    public void alterarStatus(Context ctx){
+        HttpSession sessao = obterSessaoDeFuncionario(ctx);
+
+        if (sessao == null) return;
+
+        try {
+            String usuarioId = sessao.getAttribute("usuarioId").toString();
+
+            ObjectId municipioId = ordemService.obterMunicipioDoFuncionario(usuarioId);
+
+            String id = ctx.pathParam("id");
+
+            if (!ObjectId.isValid(id)){
+                ctx.status(400).json(Map.of("erro", "O identificador da OS é inválido."));
+                return;
+            }
+
+            Map<?, ?> dados = gson.fromJson(ctx.body(), Map.class);
+
+            if (dados == null || !"Cancelada".equals(dados.get("status"))) {
+                ctx.status(400).json(Map.of("erro", "Informe o status \"Cancelada\" para esta operação."));
+                return;
+            }
+
+            OrdemDeServico ordem = ordemService.cancelar(new ObjectId(id), municipioId);
+
+            ctx.status(200).json(Map.of("ordem", paraResposta(ordem)));
+
+        } catch (JsonParseException erro){
+            ctx.status(400).json(Map.of("erro", "Formato JSON inválido."));
+
+        } catch (SecurityException erro){
+            ctx.status(403).json(Map.of("erro", erro.getMessage()));
+
+        } catch (NoSuchElementException erro){
+            ctx.status(404).json(Map.of("erro", erro.getMessage()));
+
+        } catch (IllegalStateException erro){
+            ctx.status(409).json(Map.of("erro", erro.getMessage()));
+
+        } catch (Exception erro){
+            erro.printStackTrace();
+
+            ctx.status(500).json(Map.of("erro", "Erro interno ao cancelar a ordem de serviço."));
         }
     }
 
