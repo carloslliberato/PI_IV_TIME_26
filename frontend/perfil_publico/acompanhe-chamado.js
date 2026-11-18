@@ -1,52 +1,20 @@
-// Dados temporarios para representar os chamados criados pelo cidadao autenticado.
-// Integracao futura com o banco: consultar GET /api/cidadaos/me/chamados usando o token da sessao.
-// O servidor deve identificar o cidadao pelo token e retornar somente os chamados dele.
-const chamadosDemonstracao = [
-  {
-    id: 2401,
-    municipio: "Campinas - SP",
-    bairro: "Cambuí",
-    endereco: "Rua Maria Monteiro, 640, Cambuí, Campinas - SP",
-    tipo: "Galho quebrado",
-    status: "Em andamento",
-    prioridade: "Alta",
-    fotoDescricao: "Galho quebrado próximo à calçada",
-    recebeNotificacao: true
-  },
-  {
-    id: 2402,
-    municipio: "Campinas - SP",
-    bairro: "Taquaral",
-    endereco: "Avenida Júlio Prestes, 1250, Taquaral, Campinas - SP",
-    tipo: "Árvore em risco",
-    status: "Aberta",
-    prioridade: "Média",
-    fotoDescricao: "Árvore inclinada em área pública",
-    recebeNotificacao: false
-  },
-  {
-    id: 2403,
-    municipio: "Hortolândia - SP",
-    bairro: "Jardim Amanda",
-    endereco: "Rua das Paineiras, 82, Jardim Amanda, Hortolândia - SP",
-    tipo: "Necessidade de poda",
-    status: "Concluída",
-    prioridade: "Baixa",
-    fotoDescricao: "Copa de árvore próxima à iluminação",
-    recebeNotificacao: true
-  }
-];
+// feito por Sophia
+// Página de acompanhamento de chamados do cidadão integrada com o back-end Java (Javalin + MongoDB).
 
-// Dados ficticios usados para demonstrar o preenchimento automatico do contato.
-// Na integracao real, carregar nome, e-mail e telefone do perfil autenticado na API.
-const contatoCidadaoDemonstracao = {
-  nome: "Mariana Oliveira",
-  email: "mariana.oliveira@exemplo.com",
-  telefone: "(19) 99999-1234"
+// Guarda na memória os chamados carregados do banco de dados
+let listaChamados = [];
+
+// Guarda os dados de contato do cidadão logado (ou valores padrão caso não esteja logado)
+let contatoCidadao = {
+  id: null,
+  nome: "Cidadão",
+  email: "Não informado",
+  telefone: "Não informado"
 };
 
-// Prepara a tabela, o modal Bootstrap e os controles de notificacao da pagina.
+// Inicializa a tabela, o modal de detalhes e o controle de notificações da página
 function initializeTicketTracking() {
+  // Pega os elementos do HTML pelos IDs originais da tela
   const tableBody = document.getElementById("ticketsTableBody");
   const ticketCount = document.getElementById("ticketCount");
   const tableWrap = document.getElementById("ticketsTableWrap");
@@ -59,25 +27,44 @@ function initializeTicketTracking() {
 
   if (!tableBody || !tableWrap || !emptyState || !modalElement || !notificationToggle || !saveButton) return;
 
-  // Converte o status e a prioridade em classes visuais para as etiquetas da tabela.
+  // Define a cor da etiqueta (badge) de acordo com o status do chamado
   function statusClass(status) {
-    if (status === "Aberta") return "ticket-status-aberta";
+    if (status === "Aberta" || status === "Recebida") return "ticket-status-aberta";
     if (status === "Concluída") return "ticket-status-concluida";
     return "ticket-status-andamento";
   }
 
+  // Define a cor da etiqueta (badge) de acordo com a prioridade/urgência
   function priorityClass(priority) {
-    if (priority === "Alta") return "ticket-priority-alta";
+    if (priority === "Alta" || priority === "Crítica") return "ticket-priority-alta";
     if (priority === "Média") return "ticket-priority-media";
     return "ticket-priority-baixa";
   }
 
-  // Monta linhas da tabela com textContent para tratar os dados como texto visivel.
+  // Formata o nome do município (ex: "campinas" vira "Campinas - SP")
+  function formatarMunicipio(mun) {
+    if (!mun) return "Campinas - SP";
+    if (mun.includes("-")) return mun;
+    return mun.charAt(0).toUpperCase() + mun.slice(1) + " - SP";
+  }
+
+  // Extrai o bairro do endereço caso o registro antigo não tenha o campo bairro separado
+  function extrairBairro(endereco) {
+    if (endereco && endereco.includes("-")) {
+      const partes = endereco.split("-");
+      return partes[partes.length - 1].trim();
+    }
+    return "Centro";
+  }
+
+  // Desenha as linhas da tabela com os chamados vindos do banco de dados
   function renderTickets() {
     tableBody.replaceChildren();
 
-    chamadosDemonstracao.forEach(ticket => {
+    listaChamados.forEach(ticket => {
       const row = document.createElement("tr");
+
+      // Coluna do ID/Protocolo com link clicável que abre o modal de detalhes
       const idCell = document.createElement("td");
       const idLink = document.createElement("a");
       idLink.className = "ticket-id-link";
@@ -85,17 +72,19 @@ function initializeTicketTracking() {
       idLink.dataset.bsToggle = "modal";
       idLink.dataset.bsTarget = "#ticketDetailsModal";
       idLink.dataset.ticketId = String(ticket.id);
-      idLink.setAttribute("aria-label", `Ver detalhes do chamado ${ticket.id}`);
-      idLink.textContent = ticket.id;
+      idLink.setAttribute("aria-label", `Ver detalhes do chamado ${ticket.protocolo}`);
+      idLink.textContent = ticket.protocolo;
       idCell.appendChild(idLink);
       row.appendChild(idCell);
 
+      // Colunas de Município, Bairro e Tipo do problema
       [ticket.municipio, ticket.bairro, ticket.tipo].forEach(value => {
         const cell = document.createElement("td");
         cell.textContent = value;
         row.appendChild(cell);
       });
 
+      // Coluna de Status com etiqueta colorida
       const statusCell = document.createElement("td");
       const statusBadge = document.createElement("span");
       statusBadge.className = `ticket-badge ${statusClass(ticket.status)}`;
@@ -103,6 +92,7 @@ function initializeTicketTracking() {
       statusCell.appendChild(statusBadge);
       row.appendChild(statusCell);
 
+      // Coluna de Prioridade com etiqueta colorida
       const priorityCell = document.createElement("td");
       const priorityBadge = document.createElement("span");
       priorityBadge.className = `ticket-badge ${priorityClass(ticket.prioridade)}`;
@@ -113,47 +103,106 @@ function initializeTicketTracking() {
       tableBody.appendChild(row);
     });
 
-    // Alterna entre a tabela e a mensagem pedida quando a consulta nao retornar chamados.
-    const hasTickets = chamadosDemonstracao.length > 0;
+    // Mostra a tabela se houver chamados ou exibe a mensagem de lista vazia
+    const hasTickets = listaChamados.length > 0;
     tableWrap.classList.toggle("d-none", !hasTickets);
     emptyState.classList.toggle("d-none", hasTickets);
-    ticketCount.textContent = `${chamadosDemonstracao.length} ${chamadosDemonstracao.length === 1 ? "chamado" : "chamados"}`;
+    ticketCount.textContent = `${listaChamados.length} ${listaChamados.length === 1 ? "chamado" : "chamados"}`;
   }
 
-  // Guarda o registro aberto, o valor persistido e se ha uma gravacao em andamento.
+  // Busca os dados da sessão do cidadão logado e depois carrega os chamados dele na API
+  async function carregarChamadosDoBackend() {
+    try {
+      // 1. Tenta identificar o cidadão logado na sessão
+      const respSessao = await fetch("/api/contas/sessao");
+      if (respSessao.ok) {
+        const sessao = await respSessao.json();
+        if (sessao) {
+          contatoCidadao.id = sessao.id || sessao._id || null;
+          contatoCidadao.nome = sessao.nome || contatoCidadao.nome;
+          contatoCidadao.email = sessao.email || contatoCidadao.email;
+          contatoCidadao.telefone = sessao.telefone || contatoCidadao.telefone;
+        }
+      }
+    } catch (e) {
+      // Se não houver sessão ativa, segue com consulta padrão
+    }
+
+    try {
+      // 2. Busca os chamados do cidadão (ou todos os chamados públicos caso esteja sem login)
+      const url = contatoCidadao.id
+        ? `/api/ocorrencias/minhas?cidadaoId=${encodeURIComponent(contatoCidadao.id)}`
+        : `/api/ocorrencias`;
+
+      const resposta = await fetch(url);
+      if (!resposta.ok) throw new Error("Falha ao buscar chamados");
+
+      const dadosBanco = await resposta.json();
+
+      // Converte os documentos vindos do MongoDB para o formato que a tela e o modal usam
+      listaChamados = dadosBanco.map(doc => ({
+        id: doc.id || doc._id,
+        protocolo: doc.protocolo || doc.id || doc._id,
+        municipio: formatarMunicipio(doc.municipioId),
+        bairro: doc.bairro || extrairBairro(doc.localizacao),
+        endereco: doc.localizacao || "-",
+        tipo: doc.tipoProblema || "-",
+        status: doc.status || "Recebida",
+        prioridade: doc.urgencia || "Média",
+        fotoDescricao: doc.descricao || "Sem descrição informada",
+        imagem: doc.imagem || null,
+        recebeNotificacao: Boolean(doc.receberNotificacoes),
+        nomeContato: doc.nomeContato || contatoCidadao.nome,
+        emailContato: doc.emailContato || contatoCidadao.email,
+        telefoneContato: doc.telefoneContato || contatoCidadao.telefone
+      }));
+
+      renderTickets();
+    } catch (erro) {
+      console.error("Erro ao carregar chamados do servidor:", erro);
+      listaChamados = [];
+      renderTickets();
+    }
+  }
+
+  // Variáveis que controlam qual chamado está aberto no modal e se houve alteração não salva
   let selectedTicket = null;
   let savedNotificationPreference = false;
   let isSavingPreference = false;
 
-  // Compara o valor escolhido no modal com o valor salvo para decidir se ha alteracoes pendentes.
+  // Verifica se o usuário mudou a chavinha de notificação e ainda não clicou em Salvar
   function hasUnsavedPreference() {
     return selectedTicket !== null && notificationToggle.checked !== savedNotificationPreference;
   }
 
-  // Mostra o botao Salvar somente quando a pessoa alterou a preferencia deste chamado.
+  // Mostra o botão "Salvar" apenas quando houver alteração pendente no modal
   function updateSaveButton() {
     const hasChanges = hasUnsavedPreference();
     saveButton.classList.toggle("d-none", !hasChanges);
     saveButton.disabled = !hasChanges || isSavingPreference;
   }
 
-  // Ao abrir o modal, localiza o registro pelo ID do link e preenche seus detalhes.
+  // Quando o usuário clica no protocolo/ID, preenche o modal com os detalhes daquele chamado
   modalElement.addEventListener("show.bs.modal", event => {
     const trigger = event.relatedTarget;
-    const ticketId = Number(trigger?.dataset.ticketId);
-    selectedTicket = chamadosDemonstracao.find(ticket => ticket.id === ticketId) || null;
+    const ticketId = String(trigger?.dataset.ticketId);
+    selectedTicket = listaChamados.find(ticket => String(ticket.id) === ticketId) || null;
     if (!selectedTicket) return;
 
-    document.getElementById("ticketModalTitle").textContent = `Chamado #${selectedTicket.id}`;
-    document.getElementById("detailId").textContent = selectedTicket.id;
+    document.getElementById("ticketModalTitle").textContent = `Chamado #${selectedTicket.protocolo}`;
+    document.getElementById("detailId").textContent = selectedTicket.protocolo;
     document.getElementById("detailMunicipality").textContent = selectedTicket.municipio;
     document.getElementById("detailAddress").textContent = selectedTicket.endereco;
     document.getElementById("detailType").textContent = selectedTicket.tipo;
     document.getElementById("detailStatus").textContent = selectedTicket.status;
     document.getElementById("detailPriority").textContent = selectedTicket.prioridade;
-    document.querySelector(".ticket-photo-placeholder").setAttribute("aria-label", selectedTicket.fotoDescricao);
 
-    // Reflete a preferencia ja salva para este chamado e mostra o contato correspondente.
+    const photoPlaceholder = document.querySelector(".ticket-photo-placeholder");
+    if (photoPlaceholder) {
+      photoPlaceholder.setAttribute("aria-label", selectedTicket.fotoDescricao);
+    }
+
+    // Marca ou desmarca o botão de notificação conforme o que está salvo no banco
     notificationToggle.checked = selectedTicket.recebeNotificacao;
     savedNotificationPreference = selectedTicket.recebeNotificacao;
     isSavingPreference = false;
@@ -165,7 +214,7 @@ function initializeTicketTracking() {
     feedback.textContent = "";
   });
 
-  // Bloqueia X, tecla Esc e clique no fundo enquanto houver alteracoes ainda nao salvas.
+  // Impede fechar o modal sem salvar caso o usuário tenha mudado a chavinha de notificação
   modalElement.addEventListener("hide.bs.modal", event => {
     if (isSavingPreference) {
       event.preventDefault();
@@ -179,17 +228,18 @@ function initializeTicketTracking() {
     }
   });
 
-  // Demonstra o preenchimento do contato do perfil quando notificacoes estao ativadas.
+  // Exibe no modal o nome, e-mail e telefone que receberão as notificações do chamado
   function updateNotificationContact() {
     const enabled = notificationToggle.checked;
     contactDetails.classList.toggle("d-none", !enabled);
-    if (!enabled) return;
-    document.getElementById("notificationContactName").textContent = contatoCidadaoDemonstracao.nome;
-    document.getElementById("notificationContactEmail").textContent = contatoCidadaoDemonstracao.email;
-    document.getElementById("notificationContactPhone").textContent = contatoCidadaoDemonstracao.telefone;
+    if (!enabled || !selectedTicket) return;
+
+    document.getElementById("notificationContactName").textContent = selectedTicket.nomeContato || contatoCidadao.nome;
+    document.getElementById("notificationContactEmail").textContent = selectedTicket.emailContato || contatoCidadao.email;
+    document.getElementById("notificationContactPhone").textContent = selectedTicket.telefoneContato || contatoCidadao.telefone;
   }
 
-  // Atualiza a preferencia que esta em edicao sem alterar ainda o valor salvo.
+  // Avisa o usuário que ele precisa clicar em Salvar quando muda a chavinha de notificação
   notificationToggle.addEventListener("change", () => {
     if (!selectedTicket) return;
     const enabled = notificationToggle.checked;
@@ -202,15 +252,13 @@ function initializeTicketTracking() {
       return;
     }
 
-    if (enabled) {
-      feedback.textContent = "Preferência alterada. Salve para ativar as notificações.";
-    } else {
-      feedback.textContent = "Preferência alterada. Salve para desativar as notificações.";
-    }
+    feedback.textContent = enabled
+      ? "Preferência alterada. Salve para ativar as notificações."
+      : "Preferência alterada. Salve para desativar as notificações.";
     feedback.classList.remove("d-none", "is-error");
   });
 
-  // Salva a preferencia alterada; enquanto nao terminar, o modal e o controle ficam bloqueados.
+  // Envia a nova preferência de notificação para o back-end via PATCH /api/ocorrencias/{id}/notificacoes
   saveButton.addEventListener("click", async () => {
     if (!selectedTicket || !hasUnsavedPreference() || isSavingPreference) return;
 
@@ -221,13 +269,22 @@ function initializeTicketTracking() {
     feedback.classList.remove("d-none", "is-error");
 
     try {
-      // FUTURO BACK-END: enviar a requisicao com token para /api/chamados/{id}/notificacoes.
-      // Se marcado, usar POST e preencher nome, e-mail e telefone pelo perfil autenticado.
-      // Se desmarcado, usar DELETE para remover a inscricao do banco para este chamado.
-      // Modo demonstrativo: atualiza somente o registro temporario em memoria.
+      const response = await fetch(`/api/ocorrencias/${encodeURIComponent(selectedTicket.id)}/notificacoes`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          receberNotificacoes: notificationToggle.checked,
+          nomeContato: selectedTicket.nomeContato || contatoCidadao.nome,
+          emailContato: selectedTicket.emailContato || contatoCidadao.email,
+          telefoneContato: selectedTicket.telefoneContato || contatoCidadao.telefone
+        })
+      });
+
+      if (!response.ok) throw new Error("Erro ao salvar no servidor");
+
       selectedTicket.recebeNotificacao = notificationToggle.checked;
       savedNotificationPreference = selectedTicket.recebeNotificacao;
-      feedback.textContent = "Preferência salva no modo demonstrativo.";
+      feedback.textContent = "Preferência de notificação salva com sucesso!";
     } catch (error) {
       feedback.textContent = "Não foi possível salvar. Tente novamente.";
       feedback.classList.add("is-error");
@@ -238,12 +295,11 @@ function initializeTicketTracking() {
     }
   });
 
-  // Ponto de integracao: carregar os chamados do usuario na API em vez desta lista ficticia.
-  // A acao do controle de notificacao tambem deve enviar o token da sessao para associar a preferencia ao cidadao.
-  renderTickets();
+  // Carrega os chamados reais assim que a página abre
+  carregarChamadosDoBackend();
 }
 
-// O sidebar injeta este arquivo; inicializa apos o DOM estar pronto ou imediatamente se ja estiver.
+// Inicia a função quando o DOM estiver pronto
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initializeTicketTracking, { once: true });
 } else {

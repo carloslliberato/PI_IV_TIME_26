@@ -1,22 +1,12 @@
-﻿// Página de consulta de ocorrências do portal público Arboriza.
-// Os dados abaixo são temporários e servem para demonstrar a tabela e os filtros.
+﻿// feito por Sophia
+// Página de consulta de ocorrências do portal público Arboriza conectada ao back-end.
 
-// Substituir esta lista pela resposta da API conectada ao banco de dados.
-// Ponto de integração: fazer GET /api/ocorrencias com município, tipo, status e prioridade
-// como parâmetros de consulta. O back-end deve retornar as ocorrências permitidas ao cidadão,
-// incluindo as que estão em andamento; os filtros podem ser aplicados no servidor ou no navegador.
-const ocorrenciasDemonstracao = [
-  { id: 1024, municipio: "Campinas", bairro: "Cambuí", tipo: "Galho quebrado", status: "Em andamento", prioridade: "Alta" },
-  { id: 1025, municipio: "Hortolândia", bairro: "Jardim Amanda", tipo: "Árvore em risco", status: "Aberta", prioridade: "Alta" },
-  { id: 1026, municipio: "Sumaré", bairro: "Centro", tipo: "Necessidade de poda", status: "Em andamento", prioridade: "Média" },
-  { id: 1027, municipio: "Campinas", bairro: "Taquaral", tipo: "Manutenção preventiva", status: "Concluída", prioridade: "Baixa" },
-  { id: 1028, municipio: "Hortolândia", bairro: "Remanso Campineiro", tipo: "Árvore caída", status: "Aberta", prioridade: "Alta" },
-  { id: 1029, municipio: "Sumaré", bairro: "Matão", tipo: "Outros", status: "Em andamento", prioridade: "Baixa" },
-  { id: 1030, municipio: "Campinas", bairro: "Barão Geraldo", tipo: "Árvore em risco", status: "Em andamento", prioridade: "Média" }
-];
+// Guarda na memória as ocorrências que vieram do banco de dados (MongoDB)
+let listaOcorrencias = [];
 
-// Aguarda o carregamento do HTML inserido pelo sidebar antes de acessar os filtros e a tabela.
+// Inicializa a página assim que o HTML terminar de carregar
 function initializeCitizenOccurrences() {
+  // Pega os elementos dos 4 filtros, do corpo da tabela e dos avisos da tela
   const municipalityFilter = document.getElementById("filterMunicipality");
   const typeFilter = document.getElementById("filterType");
   const statusFilter = document.getElementById("filterStatus");
@@ -25,42 +15,69 @@ function initializeCitizenOccurrences() {
   const resultsCount = document.getElementById("resultsCount");
   const emptyState = document.getElementById("emptyState");
 
+  // Se algum elemento essencial não existir na tela, interrompe a função
   if (!municipalityFilter || !typeFilter || !statusFilter || !priorityFilter || !tableBody) return;
 
-  // Marca a opção de ocorrências no sidebar compartilhado como a página atual.
+  // Marca o botão de "Ocorrências" no menu lateral (sidebar) como ativo
   const occurrencesNavLink = document.getElementById("navOccurrences");
   if (occurrencesNavLink) {
-    // occurrencesNavLink.href = "ocorrencias-cidadao.html";
     occurrencesNavLink.href = "/ocorrencias-cidadao";
     occurrencesNavLink.classList.add("active");
     occurrencesNavLink.setAttribute("aria-current", "page");
   }
 
-  // Converte o status em uma classe CSS para exibir uma etiqueta com cor correspondente.
+  // Padroniza textos para comparação nos filtros (remove acentos, hífens e deixa minúsculo)
+  function normalizarTexto(texto) {
+    return String(texto || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/-/g, " ")
+      .trim()
+      .toLowerCase();
+  }
+
+  // Transforma valores como "galho-quebrado" em "Galho quebrado" para exibir bonito na tabela
+  function formatarTipoOcorrencia(tipo) {
+    if (!tipo || tipo === "-") return "-";
+    const textoLimpo = tipo.replace(/-/g, " ").trim();
+    return textoLimpo.charAt(0).toUpperCase() + textoLimpo.slice(1);
+  }
+
+  // Escolhe a cor da etiqueta (badge) de acordo com o status da ocorrência
   function statusClass(status) {
-    if (status === "Aberta") return "status-aberta";
-    if (status === "Concluída") return "status-concluida";
+    const st = normalizarTexto(status);
+    if (st === "aberta" || st === "recebida") return "status-aberta";
+    if (st === "concluida") return "status-concluida";
     return "status-andamento";
   }
 
-  // Converte a prioridade em uma classe CSS e mantém o texto da linha acessível.
+  // Escolhe a cor da etiqueta (badge) de acordo com a prioridade/urgência
   function priorityClass(priority) {
-    if (priority === "Alta") return "priority-alta";
-    if (priority === "Média") return "priority-media";
+    const pr = normalizarTexto(priority);
+    if (pr === "alta" || pr === "critica") return "priority-alta";
+    if (pr === "media") return "priority-media";
     return "priority-baixa";
   }
 
-  // Aplica em conjunto todos os filtros selecionados e redesenha apenas as linhas correspondentes.
+  // Formata o nome do município (ex: transforma "campinas" em "Campinas")
+  function formatarMunicipio(mun) {
+    if (!mun) return "Campinas";
+    return mun.charAt(0).toUpperCase() + mun.slice(1);
+  }
+
+  // Filtra as ocorrências carregadas e desenha as linhas na tabela
   function updateOccurrencesTable() {
-    const filteredOccurrences = ocorrenciasDemonstracao.filter(occurrence => {
-      return (!municipalityFilter.value || occurrence.municipio === municipalityFilter.value)
-        && (!typeFilter.value || occurrence.tipo === typeFilter.value)
-        && (!statusFilter.value || occurrence.status === statusFilter.value)
-        && (!priorityFilter.value || occurrence.prioridade === priorityFilter.value);
+    const filteredOccurrences = listaOcorrencias.filter(occurrence => {
+      return (!municipalityFilter.value || normalizarTexto(occurrence.municipio) === normalizarTexto(municipalityFilter.value))
+        && (!typeFilter.value || normalizarTexto(occurrence.tipo) === normalizarTexto(typeFilter.value))
+        && (!statusFilter.value || normalizarTexto(occurrence.status) === normalizarTexto(statusFilter.value))
+        && (!priorityFilter.value || normalizarTexto(occurrence.prioridade) === normalizarTexto(priorityFilter.value));
     });
 
-    // Prepara as células usando textContent para que valores recebidos da API sejam exibidos como texto.
+    // Limpa a tabela antes de desenhar as linhas filtradas
     tableBody.replaceChildren();
+
+    // Cria uma linha (tr) e as colunas (td) para cada ocorrência encontrada
     filteredOccurrences.forEach(occurrence => {
       const row = document.createElement("tr");
       const values = [
@@ -74,6 +91,7 @@ function initializeCitizenOccurrences() {
 
       values.forEach((value, index) => {
         const cell = document.createElement("td");
+        // Nas colunas 4 (status) e 5 (prioridade), cria o span colorido
         if (index === 4 || index === 5) {
           const badge = document.createElement("span");
           badge.className = value.className;
@@ -85,29 +103,69 @@ function initializeCitizenOccurrences() {
         }
         row.appendChild(cell);
       });
+
       tableBody.appendChild(row);
     });
 
-    // Informa a quantidade de resultados ou orienta quando não há registros para os filtros atuais.
-    resultsCount.textContent = `${filteredOccurrences.length} ${filteredOccurrences.length === 1 ? "ocorrência encontrada" : "ocorrências encontradas"}`;
-    emptyState.classList.toggle("d-none", filteredOccurrences.length > 0);
+    // Atualiza o contador de resultados (ex: "1 ocorrência encontrada")
+    if (resultsCount) {
+      resultsCount.textContent = `${filteredOccurrences.length} ${filteredOccurrences.length === 1 ? "ocorrência encontrada" : "ocorrências encontradas"}`;
+    }
+
+    // Mostra ou esconde a mensagem de lista vazia
+    if (emptyState) {
+      emptyState.classList.toggle("d-none", filteredOccurrences.length > 0);
+    }
   }
 
-  // Atualiza a tabela sempre que qualquer um dos quatro selects mudar.
+  // Busca as ocorrências reais no back-end (Javalin + MongoDB) via GET /api/ocorrencias
+  async function carregarOcorrenciasDaApi() {
+    try {
+      const resposta = await fetch("/api/ocorrencias");
+      if (!resposta.ok) throw new Error("Erro ao buscar ocorrências do servidor");
+
+      const dadosBanco = await resposta.json();
+
+      // Converte os nomes dos campos do MongoDB para o formato usado pela tabela
+      listaOcorrencias = dadosBanco.map(doc => ({
+        id: doc.protocolo || doc.id || doc._id || "-",
+        municipio: doc.municipio || formatarMunicipio(doc.municipioId),
+        bairro: doc.bairro || extrairBairro(doc.localizacao),
+        tipo: formatarTipoOcorrencia(doc.tipo || doc.tipoProblema),
+        status: doc.status || "Recebida",
+        prioridade: doc.prioridade || doc.urgencia || "Média"
+      }));
+
+      // Atualiza a tabela na tela com os dados recebidos
+      updateOccurrencesTable();
+    } catch (erro) {
+      console.error("Erro ao carregar ocorrências:", erro);
+      listaOcorrencias = [];
+      updateOccurrencesTable();
+    }
+  }
+
+  // Caso a ocorrência antiga no banco não tenha o campo bairro separado, extrai do endereço
+  function extrairBairro(localizacao) {
+    if (localizacao && localizacao.includes("-")) {
+      const partes = localizacao.split("-");
+      return partes[partes.length - 1].trim();
+    }
+    return "Centro";
+  }
+
+  // Faz a tabela atualizar sempre que o usuário mudar qualquer um dos 4 filtros
   [municipalityFilter, typeFilter, statusFilter, priorityFilter].forEach(filter => {
     filter.addEventListener("change", updateOccurrencesTable);
   });
 
-  // Futuramente, substituir a renderização inicial pela chamada assíncrona à API/banco de dados.
-  // Exemplo: fetch(`/api/ocorrencias?${new URLSearchParams(filters)}`), validar a resposta,
-  // guardar os registros recebidos e então chamar updateOccurrencesTable().
-  updateOccurrencesTable();
+  // Chama a API assim que a tela abre
+  carregarOcorrenciasDaApi();
 }
 
-// O sidebar injeta este arquivo dinamicamente; trata tanto o DOM pronto quanto o carregamento inicial.
+// Garante que a função rode tanto se a página ainda estiver carregando quanto se já tiver carregado
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initializeCitizenOccurrences, { once: true });
 } else {
   initializeCitizenOccurrences();
 }
-

@@ -1,50 +1,19 @@
-// Os registros abaixo simulam a resposta que futuramente virá do backend municipal.
-// FUTURO API/BD: substituir este conjunto por GET /api/municipios/{id}/ocorrencias,
-// incluindo árvore, endereço, risco, status, ordem de serviço e equipe vinculada.
-const occurrenceDemoData = {
-  municipality: { id: "campinas-demo", name: "Campinas - SP" },
-  occurrences: [
-    {
-      id: "OC-2026-0241", municipalityId: "campinas-demo", type: "Galho próximo à rede elétrica", date: "2026-10-17",
-      tree: "Ipê-amarelo", treeId: "10234", neighborhood: "Taquaral", address: "R. Dr. Alberto Sarmento, 123",
-      risk: "Alto", reporter: "Central de atendimento", description: "Morador relata galhos tocando os cabos durante períodos de vento. Solicita avaliação e poda preventiva.",
-      status: "Em atendimento", order: { id: "OS-2026-0381", status: "Em andamento", teamId: "TEAM-01" }
-    },
-    {
-      id: "OC-2026-0240", municipalityId: "campinas-demo", type: "Árvore inclinada", date: "2026-10-14",
-      tree: "Sibipiruna", treeId: "11802", neighborhood: "Centro", address: "R. Barão de Jaguara, 880",
-      risk: "Crítico", reporter: "Vistoria de campo", description: "Foi observada inclinação recente do tronco em direção à calçada, com cavidade visível na base. É necessária avaliação técnica prioritária.",
-      status: "Aguardando atendimento", order: null
-    },
-    {
-      id: "OC-2026-0238", municipalityId: "campinas-demo", type: "Galho quebrado", date: "2026-10-11",
-      tree: "Jatobá", treeId: "10418", neighborhood: "Jardim Chapadão", address: "Av. Imperatriz Leopoldina, 300",
-      risk: "Médio", reporter: "Aplicativo municipal", description: "Galho de médio porte quebrou após chuva e permanece apoiado em outros ramos. A passagem de pedestres está parcialmente obstruída.",
-      status: "Aguardando atendimento", order: null
-    },
-    {
-      id: "OC-2026-0231", municipalityId: "campinas-demo", type: "Raiz danificando calçada", date: "2026-09-30",
-      tree: "Pau-brasil", treeId: "11076", neighborhood: "Centro", address: "Praça Carlos Gomes, s/n",
-      risk: "Baixo", reporter: "Equipe de zeladoria", description: "Raízes superficiais levantaram uma placa da calçada. Sem dano aparente ao tronco; recomenda-se vistoria e orientação de manejo.",
-      status: "Concluída", order: { id: "OS-2026-0312", status: "Concluída", teamId: "TEAM-03" }
-    },
-    {
-      id: "OC-2026-0226", municipalityId: "campinas-demo", type: "Árvore com sinais de praga", date: "2026-09-22",
-      tree: "Quaresmeira", treeId: "12031", neighborhood: "Cambuí", address: "Av. Júlio de Mesquita, 410",
-      risk: "Médio", reporter: "Morador", description: "Folhas com manchas e queda acima do habitual. A pessoa solicitante enviou relato para avaliação fitossanitária.",
-      status: "Aguardando atendimento", order: null
-    }
-  ],
-  // A disponibilidade é atualizada em memória ao atribuir uma equipe a uma nova ordem.
+// feito por Sophia
+// Painel profissional de gestão de ocorrências integrado com o back-end Java (Javalin + MongoDB).
+
+// Guarda na memória os dados reais vindos do banco de dados
+const occurrenceData = {
+  municipality: { id: "campinas", name: "Campinas - SP" },
+  occurrences: [],
   teams: [
-    { id: "TEAM-01", name: "Equipe Norte", available: false },
+    { id: "TEAM-01", name: "Equipe Norte", available: true },
     { id: "TEAM-02", name: "Equipe Central", available: true },
     { id: "TEAM-03", name: "Equipe Sul", available: true },
     { id: "TEAM-04", name: "Equipe de poda", available: true }
   ]
 };
 
-// Mantém as referências da página e o identificador do registro aberto no modal.
+// Mantém as referências dos elementos HTML da página pelos IDs originais
 const occurrencePage = {
   tableBody: document.getElementById("occurrencesTableBody"),
   emptyState: document.getElementById("occurrencesEmpty"),
@@ -55,35 +24,36 @@ const occurrencePage = {
   modalContent: document.getElementById("occurrenceModalContent"),
   toast: document.getElementById("occurrencesToast")
 };
+
 let selectedOccurrenceId = null;
 let occurrenceToastTimer = null;
 
-// Escapa os valores dinâmicos antes de inseri-los em templates HTML.
+// Protege o HTML escapando caracteres especiais nos textos vindos do banco
 function escapeOccurrenceText(value) {
   return String(value ?? "—").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   })[character]);
 }
 
-// Converte texto para busca sem diferença entre maiúsculas e acentos.
+// Remove acentos e deixa tudo minúsculo para facilitar a busca na barra de pesquisa
 function normalizeOccurrenceText(value) {
   return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
 }
 
-// Traduz os níveis de risco para classes de estilo e posições de criticidade.
+// Converte a urgência/risco em classe CSS para colorir a etiqueta (badge)
 function occurrenceRiskClass(risk) {
   const normalized = normalizeOccurrenceText(risk);
   if (normalized.includes("crit")) return "critical";
-  if (normalized.includes("alto")) return "high";
-  if (normalized.includes("medio")) return "medium";
+  if (normalized.includes("alt")) return "high";
+  if (normalized.includes("med")) return "medium";
   return "low";
 }
 
-// Ordena os registros por criticidade, mantendo a data recente como desempate.
+// Ordena as ocorrências por nível de criticidade ou por data mais recente
 function sortOccurrences(records) {
   const criticality = { critical: 4, high: 3, medium: 2, low: 1 };
   const sorted = [...records];
-  if (occurrencePage.sort.value === "critical") {
+  if (occurrencePage.sort && occurrencePage.sort.value === "critical") {
     return sorted.sort((left, right) => {
       const riskDifference = criticality[occurrenceRiskClass(right.risk)] - criticality[occurrenceRiskClass(left.risk)];
       return riskDifference || right.date.localeCompare(left.date);
@@ -92,26 +62,27 @@ function sortOccurrences(records) {
   return sorted.sort((left, right) => right.date.localeCompare(left.date));
 }
 
-// Busca exclusivamente nos registros do município associado à tela.
-// FUTURO API/BD: passar municipalityId e termo de busca como parâmetros do endpoint.
+// Filtra as ocorrências conforme o texto digitado na busca (bairro, árvore, ID ou tipo)
 function getVisibleOccurrences() {
-  const municipalityId = occurrenceDemoData.municipality.id;
-  const query = normalizeOccurrenceText(occurrencePage.search.value.trim());
-  const municipalRecords = occurrenceDemoData.occurrences.filter(item => item.municipalityId === municipalityId);
-  const filtered = municipalRecords.filter(item => {
-    const searchableValues = [item.neighborhood, item.tree, item.treeId];
+  const query = normalizeOccurrenceText(occurrencePage.search ? occurrencePage.search.value.trim() : "");
+  const filtered = occurrenceData.occurrences.filter(item => {
+    const searchableValues = [item.neighborhood, item.tree, item.treeId, item.type, item.id];
     return !query || searchableValues.some(value => normalizeOccurrenceText(value).includes(query));
   });
   return sortOccurrences(filtered);
 }
 
-// Formata as datas ISO dos dados locais para a apresentação brasileira na tabela e no modal.
+// Formata a data ISO (ex: 2026-10-28T14:30:00Z) para o padrão brasileiro DD/MM/AAAA
 function formatOccurrenceDate(isoDate) {
-  const [year, month, day] = isoDate.split("-");
+  if (!isoDate) return "—";
+  const cleanDate = String(isoDate).split("T")[0];
+  const parts = cleanDate.split("-");
+  if (parts.length !== 3) return isoDate;
+  const [year, month, day] = parts;
   return `${day}/${month}/${year}`;
 }
 
-// Retorna o texto e o estilo da célula de ordem de serviço para cada ocorrência.
+// Desenha a coluna de Ordem de Serviço na tabela (mostra se já tem OS ou se está sem ordem)
 function renderOccurrenceOrderCell(occurrence) {
   if (!occurrence.order) {
     return '<span class="occurrence-order-missing"><i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i><span>Sem ordem</span></span>';
@@ -119,16 +90,19 @@ function renderOccurrenceOrderCell(occurrence) {
   return `<span class="occurrence-order-created"><i class="bi bi-check-circle-fill" aria-hidden="true"></i>${escapeOccurrenceText(occurrence.order.id)}</span>`;
 }
 
-// Desenha a tabela com os filtros atuais e atualiza a contagem de resultados.
+// Desenha todas as linhas da tabela de ocorrências na tela do funcionário
 function renderOccurrencesTable() {
+  if (!occurrencePage.tableBody) return;
   const records = getVisibleOccurrences();
+
   occurrencePage.tableBody.innerHTML = records.map(occurrence => {
     const assignedTeam = occurrence.order
-      ? occurrenceDemoData.teams.find(team => team.id === occurrence.order.teamId)?.name || "Equipe pendente"
+      ? (occurrence.order.teamName || occurrenceData.teams.find(team => team.id === occurrence.order.teamId)?.name || "Equipe designada")
       : "—";
+
     return `
       <tr>
-        <td><button class="occurrence-id-link" type="button" data-open-occurrence="${escapeOccurrenceText(occurrence.id)}">${escapeOccurrenceText(occurrence.id)}</button></td>
+        <td><button class="occurrence-id-link" type="button" data-open-occurrence="${escapeOccurrenceText(occurrence.id)}">${escapeOccurrenceText(occurrence.protocolo)}</button></td>
         <td>${escapeOccurrenceText(occurrence.type)}</td>
         <td>${escapeOccurrenceText(occurrence.neighborhood)}</td>
         <td><span class="occurrence-risk-badge ${occurrenceRiskClass(occurrence.risk)}">${escapeOccurrenceText(occurrence.risk)}</span></td>
@@ -139,22 +113,27 @@ function renderOccurrencesTable() {
     `;
   }).join("");
 
-  occurrencePage.count.textContent = `${records.length} ${records.length === 1 ? "ocorrência encontrada" : "ocorrências encontradas"}`;
-  occurrencePage.emptyState.hidden = records.length > 0;
+  if (occurrencePage.count) {
+    occurrencePage.count.textContent = `${records.length} ${records.length === 1 ? "ocorrência encontrada" : "ocorrências encontradas"}`;
+  }
+  if (occurrencePage.emptyState) {
+    occurrencePage.emptyState.hidden = records.length > 0;
+  }
 }
 
-// Monta a apresentação detalhada do registro e as ações disponíveis conforme seu estado.
+// Monta o conteúdo do modal com os detalhes completos da ocorrência e controles de status/prioridade
 function renderOccurrenceDetails(occurrence) {
   const team = occurrence.order
-    ? occurrenceDemoData.teams.find(item => item.id === occurrence.order.teamId)
+    ? occurrenceData.teams.find(item => item.id === occurrence.order.teamId)
     : null;
+
   const actionMarkup = occurrence.order
     ? `
       <section class="occurrence-order-summary">
         <h3><i class="bi bi-clipboard-check" aria-hidden="true"></i> Ordem de serviço ${escapeOccurrenceText(occurrence.order.id)}</h3>
         <div class="occurrence-detail-grid">
           <div><span>Status da ordem</span><strong>${escapeOccurrenceText(occurrence.order.status)}</strong></div>
-          <div><span>Equipe destinada</span><strong>${escapeOccurrenceText(team?.name || "Aguardando equipe")}</strong></div>
+          <div><span>Equipe destinada</span><strong>${escapeOccurrenceText(occurrence.order.teamName || team?.name || "Equipe designada")}</strong></div>
         </div>
         <p>O status da ocorrência está como <strong>${escapeOccurrenceText(occurrence.status)}</strong>.</p>
       </section>
@@ -164,7 +143,7 @@ function renderOccurrenceDetails(occurrence) {
   occurrencePage.modalContent.innerHTML = `
     <header class="occurrence-detail-heading">
       <span class="occurrence-detail-icon ${occurrenceRiskClass(occurrence.risk)}"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i></span>
-      <div><span class="occurrence-detail-eyebrow">${escapeOccurrenceText(occurrence.id)} · ${formatOccurrenceDate(occurrence.date)}</span><h2 id="occurrenceModalTitle">${escapeOccurrenceText(occurrence.type)}</h2></div>
+      <div><span class="occurrence-detail-eyebrow">${escapeOccurrenceText(occurrence.protocolo)} · ${formatOccurrenceDate(occurrence.date)}</span><h2 id="occurrenceModalTitle">${escapeOccurrenceText(occurrence.type)}</h2></div>
     </header>
     <div class="occurrence-detail-grid occurrence-detail-meta">
       <div><span>Árvore</span><strong>${escapeOccurrenceText(occurrence.tree)} · ID ${escapeOccurrenceText(occurrence.treeId)}</strong></div>
@@ -182,9 +161,9 @@ function renderOccurrenceDetails(occurrence) {
   `;
 }
 
-// Apresenta um seletor de equipes livres antes de criar uma nova ordem de serviço.
+// Monta o formulário dentro do modal para escolher uma equipe livre e gerar a Ordem de Serviço
 function renderCreateOrderForm() {
-  const freeTeams = occurrenceDemoData.teams.filter(team => team.available);
+  const freeTeams = occurrenceData.teams.filter(team => team.available);
   if (!freeTeams.length) {
     return '<section class="occurrence-order-create"><h3>Criar ordem de serviço</h3><p class="occurrence-no-team"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> Não há equipes livres no momento.</p></section>';
   }
@@ -203,59 +182,151 @@ function renderCreateOrderForm() {
   `;
 }
 
-// Abre o modal para a ocorrência escolhida e prepara os detalhes com o estado mais recente.
+// Abre o modal de detalhes quando o funcionário clica no protocolo da ocorrência
 function openOccurrenceDetails(occurrenceId) {
-  const occurrence = occurrenceDemoData.occurrences.find(item => item.id === occurrenceId);
+  const occurrence = occurrenceData.occurrences.find(item => String(item.id) === String(occurrenceId));
   if (!occurrence) return;
   selectedOccurrenceId = occurrence.id;
   renderOccurrenceDetails(occurrence);
   occurrencePage.modal.hidden = false;
   document.body.classList.add("occurrence-modal-open");
-  document.getElementById("closeOccurrenceModal").focus();
+  document.getElementById("closeOccurrenceModal")?.focus();
 }
 
-// Fecha o modal e devolve a rolagem da página ao estado normal.
+// Fecha o modal de detalhes
 function closeOccurrenceDetails() {
   occurrencePage.modal.hidden = true;
   document.body.classList.remove("occurrence-modal-open");
 }
 
-// Mostra uma confirmação breve após uma ordem ser criada nesta demonstração local.
+// Mostra um aviso rápido (toast) na tela após salvar uma alteração
 function showOccurrenceToast(message) {
+  if (!occurrencePage.toast) return;
   occurrencePage.toast.textContent = message;
   occurrencePage.toast.hidden = false;
   window.clearTimeout(occurrenceToastTimer);
   occurrenceToastTimer = window.setTimeout(() => { occurrencePage.toast.hidden = true; }, 3600);
 }
 
-// Cria a ordem de serviço em memória, reserva a equipe e muda os estados relacionados.
-// FUTURO API/BD: enviar POST /api/ocorrencias/{id}/ordens com equipeId e atualizar a tabela via resposta.
-function createOccurrenceOrder(teamId) {
-  const occurrence = occurrenceDemoData.occurrences.find(item => item.id === selectedOccurrenceId);
-  const team = occurrenceDemoData.teams.find(item => item.id === teamId && item.available);
+// Envia para o back-end a criação de vínculo da Ordem de Serviço e muda o status para "Em Atendimento"
+async function createOccurrenceOrder(teamId) {
+  const occurrence = occurrenceData.occurrences.find(item => String(item.id) === String(selectedOccurrenceId));
+  const team = occurrenceData.teams.find(item => String(item.id) === String(teamId) && item.available);
   if (!occurrence || occurrence.order || !team) return;
 
-  const nextOrderNumber = String(occurrenceDemoData.occurrences.length + 381).padStart(4, "0");
-  occurrence.order = { id: `OS-2026-${nextOrderNumber}`, status: "Em andamento", teamId: team.id };
-  occurrence.status = "Em atendimento";
-  team.available = false;
+  const nextOrderNumber = String(occurrenceData.occurrences.length + 381).padStart(4, "0");
+  const orderId = `OS-2026-${nextOrderNumber}`;
 
-  renderOccurrencesTable();
-  renderOccurrenceDetails(occurrence);
-  showOccurrenceToast(`Ordem ${occurrence.order.id} criada e destinada à ${team.name}.`);
+  try {
+    // Atualiza o status da ocorrência no back-end Java via PATCH /api/ocorrencias/{id}/status
+    const response = await fetch(`/api/ocorrencias/${encodeURIComponent(occurrence.id)}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: "Em Atendimento",
+        observacaoInterna: `Ordem ${orderId} atribuída à equipe ${team.name} (${team.id})`
+      })
+    });
+
+    if (!response.ok) throw new Error("Falha ao atualizar status no servidor");
+
+    // Atualiza os dados na tela imediatamente
+    occurrence.order = { id: orderId, status: "Em andamento", teamId: team.id, teamName: team.name };
+    occurrence.status = "Em Atendimento";
+    team.available = false;
+
+    renderOccurrencesTable();
+    renderOccurrenceDetails(occurrence);
+    showOccurrenceToast(`Ordem ${occurrence.order.id} criada e destinada à ${team.name}.`);
+  } catch (erro) {
+    console.error("Erro ao criar ordem para a ocorrência:", erro);
+    showOccurrenceToast("Erro ao salvar a ordem no servidor.");
+  }
 }
 
-// Conecta busca, ordenação, abertura de detalhes, formulário e ações de fechamento.
-function setupOccurrencePageEvents() {
-  occurrencePage.search.addEventListener("input", renderOccurrencesTable);
-  occurrencePage.sort.addEventListener("change", renderOccurrencesTable);
+// Extrai o bairro do endereço caso não tenha vindo separado no documento do banco
+function extrairBairro(endereco) {
+  if (endereco && endereco.includes("-")) {
+    const partes = endereco.split("-");
+    return partes[partes.length - 1].trim();
+  }
+  return "Centro";
+}
 
-  occurrencePage.tableBody.addEventListener("click", event => {
+// Busca as ocorrências reais e as equipes disponíveis no back-end (Javalin + MongoDB)
+async function carregarDadosDoBackend() {
+  try {
+    // 1. Tenta carregar as equipes cadastradas na API da Pessoa 4 (/api/equipes)
+    const respEquipes = await fetch("/api/equipes");
+    if (respEquipes.ok) {
+      const equipesBanco = await respEquipes.json();
+      if (Array.isArray(equipesBanco) && equipesBanco.length > 0) {
+        occurrenceData.teams = equipesBanco.map(eq => ({
+          id: eq.id || eq._id,
+          name: eq.nome || eq.nomeEquipe || "Equipe Operacional",
+          available: eq.disponivel !== false && eq.status !== "Inativa"
+        }));
+      }
+    }
+  } catch (e) {
+    // Se a rota de equipes não responder, mantém as equipes padrão em memória
+  }
+
+  try {
+    // 2. Busca todas as ocorrências no back-end da Pessoa 3 (GET /api/ocorrencias)
+    const respOcorrencias = await fetch("/api/ocorrencias");
+    if (!respOcorrencias.ok) throw new Error("Erro ao buscar ocorrências");
+
+    const dadosBanco = await respOcorrencias.json();
+
+    // Converte os documentos do MongoDB para o formato usado pela tabela profissional
+    occurrenceData.occurrences = dadosBanco.map(doc => {
+      const dataIso = (doc.criadoEm || doc.dataHora || new Date().toISOString()).split("T")[0];
+      const jaEmAtendimento = doc.status === "Em Atendimento" || doc.status === "Concluída";
+
+      return {
+        id: doc.id || doc._id,
+        protocolo: doc.protocolo || doc.id || doc._id,
+        municipalityId: doc.municipioId || "campinas",
+        type: doc.tipoProblema || "Ocorrência arbórea",
+        date: dataIso,
+        tree: doc.especieArvore || "Árvore urbana",
+        treeId: doc.arvoreId || "Não vinculada",
+        neighborhood: doc.bairro || extrairBairro(doc.localizacao),
+        address: doc.localizacao || "Endereço não informado",
+        risk: doc.urgencia || "Média",
+        reporter: doc.nomeContato || (doc.cidadaoId === "cid_anonimo" ? "Portal Público (Anônimo)" : `Cidadão (${doc.cidadaoId || "Portal"})`),
+        description: doc.descricao || "Sem descrição detalhada.",
+        status: doc.status || "Recebida",
+        order: jaEmAtendimento
+          ? {
+              id: `OS-${String(doc.protocolo || doc.id).slice(-4)}`,
+              status: doc.status === "Concluída" ? "Concluída" : "Em andamento",
+              teamId: "TEAM-01",
+              teamName: doc.observacaoInterna || "Equipe designada"
+            }
+          : null
+      };
+    });
+
+    renderOccurrencesTable();
+  } catch (erro) {
+    console.error("Erro ao carregar ocorrências do servidor:", erro);
+    renderOccurrencesTable();
+  }
+}
+
+// Configura os eventos de busca, ordenação e cliques nos botões do modal
+function setupOccurrencePageEvents() {
+  occurrencePage.search?.addEventListener("input", renderOccurrencesTable);
+  occurrencePage.sort?.addEventListener("change", renderOccurrencesTable);
+
+  occurrencePage.tableBody?.addEventListener("click", event => {
     const trigger = event.target.closest("[data-open-occurrence]");
     if (trigger) openOccurrenceDetails(trigger.dataset.openOccurrence);
   });
 
-  occurrencePage.modalContent.addEventListener("submit", event => {
+  occurrencePage.modalContent?.addEventListener("submit", event => {
     if (event.target.id !== "createOccurrenceOrderForm") return;
     event.preventDefault();
     const teamId = new FormData(event.target).get("teamId");
@@ -263,20 +334,21 @@ function setupOccurrencePageEvents() {
     createOccurrenceOrder(String(teamId));
   });
 
-  document.getElementById("closeOccurrenceModal").addEventListener("click", closeOccurrenceDetails);
-  occurrencePage.modal.addEventListener("click", event => {
+  document.getElementById("closeOccurrenceModal")?.addEventListener("click", closeOccurrenceDetails);
+  occurrencePage.modal?.addEventListener("click", event => {
     if (event.target === occurrencePage.modal) closeOccurrenceDetails();
   });
   document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && !occurrencePage.modal.hidden) closeOccurrenceDetails();
+    if (event.key === "Escape" && occurrencePage.modal && !occurrencePage.modal.hidden) {
+      closeOccurrenceDetails();
+    }
   });
 }
 
-// Inicializa município demonstrativo, filtros, tabela e eventos da página.
-// FUTURO API/BD: obter município do perfil autenticado e carregar apenas suas ocorrências.
+// Inicializa os eventos e carrega os dados reais do banco assim que a página abre
 function initializeOccurrencePage() {
   setupOccurrencePageEvents();
-  renderOccurrencesTable();
+  carregarDadosDoBackend();
 }
 
 initializeOccurrencePage();
