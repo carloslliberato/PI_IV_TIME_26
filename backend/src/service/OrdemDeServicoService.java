@@ -94,5 +94,14 @@ public class OrdemDeServicoService {
         ordemRepository.atualizar(ordem);
         return ordem;
     }
-    
+
+    // Cancela uma OS do município informado e salva a alteração.
+    public OrdemDeServico cancelar(ObjectId id, ObjectId municipioId){
+        OrdemDeServico ordem = buscarPorId(id, municipioId);
+
+        ordem.cancelar();
+        ordemRepository.atualizar(ordem);
+        return ordem;
+    }
+
 }

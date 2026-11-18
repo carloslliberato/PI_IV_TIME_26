@@ -200,7 +200,11 @@ public class ConfiguracaoRotas {
 
         servidorHttp.get(
                 "/api/ordens-servico/{id}",
-                ctx -> ordemDeServicoController.consultar(ctx));               
+                ctx -> ordemDeServicoController.consultar(ctx));
+        
+        servidorHttp.patch(
+                "/api/ordens-servico/{id}/status",
+                ctx -> ordemDeServicoController.alterarStatus(ctx));
         
     }
 }

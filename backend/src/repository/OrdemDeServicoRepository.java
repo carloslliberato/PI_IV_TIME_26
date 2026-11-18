@@ -13,7 +13,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.UpdateResult;
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.ne;
+import static com.mongodb.client.model.Filters.nin;
 
 public class OrdemDeServicoRepository {
     private final MongoCollection<Document> colecao;
@@ -85,14 +85,14 @@ public class OrdemDeServicoRepository {
         documento.remove("dataCriacao");
 
         UpdateResult resultado = colecao.updateOne(
-            and(eq("_id", ordem.getOrdemServicoId()), ne("status", "Concluída")), new Document("$set", documento));
-        
+                and(eq("_id", ordem.getOrdemServicoId()),nin("status", "Concluída", "Cancelada")),
+                new Document("$set", documento));
+
         if (resultado.getMatchedCount() == 0){
-            throw new IllegalStateException("Não foi possível atualizar: ordem de serviço não encontrada ou já concluída.");
+            throw new IllegalStateException("Não foi possível atualizar: ordem de serviço não encontrada, concluída ou cancelada.");
         }
 
     }
-
 
     // Prepara os dados de uma ordem de servico para o MongoDB.
     private Document converterParaDocumento(OrdemDeServico ordem) {
