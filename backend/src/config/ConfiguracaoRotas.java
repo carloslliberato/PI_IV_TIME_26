@@ -5,6 +5,7 @@ import controller.ContaController;
 import controller.EquipeController;
 import controller.EspecieController;
 import controller.OcorrenciaController;
+import controller.OrdemDeServicoController;
 import io.javalin.Javalin;
 import repository.ArvoreRepository;
 import repository.ContaRepository;
@@ -12,6 +13,7 @@ import repository.EquipeRepository;
 import repository.EspecieRepository;
 import repository.MunicipioRepository;
 import repository.OcorrenciaRepository;
+import repository.OrdemDeServicoRepository;
 import repository.RecuperacaoSenhaRepository;
 import service.ArvoreService;
 import service.ConexaoServidor;
@@ -19,6 +21,7 @@ import service.ContaService;
 import service.EquipeService;
 import service.EspecieService;
 import service.OcorrenciaService;
+import service.OrdemDeServicoService;
 import service.RecuperacaoSenhaService;
 import service.ServicoEmail;
 
@@ -29,6 +32,7 @@ public class ConfiguracaoRotas {
     private final EspecieController especieController;
     private final EquipeController equipeController;
     private final OcorrenciaController ocorrenciaController;
+    private final OrdemDeServicoController ordemDeServicoController;    
 
     public ConfiguracaoRotas(
             ConexaoServidor conexaoServidor) {
@@ -100,6 +104,16 @@ public class ConfiguracaoRotas {
 
         this.ocorrenciaController =
                 new OcorrenciaController(ocorrenciaService);
+        OrdemDeServicoRepository ordemRepository =
+                new OrdemDeServicoRepository();
+
+        OrdemDeServicoService ordemService =
+                new OrdemDeServicoService(
+                        ordemRepository,
+                        contaRepository);
+
+        this.ordemDeServicoController =
+                new OrdemDeServicoController(ordemService);        
     }
 
     public void registrarRotas(Javalin servidorHttp) {
@@ -220,5 +234,13 @@ public class ConfiguracaoRotas {
         servidorHttp.patch(
                 "/api/ocorrencias/{id}/notificacoes",
                 ctx -> ocorrenciaController.atualizarNotificacao(ctx));
+        servidorHttp.get(
+                "/api/ordens-servico",
+                ctx -> ordemDeServicoController.listar(ctx));
+
+        servidorHttp.get(
+                "/api/ordens-servico/{id}",
+                ctx -> ordemDeServicoController.consultar(ctx));               
+        
     }
 }
