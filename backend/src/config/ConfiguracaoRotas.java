@@ -1,27 +1,26 @@
-
 package config;
 
-import io.javalin.Javalin;
-
-import controller.ContaController;
 import controller.ArvoreController;
-import controller.EspecieController;
+import controller.ContaController;
 import controller.EquipeController;
-
-import repository.ContaRepository;
-import repository.MunicipioRepository;
-import repository.RecuperacaoSenhaRepository;
+import controller.EspecieController;
+import controller.OcorrenciaController;
+import io.javalin.Javalin;
 import repository.ArvoreRepository;
-import repository.EspecieRepository;
+import repository.ContaRepository;
 import repository.EquipeRepository;
-
+import repository.EspecieRepository;
+import repository.MunicipioRepository;
+import repository.OcorrenciaRepository;
+import repository.RecuperacaoSenhaRepository;
+import service.ArvoreService;
 import service.ConexaoServidor;
 import service.ContaService;
+import service.EquipeService;
+import service.EspecieService;
+import service.OcorrenciaService;
 import service.RecuperacaoSenhaService;
 import service.ServicoEmail;
-import service.ArvoreService;
-import service.EspecieService;
-import service.EquipeService;
 
 public class ConfiguracaoRotas {
 
@@ -29,6 +28,7 @@ public class ConfiguracaoRotas {
     private final ArvoreController arvoreController;
     private final EspecieController especieController;
     private final EquipeController equipeController;
+    private final OcorrenciaController ocorrenciaController;
 
     public ConfiguracaoRotas(
             ConexaoServidor conexaoServidor) {
@@ -90,6 +90,16 @@ public class ConfiguracaoRotas {
 
         this.equipeController =
                 new EquipeController(equipeService);
+
+        // Inicializa o repositório, serviço e controlador de Ocorrências
+        OcorrenciaRepository ocorrenciaRepository =
+                new OcorrenciaRepository();
+
+        OcorrenciaService ocorrenciaService =
+                new OcorrenciaService(ocorrenciaRepository);
+
+        this.ocorrenciaController =
+                new OcorrenciaController(ocorrenciaService);
     }
 
     public void registrarRotas(Javalin servidorHttp) {
@@ -177,5 +187,38 @@ public class ConfiguracaoRotas {
         servidorHttp.delete(
                 "/api/equipes/{equipeId}/colaboradores/{colaboradorId}",
                 ctx -> equipeController.excluirColaborador(ctx));
+
+        // Rotas de Ocorrências
+        servidorHttp.post(
+                "/api/ocorrencias",
+                ctx -> ocorrenciaController.abrirChamado(ctx));
+
+        servidorHttp.get(
+                "/api/ocorrencias",
+                ctx -> ocorrenciaController.listarOcorrencias(ctx));
+
+        servidorHttp.get(
+                "/api/ocorrencias/minhas",
+                ctx -> ocorrenciaController.listarMinhasOcorrencias(ctx));
+
+        servidorHttp.get(
+                "/api/ocorrencias/protocolo/{protocolo}",
+                ctx -> ocorrenciaController.consultarPorProtocolo(ctx));
+
+        servidorHttp.get(
+                "/api/ocorrencias/{id}",
+                ctx -> ocorrenciaController.consultarPorId(ctx));
+
+        servidorHttp.patch(
+                "/api/ocorrencias/{id}/status",
+                ctx -> ocorrenciaController.atualizarStatus(ctx));
+
+        servidorHttp.patch(
+                "/api/ocorrencias/{id}/prioridade",
+                ctx -> ocorrenciaController.atualizarPrioridade(ctx));
+
+        servidorHttp.patch(
+                "/api/ocorrencias/{id}/notificacoes",
+                ctx -> ocorrenciaController.atualizarNotificacao(ctx));
     }
 }
