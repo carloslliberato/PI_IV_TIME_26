@@ -38,6 +38,7 @@
 .service-order-status.completed { background: #e8f4e8; color: #43833c; }
 .service-order-status.in-progress { background: #e8f1fb; color: #326b9d; }
 .service-order-status.pending { background: #fff3d4; color: #ac7b0b; }
+.service-order-status.cancelled {background: #edf0ee; color: #536259;}
 .service-orders-empty { min-height: 190px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; color: #849087; text-align: center; }
 .service-orders-empty[hidden] { display: none; }
 .service-orders-empty > i { color: #7c9e88; font-size: 27px; }
