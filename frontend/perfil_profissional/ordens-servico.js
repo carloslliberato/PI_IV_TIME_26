@@ -107,10 +107,24 @@ function getVisibleServiceOrders(){
   const query = normalizeServiceOrderText(serviceOrdersPage.search.value.trim());
   const selectedStatus = serviceOrdersPage.statusFilter.value;
 
-  const records = serviceOrdersState.orders.filter(order =>{
-    const matchesStatus = selectedStatus === "all" || order.status === selectedStatus;
-    const searchFields = [order.id, order.titulo, order.descricao,order.arvoreId, order.ocorrenciaId, order.equipeId];
-    const matchesSearch = !query || searchFields.some(value => normalizeServiceOrderText(value).includes(query));
+const records = serviceOrdersState.orders.filter(order => {
+  const matchesStatus =
+    selectedStatus === "all" || order.status === selectedStatus;
+
+    const searchFields = [
+      order.codigo,
+      order.id,
+      order.titulo,
+      order.descricao,
+      order.arvoreId,
+      order.ocorrenciaId,
+      order.equipeId
+    ];
+
+    // Verifica se algum dos campos corresponde ao texto pesquisado.
+    const matchesSearch = !query || searchFields.some(
+      value => normalizeServiceOrderText(value).includes(query)
+    );
 
     return matchesStatus && matchesSearch;
   });
@@ -140,7 +154,14 @@ function renderServiceOrdersTable(){
 
   serviceOrdersPage.tableBody.innerHTML = records.map(order => `
     <tr>
-      <td><button class="service-order-id-link" type="button" data-open-service-order="${escapeServiceOrderText(order.id)}">${escapeServiceOrderText(order.id)}</button></td>
+      <td>
+        <button
+          class="service-order-id-link"
+          type="button"
+          data-open-service-order="${escapeServiceOrderText(order.id)}">
+          ${escapeServiceOrderText(order.codigo || order.id)}
+        </button>
+      </td>
       <td>${escapeServiceOrderText(order.titulo)}</td>
       <td>${escapeServiceOrderText(order.equipeId ?? "Não atribuída")}</td>
       <td><span class="service-order-status ${serviceOrderStatusClass(order.status)}">${escapeServiceOrderText(order.status)}</span></td>
@@ -193,7 +214,7 @@ function renderServiceOrderDetails(order){
       <span class="service-order-detail-icon"><i class="bi bi-clipboard2-check" aria-hidden="true"></i></span>
       <div>
         <span class="service-order-detail-eyebrow">Criada em ${escapeServiceOrderText(formatServiceOrderDate(order.dataCriacao))}</span>
-        <h2 id="serviceOrderModalTitle">Ordem ${escapeServiceOrderText(order.id)}</h2>
+        <h2 id="serviceOrderModalTitle">Ordem ${escapeServiceOrderText(order.codigo || order.id)}</h2>
       </div>
     </header>
     <div class="service-order-detail-grid">

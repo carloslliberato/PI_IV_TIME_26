@@ -2,11 +2,15 @@ package service;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Locale;
+import java.time.Year;
+import java.time.ZoneId;
 import org.bson.types.ObjectId;
 import model.Conta;
 import model.OrdemDeServico;
 import repository.ContaRepository;
 import repository.OrdemDeServicoRepository;
+import dto.CadastroOrdemDeServicoDTO;
 
 
 public class OrdemDeServicoService {
@@ -25,6 +29,40 @@ public class OrdemDeServicoService {
 
         this.ordemRepository = ordemRepository;
         this.contaRepository = contaRepository;
+    }
+
+    // Reserva o sequencial do ano e monta o código de acompanhamento da OS.
+    private String gerarCodigo(){
+        int ano = Year.now(ZoneId.of("America/Sao_Paulo")).getValue();
+
+        long sequencial = ordemRepository.gerarProximoNumero(ano);
+
+        return String.format(Locale.ROOT,"OS%05d%d",ano,sequencial);
+    }
+
+    // Verifica os campos obrigatórios para criar uma ordem de serviço.
+    private void validarDadosDeCriacao(CadastroOrdemDeServicoDTO dados){
+        if (dados == null){
+            throw new IllegalArgumentException("Os dados da ordem de serviço não foram informados.");
+        }
+
+        if (dados.getTitulo() == null || dados.getTitulo().isBlank()){
+            throw new IllegalArgumentException("O título da ordem de serviço é obrigatório.");
+        }
+
+        if (dados.getDescricao() == null || dados.getDescricao().isBlank()){
+            throw new IllegalArgumentException("A descrição da ordem de serviço é obrigatória.");
+        }
+
+        String arvoreId = dados.getArvoreId();
+
+        if (arvoreId == null || arvoreId.isBlank()){
+            throw new IllegalArgumentException("Selecione uma árvore para a ordem de serviço.");
+        }
+
+        if (!ObjectId.isValid(arvoreId)){
+            throw new IllegalArgumentException("O identificador da árvore é inválido.");
+        }
     }
 
     // Obtém o município da conta do funcionário identificado pela sessão.
