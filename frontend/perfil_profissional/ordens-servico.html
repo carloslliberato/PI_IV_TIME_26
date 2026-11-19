@@ -26,8 +26,16 @@
             <p>Consulte os serviços destinados às equipes do município.</p>
           </div>
           <div class="service-orders-heading-actions">
-            <!-- Abre o formulário para registrar uma ordem antes dos filtros da página. -->
-            <button class="service-orders-create-button" id="openCreateServiceOrderModal" type="button"><i class="bi bi-clipboard-plus" aria-hidden="true"></i>Criar ordem de serviço</button>
+            <!-- Botão de criação temporariamente desativado. -->
+            <button
+              class="service-orders-create-button"
+              id="openCreateServiceOrderModal"
+              type="button"
+              disabled
+              title="Criação de ordens indisponível no momento.">
+              <i class="bi bi-clipboard-plus" aria-hidden="true"></i>
+              Criar ordem de serviço
+            </button>
           </div>
         </header>
 
@@ -36,7 +44,11 @@
           <label class="service-orders-search" for="serviceOrdersSearch">
             <i class="bi bi-search" aria-hidden="true"></i>
             <span class="visually-hidden">Buscar ordem de serviço</span>
-            <input id="serviceOrdersSearch" type="search" placeholder="Buscar por ID, bairro, ocorrência ou equipe..." autocomplete="off">
+            <input
+              id="serviceOrdersSearch"
+              type="search"
+              placeholder="Buscar por título, descrição ou ID..."
+              autocomplete="off">
           </label>
           <label class="service-orders-select" for="serviceOrdersSort">
             <i class="bi bi-sort-down" aria-hidden="true"></i>
@@ -51,10 +63,10 @@
             <span class="visually-hidden">Filtrar pelo status</span>
             <select id="serviceOrdersStatusFilter">
               <option value="all">Todos os status</option>
+              <option value="Aberta">Aberta</option>
               <option value="Em andamento">Em andamento</option>
-              <option value="Aguardando equipe">Aguardando equipe</option>
-              <option value="Pendente">Pendente</option>
               <option value="Concluída">Concluída</option>
+              <option value="Cancelada">Cancelada</option>
             </select>
           </label>
         </section>
@@ -72,8 +84,8 @@
               <thead>
                 <tr>
                   <th scope="col">ID da ordem</th>
-                  <th scope="col">Tipo de ocorrência</th>
-                  <th scope="col">Equipe designada</th>
+                  <th scope="col">Título da OS</th>
+                  <th scope="col">ID da equipe</th>
                   <th scope="col">Status da ordem de serviço</th>
                 </tr>
               </thead>
