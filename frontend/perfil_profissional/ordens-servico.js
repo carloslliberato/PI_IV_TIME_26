@@ -4,7 +4,9 @@ const serviceOrdersState = {
   loading: true,
   error: "",
   detailsRequest: 0,
-  previousFocus: null
+  previousFocus: null,
+  currentOrderId: null,
+  cancellations: new Set()
 };
 
 // Guarda os elementos da página usados por filtros, tabela e modal.
@@ -63,6 +65,33 @@ async function buscarOrdemDeServico(id) {
   return dados.ordem;
 }
 
+// Solicita o cancelamento e usa a ordem atualizada devolvida pelo servidor.
+async function cancelarOrdemDeServico(id) {
+  const resposta = await fetch(
+    "/api/ordens-servico/" + encodeURIComponent(id) + "/status",
+    {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "Cancelada" })
+    }
+  );
+
+  const dados = await resposta.json();
+
+  if (!resposta.ok) {
+    const erro = new Error(dados?.erro || "Não foi possível cancelar a ordem de serviço.");
+    erro.status = resposta.status;
+    throw erro;
+  }
+
+  if (dados?.ordem?.id !== id || dados?.ordem?.status !== "Cancelada") {
+    throw new Error("A API retornou uma confirmação de cancelamento inválida.");
+  }
+
+  return dados.ordem;
+}
+
 // Escapa texto antes de inserir conteúdo dinâmico na tabela ou na janela de detalhes.
 function escapeServiceOrderText(value) {
   return String(value ?? "—").replace(/[&<>"']/g, character => ({
@@ -107,9 +136,9 @@ function getVisibleServiceOrders(){
   const query = normalizeServiceOrderText(serviceOrdersPage.search.value.trim());
   const selectedStatus = serviceOrdersPage.statusFilter.value;
 
-const records = serviceOrdersState.orders.filter(order => {
-  const matchesStatus =
-    selectedStatus === "all" || order.status === selectedStatus;
+  const records = serviceOrdersState.orders.filter(order => {
+    const matchesStatus =
+      selectedStatus === "all" || order.status === selectedStatus;
 
     const searchFields = [
       order.codigo,
@@ -198,6 +227,9 @@ function getServiceOrdersErrorMessage(error, fallback){
 
 // Apresenta somente os campos retornados pela consulta da OS.
 function renderServiceOrderDetails(order){
+  const canCancel = order.status === "Aberta" || order.status === "Em andamento";
+  const cancelling = serviceOrdersState.cancellations.has(order.id);
+
   const fields = [
     ["Título da OS", order.titulo],
     ["Prioridade", order.prioridade],
@@ -234,12 +266,95 @@ function renderServiceOrderDetails(order){
       <h3>Observações</h3>
       <p>${escapeServiceOrderText(order.observacoes)}</p>
     </section>
+    ${canCancel ? `
+      <div class="service-order-create-actions">
+        <button
+          class="service-order-cancel-button"
+          type="button"
+          data-cancel-service-order="${escapeServiceOrderText(order.id)}"
+          ${cancelling ? "disabled" : ""}>
+          ${cancelling ? "Cancelando..." : "Cancelar ordem de serviço"}
+        </button>
+      </div>
+    ` : ""}
+    <p
+      id="serviceOrderStatusFeedback"
+      class="service-order-create-intro"
+      role="status"
+      aria-live="polite">${cancelling ? "Cancelando a ordem de serviço..." : ""}</p>
   `;
+}
+
+// Exibe a mensagem somente se os detalhes desta OS ainda estiverem abertos.
+function showServiceOrderStatusFeedback(orderId, message) {
+  if (serviceOrdersPage.modal.hidden || serviceOrdersState.currentOrderId !== orderId) return;
+
+  const feedback = document.getElementById("serviceOrderStatusFeedback");
+  if (feedback) feedback.textContent = message;
+}
+
+// Confirma a ação, impede envios repetidos e atualiza a tela após o cancelamento.
+async function cancelServiceOrderFromDetails(orderId, button) {
+  if (serviceOrdersPage.modal.hidden
+      || serviceOrdersState.currentOrderId !== orderId
+      || serviceOrdersState.cancellations.has(orderId)) return;
+
+  const title = document.getElementById("serviceOrderModalTitle").textContent;
+  const confirmed = window.confirm(
+    "Deseja cancelar " + title + "?\n\n"
+    + "Após o cancelamento, a OS poderá ser consultada, mas não poderá ser alterada."
+  );
+
+  if (!confirmed) return;
+
+  serviceOrdersState.cancellations.add(orderId);
+  button.disabled = true;
+  button.textContent = "Cancelando...";
+  showServiceOrderStatusFeedback(orderId, "Cancelando a ordem de serviço...");
+
+  try {
+    const order = await cancelarOrdemDeServico(orderId);
+    serviceOrdersState.cancellations.delete(orderId);
+
+    // Atualiza o registro pelo ID interno e reaplica os filtros da lista.
+    serviceOrdersState.orders = serviceOrdersState.orders.map(
+      current => current.id === order.id ? order : current
+    );
+    renderServiceOrdersTable();
+
+    if (!serviceOrdersPage.modal.hidden && serviceOrdersState.currentOrderId === orderId) {
+      // Impede que uma consulta anterior substitua o resultado do cancelamento.
+      serviceOrdersState.detailsRequest += 1;
+      renderServiceOrderDetails(order);
+      showServiceOrderStatusFeedback(orderId, "Ordem de serviço cancelada com sucesso.");
+      document.getElementById("closeServiceOrderModal").focus();
+    }
+  } catch (error) {
+    const fallback = error.status
+      ? error.message
+      : "Não foi possível confirmar o cancelamento. Atualize a página e consulte a OS.";
+
+    showServiceOrderStatusFeedback(
+      orderId,
+      getServiceOrdersErrorMessage(error, fallback)
+    );
+  } finally {
+    serviceOrdersState.cancellations.delete(orderId);
+
+    if (!serviceOrdersPage.modal.hidden && serviceOrdersState.currentOrderId === orderId) {
+      const currentButton = serviceOrdersPage.modalContent.querySelector("[data-cancel-service-order]");
+      if (currentButton) {
+        currentButton.disabled = false;
+        currentButton.textContent = "Cancelar ordem de serviço";
+      }
+    }
+  }
 }
 
 // Abre o modal e consulta os dados atualizados da OS selecionada.
 async function openServiceOrderDetails(orderId){
   const request = ++serviceOrdersState.detailsRequest;
+  serviceOrdersState.currentOrderId = orderId;
   serviceOrdersState.previousFocus = document.activeElement;
 
   serviceOrdersPage.modalContent.innerHTML =
@@ -269,12 +384,15 @@ async function openServiceOrderDetails(orderId){
 // Fecha o modal e impede que uma resposta atrasada atualize seus dados.
 function closeServiceOrderDetails(){
   serviceOrdersState.detailsRequest += 1;
+  serviceOrdersState.currentOrderId = null;
   serviceOrdersPage.modal.hidden = true;
   serviceOrdersPage.modalContent.innerHTML = "";
   document.body.classList.remove("service-order-modal-open");
 
   if (serviceOrdersState.previousFocus?.isConnected){
     serviceOrdersState.previousFocus.focus();
+  } else {
+    serviceOrdersPage.search.focus();
   }
 
   serviceOrdersState.previousFocus = null;
@@ -289,6 +407,11 @@ function setupServiceOrdersEvents(){
   serviceOrdersPage.tableBody.addEventListener("click", event =>{
     const trigger = event.target.closest("[data-open-service-order]");
     if (trigger) openServiceOrderDetails(trigger.dataset.openServiceOrder);
+  });
+
+  serviceOrdersPage.modalContent.addEventListener("click", event => {
+    const trigger = event.target.closest("[data-cancel-service-order]");
+    if (trigger) cancelServiceOrderFromDetails(trigger.dataset.cancelServiceOrder, trigger);
   });
 
   document.getElementById("closeServiceOrderModal").addEventListener("click", closeServiceOrderDetails);
