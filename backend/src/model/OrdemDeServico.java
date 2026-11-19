@@ -7,6 +7,7 @@ import org.bson.types.ObjectId;
 public class OrdemDeServico {
 
     private ObjectId ordemServicoId;
+    private String codigo;
     private ObjectId municipioId;
     private ObjectId arvoreId;
     private ObjectId ocorrenciaId;
@@ -20,42 +21,70 @@ public class OrdemDeServico {
     private Instant dataAtualizacao;
     private Instant dataConclusao;
 
-    //// Cria uma nova ordem de servico.
-    public OrdemDeServico(ObjectId municipioId, ObjectId arvoreId, ObjectId ocorrenciaId, ObjectId equipeId, String titulo, String descricao,
-        String prioridade, String observacoes){
+    // Cria uma nova ordem de serviço com o código gerado pelo sistema.
+    public OrdemDeServico(
+            ObjectId municipioId,
+            ObjectId arvoreId,
+            ObjectId ocorrenciaId,
+            ObjectId equipeId,
+            String titulo,
+            String descricao,
+            String prioridade,
+            String observacoes,
+            String codigo){
 
-            this.ordemServicoId = new ObjectId();
-            this.municipioId = municipioId;
-            this.arvoreId = arvoreId;
-            this.ocorrenciaId = ocorrenciaId;
-            this.equipeId = equipeId;
-            this.titulo = titulo;
-            this.descricao = descricao;
-            this.prioridade = prioridade;
-            this.observacoes = observacoes;
-            this.dataCriacao = Instant.now();
-            this.dataAtualizacao = this.dataCriacao;
-            if (equipeId != null) this.status = "Em andamento";
-            else this.status = "Aberta";
+        this.ordemServicoId = new ObjectId();
+        this.codigo = codigo;
+        this.municipioId = municipioId;
+        this.arvoreId = arvoreId;
+        this.ocorrenciaId = ocorrenciaId;
+        this.equipeId = equipeId;
+        this.titulo = titulo;
+        this.descricao = descricao;
+        this.prioridade = prioridade;
+        this.observacoes = observacoes;
+        this.dataCriacao = Instant.now();
+        this.dataAtualizacao = this.dataCriacao;
+
+        if (equipeId != null){
+            this.status = "Em andamento";
+        } else{
+            this.status = "Aberta";
+        }
     }
 
-        //// Reconstroi uma ordem de servico com os dados armazenados no banco.
-    public OrdemDeServico(ObjectId ordemServicoId, ObjectId municipioId, ObjectId arvoreId, ObjectId ocorrenciaId, ObjectId equipeId, String titulo, String descricao,
-        String status, String prioridade, String observacoes, Instant dataCriacao, Instant dataAtualizacao, Instant dataConclusao){
-            this.ordemServicoId = ordemServicoId;
-            this.municipioId = municipioId;
-            this.arvoreId = arvoreId;
-            this.ocorrenciaId = ocorrenciaId;
-            this.equipeId = equipeId;
-            this.titulo = titulo;
-            this.descricao = descricao;
-            this.status = status;
-            this.prioridade = prioridade;
-            this.observacoes = observacoes;
-            this.dataCriacao = dataCriacao;
-            this.dataAtualizacao = dataAtualizacao;
-            this.dataConclusao = dataConclusao;
-        }
+    // Reconstrói uma ordem de serviço com os dados armazenados no banco.
+    public OrdemDeServico(
+            ObjectId ordemServicoId,
+            ObjectId municipioId,
+            ObjectId arvoreId,
+            ObjectId ocorrenciaId,
+            ObjectId equipeId,
+            String titulo,
+            String descricao,
+            String status,
+            String prioridade,
+            String observacoes,
+            Instant dataCriacao,
+            Instant dataAtualizacao,
+            Instant dataConclusao,
+            String codigo){
+
+        this.ordemServicoId = ordemServicoId;
+        this.codigo = codigo;
+        this.municipioId = municipioId;
+        this.arvoreId = arvoreId;
+        this.ocorrenciaId = ocorrenciaId;
+        this.equipeId = equipeId;
+        this.titulo = titulo;
+        this.descricao = descricao;
+        this.status = status;
+        this.prioridade = prioridade;
+        this.observacoes = observacoes;
+        this.dataCriacao = dataCriacao;
+        this.dataAtualizacao = dataAtualizacao;
+        this.dataConclusao = dataConclusao;
+    }
     
     private void verificarSeEditavel() {
         if ("Concluída".equals(this.status) || "Cancelada".equals(this.status)) {
@@ -67,6 +96,10 @@ public class OrdemDeServico {
     public ObjectId getOrdemServicoId(){
         return ordemServicoId;
     }
+
+    public String getCodigo(){
+        return codigo;
+    }   
 
     public ObjectId getMunicipioId(){
         return municipioId;

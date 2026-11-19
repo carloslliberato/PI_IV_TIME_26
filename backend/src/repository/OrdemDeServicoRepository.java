@@ -11,16 +11,45 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.UpdateResult;
+import com.mongodb.client.model.FindOneAndUpdateOptions;
+import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.ReturnDocument;
+import static com.mongodb.client.model.Indexes.ascending;
+import static com.mongodb.client.model.Updates.inc;
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.nin;
 
 public class OrdemDeServicoRepository {
     private final MongoCollection<Document> colecao;
+    private final MongoCollection<Document> sequencias;
 
-    public OrdemDeServicoRepository() {
+    public OrdemDeServicoRepository(){
         MongoDatabase banco = ConexaoMongo.getDatabase();
+
         this.colecao = banco.getCollection("ordens_servico");
+        this.sequencias = banco.getCollection("sequencias_ordens_servico");
+
+        // Garante a existência de apenas um contador para cada ano.
+        this.sequencias.createIndex(ascending("ano"), new IndexOptions().unique(true));
+    }
+
+    // Reserva e retorna o próximo número da sequência de OS do ano informado.
+    public long gerarProximoNumero(int ano){
+        if (ano <= 0){
+            throw new IllegalArgumentException("O ano deve ser válido.");
+        }
+
+        Document contador = sequencias.findOneAndUpdate(
+                eq("ano", ano),
+                inc("sequencia", 1L),
+                new FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER));
+
+        if (contador == null){
+            throw new IllegalStateException("Não foi possível gerar o número sequencial da OS.");
+        }
+
+        return contador.getLong("sequencia");
     }
 
     // Insere uma nova ordem de servico no banco.
@@ -80,9 +109,10 @@ public class OrdemDeServicoRepository {
 
         Document documento = converterParaDocumento(ordem);
 
-        // Campos que nao devem ser alterados em uma atualização (por isso foram removidos).
+        // Campos que devem ser preservados no banco durante uma atualização.
         documento.remove("_id");
         documento.remove("dataCriacao");
+        documento.remove("codigo");
 
         UpdateResult resultado = colecao.updateOne(
                 and(eq("_id", ordem.getOrdemServicoId()),nin("status", "Concluída", "Cancelada")),
@@ -99,6 +129,7 @@ public class OrdemDeServicoRepository {
         Document documento = new Document();
 
         documento.append("_id", ordem.getOrdemServicoId());
+        documento.append("codigo", ordem.getCodigo());
         documento.append("municipioId", ordem.getMunicipioId());
         documento.append("arvoreId", ordem.getArvoreId());
         documento.append("ocorrenciaId", ordem.getOcorrenciaId());
@@ -146,7 +177,8 @@ public class OrdemDeServicoRepository {
             documento.getString("observacoes"),
             instanteCriacao,
             instanteAtualizacao,
-            instanteConclusao);
+            instanteConclusao,
+            documento.getString("codigo"));
     }
 
 }

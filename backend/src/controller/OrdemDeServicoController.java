@@ -160,6 +160,7 @@ public class OrdemDeServicoController {
         Map<String, Object> resposta = new HashMap<>();
 
         resposta.put("id", converterId(ordem.getOrdemServicoId()));
+        resposta.put("codigo", ordem.getCodigo());
         resposta.put("municipioId", converterId(ordem.getMunicipioId()));
         resposta.put("arvoreId", converterId(ordem.getArvoreId()));
         resposta.put("ocorrenciaId", converterId(ordem.getOcorrenciaId()));
