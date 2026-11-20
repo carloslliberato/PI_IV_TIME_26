@@ -112,7 +112,7 @@ class AtribuicaoEquipeOrdemDeServicoIntegracaoTest {
         repositorio.atribuirEquipe(os.getOrdemServicoId(), MUNICIPIO, segunda, CONCLUSAO);
         assertEquals("Disponível", equipe(primeira).getString("status"));
         assertEquals("Indisponível", equipe(segunda).getString("status"));
-        repositorio.cancelar(os.getOrdemServicoId(), MUNICIPIO, CONCLUSAO);
+        repositorio.cancelar(os.getOrdemServicoId(), MUNICIPIO, "Serviço duplicado no teste de equipe.", CONCLUSAO);
         assertEquals("Disponível", equipe(segunda).getString("status"));
         assertEquals(segunda, ordem(os).getObjectId("equipeId"));
         assertThrows(IllegalStateException.class,
@@ -159,7 +159,7 @@ class AtribuicaoEquipeOrdemDeServicoIntegracaoTest {
         ObjectId equipe = salvarEquipe(MUNICIPIO, USUARIO, "Equipe com histórico");
         OrdemDeServico os = salvarOrdem(MUNICIPIO);
         repositorio.atribuirEquipe(os.getOrdemServicoId(), MUNICIPIO, equipe, CONCLUSAO);
-        repositorio.cancelar(os.getOrdemServicoId(), MUNICIPIO, CONCLUSAO);
+        repositorio.cancelar(os.getOrdemServicoId(), MUNICIPIO, "Serviço duplicado no teste de equipe.", CONCLUSAO);
         EquipeRepository equipes = new EquipeRepository(banco);
         var lista = equipes.listarPorMunicipioEUsuario(
                 MUNICIPIO, "Município teste", USUARIO, "Usuário teste", null, "Disponível");

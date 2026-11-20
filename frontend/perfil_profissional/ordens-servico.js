@@ -11,6 +11,8 @@ const serviceOrdersState ={
   operations: new Map(),
   completionDrafts: new Map(),
   completionForms: new Set(),
+  cancellationDrafts: new Map(),
+  cancellationForms: new Set(),
   teamForms: new Set(),
   teamOptions: new Map(),
   teamDrafts: new Map(),
@@ -375,19 +377,19 @@ function getServiceOrderCompletion(order){
 }
 
 // Solicita o cancelamento e usa a ordem atualizada devolvida pelo servidor.
-async function cancelarOrdemDeServico(id){
+async function cancelarOrdemDeServico(id, motivoCancelamento){
   const resposta = await fetch("/api/ordens-servico/" + encodeURIComponent(id) + "/status",
     {
       method: "PATCH",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "Cancelada" })
+      body: JSON.stringify({ status: "Cancelada", motivoCancelamento })
     }
   );
 
   const dados = await readServiceOrderResponse(resposta, "Não foi possível cancelar a ordem de serviço.");
   const order = validateServiceOrderResponse(dados, id);
-  if (order.status !== "Cancelada"){
+  if (order.status !== "Cancelada" || order.motivoCancelamento !== motivoCancelamento){
     const error = new Error("Não foi possível confirmar o cancelamento.");
     error.invalidResponse = true;
     throw error;
@@ -572,6 +574,56 @@ function saveServiceOrderCompletionDraft(form){
   }
   serviceOrdersState.completionDrafts.set(orderId, draft);
   return draft;
+}
+
+// Motivo obrigatório e rascunho por OS. Autoria: Marialvo Corrêa de Freitas Junior.
+function saveServiceOrderCancellationDraft(form){
+  const motivo = form.elements.namedItem("motivoCancelamento").value;
+  serviceOrdersState.cancellationDrafts.set(form.dataset.cancelOrderForm, motivo);
+  return motivo;
+}
+
+function validateServiceOrderCancellationReason(value){
+  // Mesmos espaços Unicode removidos nas bordas pelo validador do servidor.
+  const motivo = typeof value === "string"
+    ? value.replace(/^[\s\p{Z}\u0085\uFEFF]+|[\s\p{Z}\u0085\uFEFF]+$/gu, "") : "";
+  if (!motivo) throw new Error("O motivo do cancelamento deve ser informado.");
+  if (motivo.length > 1000) throw new Error("O motivo do cancelamento deve ter no máximo 1000 caracteres.");
+  return motivo;
+}
+
+function renderServiceOrderCancellationForm(order, blocked){
+  const draft = serviceOrdersState.cancellationDrafts.get(order.id) || "";
+  const sending = serviceOrdersState.operations.get(order.id)?.phase === "sending";
+  return `<section class="service-order-cancellation-editor" aria-labelledby="serviceOrderCancellationTitle">
+    <h3 id="serviceOrderCancellationTitle">Cancelar ordem de serviço</h3>
+    <p>Informe o motivo. Após confirmar, a ordem e o motivo ficarão disponíveis somente para consulta.</p>
+    <form data-cancel-order-form="${escapeServiceOrderText(order.id)}">
+      <fieldset ${blocked ? "disabled" : ""}>
+        <legend class="visually-hidden">Dados do cancelamento</legend>
+        <label for="serviceOrderCancellationReason">Motivo do cancelamento
+          <textarea id="serviceOrderCancellationReason" name="motivoCancelamento" rows="4" required
+            maxlength="1000" aria-describedby="serviceOrderCancellationHint"
+            placeholder="Descreva por que esta ordem será cancelada">${escapeServiceOrderText(draft)}</textarea>
+          <small id="serviceOrderCancellationHint">Obrigatório. Até 1.000 caracteres.</small>
+        </label>
+        <div class="service-order-create-actions">
+          <button class="service-order-cancel-button" type="button" data-close-cancellation-form="${escapeServiceOrderText(order.id)}">Voltar aos detalhes</button>
+          <button class="service-order-confirm-cancellation" type="submit">${sending ? "Cancelando..." : "Confirmar cancelamento"}</button>
+        </div>
+      </fieldset>
+    </form>
+  </section>`;
+}
+
+function renderServiceOrderCancellationReason(order){
+  if (order.status !== "Cancelada") return "";
+  const motivo = typeof order.motivoCancelamento === "string" && order.motivoCancelamento.trim()
+    ? order.motivoCancelamento : "Motivo não registrado.";
+  return `<section class="service-order-description service-order-cancellation-record" aria-labelledby="serviceOrderCancellationRecordTitle">
+    <h3 id="serviceOrderCancellationRecordTitle">Motivo do cancelamento</h3>
+    <p class="service-order-preserve-lines">${escapeServiceOrderText(motivo)}</p>
+  </section>`;
 }
 
 // Aceita somente links de fotos que o usuário escolhe abrir, sem carregar imagens.
@@ -769,6 +821,7 @@ function openServiceOrderTeamForm(orderId){
   if (!isCurrentServiceOrder(orderId) || !canChangeServiceOrder(serviceOrdersState.details.get(orderId))
       || serviceOrdersState.operations.has(orderId)) return;
   serviceOrdersState.completionForms.delete(orderId);
+  serviceOrdersState.cancellationForms.delete(orderId);
   serviceOrdersState.teamForms.add(orderId);
   serviceOrdersState.feedback.delete(orderId);
   loadServiceOrderTeams(orderId);
@@ -804,6 +857,7 @@ function renderServiceOrderDetails(order){
   const editable = canChangeServiceOrder(order);
   const formOpen = editable && serviceOrdersState.completionForms.has(order.id);
   const teamFormOpen = editable && serviceOrdersState.teamForms.has(order.id);
+  const cancellationFormOpen = editable && serviceOrdersState.cancellationForms.has(order.id);
   const feedback = serviceOrdersState.feedback.get(order.id);
   const message = operation?.message || feedback?.message || "";
   const fields = [
@@ -843,9 +897,11 @@ function renderServiceOrderDetails(order){
       <p class="service-order-preserve-lines">${escapeServiceOrderText(order.observacoes)}</p>
     </section>
     ${renderServiceOrderCompletionReport(order)}
+    ${renderServiceOrderCancellationReason(order)}
     ${formOpen ? renderServiceOrderCompletionForm(order, blocked) : ""}
     ${teamFormOpen ? renderServiceOrderTeamForm(order, blocked) : ""}
-    ${editable && !formOpen && !teamFormOpen ? `
+    ${cancellationFormOpen ? renderServiceOrderCancellationForm(order, blocked) : ""}
+    ${editable && !formOpen && !teamFormOpen && !cancellationFormOpen ? `
       <div class="service-order-create-actions service-order-detail-actions">
         <button class="service-order-cancel-button" type="button"
           data-open-team-form="${escapeServiceOrderText(order.id)}" ${blocked ? "disabled" : ""}>
@@ -884,6 +940,7 @@ function rememberServiceOrder(order){
   if (!canChangeServiceOrder(order)){
     serviceOrdersState.completionForms.delete(order.id);
     serviceOrdersState.completionDrafts.delete(order.id);
+    serviceOrdersState.cancellationForms.delete(order.id);
     serviceOrdersState.teamForms.delete(order.id);
     serviceOrdersState.teamOptions.delete(order.id);
     serviceOrdersState.teamDrafts.delete(order.id);
@@ -892,9 +949,9 @@ function rememberServiceOrder(order){
 }
 
 // Respostas de alteração invalidam consultas antigas da mesma OS.
-function acceptServiceOrderActionResult(order, message){
+function acceptServiceOrderActionResult(order, message, error = false){
   serviceOrdersState.orderRevisions.set(order.id, (serviceOrdersState.orderRevisions.get(order.id) || 0) + 1);
-  serviceOrdersState.feedback.set(order.id, { message, error: false });
+  serviceOrdersState.feedback.set(order.id, { message, error });
   rememberServiceOrder(order);
   if (isCurrentServiceOrder(order.id)){
     serviceOrdersState.detailsRequest += 1;
@@ -909,6 +966,11 @@ function renderCurrentServiceOrder(orderId){
 }
 
 function completionRecoveryMessage(order, operation){
+  if (operation.kind === "cancel" && order.status === "Cancelada"){
+    return order.motivoCancelamento === operation.motivoCancelamento
+      ? "Cancelamento confirmado. O motivo foi registrado."
+      : "A ordem está cancelada, mas o motivo registrado não corresponde ao enviado. Confira os detalhes.";
+  }
   if (order.status === "Concluída") return "A ordem de serviço está concluída.";
   if (order.status === "Cancelada") return "A ordem de serviço está cancelada.";
   if (operation.kind === "assign"){
@@ -917,7 +979,8 @@ function completionRecoveryMessage(order, operation){
       : "A atribuição não foi confirmada. Atualize as equipes antes de tentar novamente.";
   }
   const action = operation.kind === "complete" ? "conclusão" : "cancelamento";
-  return `A ${action} não foi confirmada. A ordem continua ${order.status.toLocaleLowerCase("pt-BR")}; você pode tentar novamente.`;
+  const cause = operation.failureMessage ? `${operation.failureMessage} ` : "";
+  return `${cause}A ${action} não foi confirmada. A ordem continua ${order.status.toLocaleLowerCase("pt-BR")}; você pode tentar novamente.`;
 }
 
 // Só consulta após uma resposta incerta. Nunca repete a alteração automaticamente.
@@ -938,7 +1001,13 @@ async function recoverServiceOrderOperation(orderId, operation){
         const options = serviceOrdersState.teamOptions.get(orderId);
         if (options) options.error = "Atualize a lista de equipes para continuar.";
       }
-      acceptServiceOrderActionResult(order, completionRecoveryMessage(order, operation));
+      const cancellationMismatch = operation.kind === "cancel" && order.status === "Cancelada"
+        && order.motivoCancelamento !== operation.motivoCancelamento;
+      if (operation.kind === "cancel" && order.status === "Cancelada" && !cancellationMismatch){
+        serviceOrdersState.cancellationDrafts.delete(orderId);
+      }
+      const cancellationNotConfirmed = operation.kind === "cancel" && canChangeServiceOrder(order);
+      acceptServiceOrderActionResult(order, completionRecoveryMessage(order, operation), cancellationMismatch || cancellationNotConfirmed);
     } catch (error){
       if (serviceOrdersState.operations.get(orderId) !== operation) return;
       operation.phase = "unknown";
@@ -973,6 +1042,7 @@ async function runServiceOrderOperation(orderId, kind, send, metadata = {}){
       serviceOrdersState.teamOptions.delete(orderId);
       serviceOrdersState.teamDrafts.delete(orderId);
     }
+    if (kind === "cancel") serviceOrdersState.cancellationDrafts.delete(orderId);
     acceptServiceOrderActionResult(order, kind === "assign"
       ? "Equipe atribuída. A ordem está em andamento."
       : kind === "complete"
@@ -987,22 +1057,49 @@ async function runServiceOrderOperation(orderId, kind, send, metadata = {}){
       renderCurrentServiceOrder(orderId);
       if (isCurrentServiceOrder(orderId)) document.getElementById("serviceOrderStatusFeedback")?.focus();
     } else {
+      if (kind === "cancel" && error.status === 503) operation.failureMessage = error.message;
       await recoverServiceOrderOperation(orderId, operation);
     }
   }
 }
 
-// Confirma e mantém um único pedido de cancelamento ou conclusão por OS.
-async function cancelServiceOrderFromDetails(orderId){
+// Abre o formulário; o envio só acontece após informar e confirmar o motivo.
+function cancelServiceOrderFromDetails(orderId){
   const order = serviceOrdersState.details.get(orderId);
   if (!isCurrentServiceOrder(orderId) || !canChangeServiceOrder(order)
       || serviceOrdersState.operations.has(orderId)) return;
-  const confirmed = window.confirm(
-    `Deseja cancelar a ordem ${order.codigo || order.id}?\n\n`
-    + "Após o cancelamento, a OS poderá ser consultada, mas não poderá ser alterada."
-  );
-  if (!confirmed) return;
-  await runServiceOrderOperation(orderId, "cancel", () => cancelarOrdemDeServico(orderId));
+  serviceOrdersState.completionForms.delete(orderId);
+  serviceOrdersState.teamForms.delete(orderId);
+  serviceOrdersState.cancellationForms.add(orderId);
+  serviceOrdersState.feedback.delete(orderId);
+  renderServiceOrderDetails(order);
+  document.getElementById("serviceOrderCancellationReason")?.focus();
+}
+
+function closeServiceOrderCancellationForm(orderId){
+  if (!isCurrentServiceOrder(orderId) || serviceOrdersState.operations.has(orderId)) return;
+  const form = serviceOrdersPage.modalContent.querySelector("[data-cancel-order-form]");
+  if (form) saveServiceOrderCancellationDraft(form);
+  serviceOrdersState.cancellationForms.delete(orderId);
+  renderCurrentServiceOrder(orderId);
+  serviceOrdersPage.modalContent.querySelector("[data-cancel-service-order]")?.focus();
+}
+
+async function submitServiceOrderCancellation(form){
+  const orderId = form.dataset.cancelOrderForm;
+  if (!isCurrentServiceOrder(orderId) || !canChangeServiceOrder(serviceOrdersState.details.get(orderId))
+      || serviceOrdersState.operations.has(orderId)) return;
+  const draft = saveServiceOrderCancellationDraft(form);
+  if (!form.reportValidity()) return;
+  let motivoCancelamento;
+  try {
+    motivoCancelamento = validateServiceOrderCancellationReason(draft);
+  } catch (error){
+    showServiceOrderStatusFeedback(orderId, error.message, true);
+    document.getElementById("serviceOrderCancellationReason")?.focus();
+    return;
+  }
+  await runServiceOrderOperation(orderId, "cancel", () => cancelarOrdemDeServico(orderId, motivoCancelamento), { motivoCancelamento });
 }
 
 function openServiceOrderCompletionForm(orderId){
@@ -1010,6 +1107,7 @@ function openServiceOrderCompletionForm(orderId){
   if (!isCurrentServiceOrder(orderId) || !canChangeServiceOrder(order)
       || serviceOrdersState.operations.has(orderId)) return;
   serviceOrdersState.teamForms.delete(orderId);
+  serviceOrdersState.cancellationForms.delete(orderId);
   serviceOrdersState.completionForms.add(orderId);
   serviceOrdersState.feedback.delete(orderId);
   renderServiceOrderDetails(order);
@@ -1081,6 +1179,8 @@ async function openServiceOrderDetails(orderId){
 function closeServiceOrderDetails(){
   const form = serviceOrdersPage.modalContent.querySelector("[data-complete-service-order]");
   if (form) saveServiceOrderCompletionDraft(form);
+  const cancellationForm = serviceOrdersPage.modalContent.querySelector("[data-cancel-order-form]");
+  if (cancellationForm) saveServiceOrderCancellationDraft(cancellationForm);
   serviceOrdersState.detailsRequest += 1;
   serviceOrdersState.currentOrderId = null;
   serviceOrdersPage.modal.hidden = true;
@@ -1129,6 +1229,7 @@ function setupServiceOrdersEvents(){
     const trigger = event.target.closest("button");
     if (!trigger || trigger.disabled) return;
     if (trigger.dataset.cancelServiceOrder) cancelServiceOrderFromDetails(trigger.dataset.cancelServiceOrder);
+    if (trigger.dataset.closeCancellationForm) closeServiceOrderCancellationForm(trigger.dataset.closeCancellationForm);
     if (trigger.dataset.openCompletionForm) openServiceOrderCompletionForm(trigger.dataset.openCompletionForm);
     if (trigger.dataset.closeCompletionForm) closeServiceOrderCompletionForm(trigger.dataset.closeCompletionForm);
     if (trigger.dataset.openTeamForm) openServiceOrderTeamForm(trigger.dataset.openTeamForm);
@@ -1143,6 +1244,8 @@ function setupServiceOrdersEvents(){
   serviceOrdersPage.modalContent.addEventListener("input", event => {
     const form = event.target.closest("[data-complete-service-order]");
     if (form) saveServiceOrderCompletionDraft(form);
+    const cancellationForm = event.target.closest("[data-cancel-order-form]");
+    if (cancellationForm) saveServiceOrderCancellationDraft(cancellationForm);
   });
 
   serviceOrdersPage.modalContent.addEventListener("change", event => {
@@ -1151,6 +1254,12 @@ function setupServiceOrdersEvents(){
   });
 
   serviceOrdersPage.modalContent.addEventListener("submit", event => {
+    const cancellationForm = event.target.closest("[data-cancel-order-form]");
+    if (cancellationForm){
+      event.preventDefault();
+      submitServiceOrderCancellation(cancellationForm);
+      return;
+    }
     const teamForm = event.target.closest("[data-assign-service-order]");
     if (teamForm){
       event.preventDefault();

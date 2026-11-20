@@ -437,9 +437,15 @@ public class OrdemDeServicoRepository {
         }
     }
 
-    public OrdemDeServico cancelar(ObjectId id, ObjectId municipioId, Instant agora){
+    // Status e motivo são gravados juntos, na mesma transação que libera a equipe.
+    public OrdemDeServico cancelar(ObjectId id, ObjectId municipioId, String motivoCancelamento, Instant agora){
         if (id == null || municipioId == null || agora == null)
             throw new IllegalArgumentException("Informe a OS e o município.");
+        // Protege a persistência também de chamadas internas sem passar pelo serviço.
+        String motivo = motivoCancelamento == null ? "" : motivoCancelamento.replaceAll(
+                "(?U)^[\\s\\p{Z}\\uFEFF]+|[\\s\\p{Z}\\uFEFF]+$", "");
+        if (motivo.isEmpty())
+            throw new IllegalArgumentException("O motivo do cancelamento deve ser informado.");
         try (ClientSession sessao = Objects.requireNonNull(abrirSessao.get())){
             return sessao.withTransaction(() -> {
                 Document documento = buscarOrdemNaTransacao(sessao, id, municipioId);
@@ -447,6 +453,7 @@ public class OrdemDeServicoRepository {
                 UpdateResult resultado = colecao.updateOne(sessao,
                         and(eq("_id", id), eq("municipioId", municipioId), in("status", "Aberta", "Em andamento")),
                         new Document("$set", new Document("status", "Cancelada")
+                                .append("motivoCancelamento", motivo)
                                 .append("dataAtualizacao", Date.from(agora))));
                 if (resultado.getMatchedCount() != 1)
                     throw new IllegalStateException("A OS foi alterada. Consulte novamente antes de cancelar.");
@@ -517,6 +524,7 @@ public class OrdemDeServicoRepository {
         documento.append("status", ordem.getStatus());
         documento.append("prioridade", ordem.getPrioridade());
         documento.append("observacoes", ordem.getObservacoes());
+        documento.append("motivoCancelamento", ordem.getMotivoCancelamento());
 
         if (ordem.getDataCriacao() != null) {
             documento.append("dataCriacao", Date.from(ordem.getDataCriacao()));
@@ -557,7 +565,8 @@ public class OrdemDeServicoRepository {
             instanteAtualizacao,
             instanteConclusao,
             documento.getString("codigo"),
-            documento.getObjectId("intervencaoConclusaoId"));
+            documento.getObjectId("intervencaoConclusaoId"),
+            documento.getString("motivoCancelamento"));
     }
 
 }

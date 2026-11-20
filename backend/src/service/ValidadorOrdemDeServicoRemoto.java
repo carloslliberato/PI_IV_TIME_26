@@ -4,6 +4,7 @@ import java.time.Instant;
 import org.bson.types.ObjectId;
 import dto.AtribuicaoEquipeOrdemDeServicoDTO;
 import dto.CadastroOrdemDeServicoDTO;
+import dto.CancelamentoOrdemDeServicoDTO;
 import dto.ConclusaoOrdemDeServicoDTO;
 import protocolo.PedidoDeValidacaoOrdemDeServico;
 import protocolo.PedidoDeValidacaoOrdemDeServico.Operacao;
@@ -67,6 +68,19 @@ public class ValidadorOrdemDeServicoRemoto {
         } catch (RuntimeException erro) {
             throw respostaInvalida(erro);
         }
+    }
+
+    public String validarCancelamento(CancelamentoOrdemDeServicoDTO dados) {
+        PedidoDeValidacaoOrdemDeServico pedido = dados == null
+                ? PedidoDeValidacaoOrdemDeServico.semDados(Operacao.CANCELAMENTO, null)
+                : PedidoDeValidacaoOrdemDeServico.cancelamento(dados.getMotivoCancelamento());
+        String motivo = enviar(pedido).getMotivoCancelamento();
+        // Uma aprovação incompleta não pode liberar a gravação de um cancelamento sem motivo.
+        if (motivo == null || motivo.isBlank() || motivo.length() > 1000 || !motivo.equals(motivo.replaceAll(
+                "(?U)^[\\s\\p{Z}\\uFEFF]+|[\\s\\p{Z}\\uFEFF]+$", ""))) {
+            throw respostaInvalida(new IllegalArgumentException("Resposta de cancelamento inválida."));
+        }
+        return motivo;
     }
 
     private ResultadoValidacaoOrdemDeServico enviar(PedidoDeValidacaoOrdemDeServico pedido) {

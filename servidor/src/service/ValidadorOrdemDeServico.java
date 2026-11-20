@@ -16,7 +16,7 @@ import protocolo.ResultadoValidacaoOrdemDeServico.ConclusaoValidada;
 
 /**
  * Contribuição: Marialvo Corrêa de Freitas Junior.
- * Valida e normaliza cadastro, conclusão e atribuição de equipe da OS.
+ * Valida e normaliza cadastro, conclusão, atribuição de equipe e cancelamento da OS.
  * Autorização municipal, consulta de referências e persistência ficam no backend.
  */
 public final class ValidadorOrdemDeServico {
@@ -40,6 +40,8 @@ public final class ValidadorOrdemDeServico {
                         pedido, prepararConclusao(pedido, pedido.getAgora()));
                 case ATRIBUICAO_EQUIPE -> ResultadoValidacaoOrdemDeServico.equipeAprovada(
                         pedido, validarIdEquipe(pedido));
+                case CANCELAMENTO -> ResultadoValidacaoOrdemDeServico.cancelamentoAprovado(
+                        pedido, validarCancelamento(pedido));
             };
         } catch (IllegalArgumentException erro) {
             return ResultadoValidacaoOrdemDeServico.reprovado(pedido, erro.getMessage());
@@ -157,5 +159,22 @@ public final class ValidadorOrdemDeServico {
         if (!ObjectId.isValid(equipeId))
             throw new IllegalArgumentException("O identificador da equipe é inválido.");
         return new ObjectId(equipeId).toHexString();
+    }
+
+    // O motivo fica separado das observações e é devolvido sem espaços externos.
+    private static String validarCancelamento(PedidoDeValidacaoOrdemDeServico dados) {
+        if (!dados.isDadosPresentes() || dados.getMotivoCancelamento() == null) {
+            throw new IllegalArgumentException("O motivo do cancelamento deve ser informado.");
+        }
+        // Inclui espaços não separáveis e BOM; apenas as bordas são removidas.
+        String motivo = dados.getMotivoCancelamento().replaceAll(
+                "(?U)^[\\s\\p{Z}\\uFEFF]+|[\\s\\p{Z}\\uFEFF]+$", "");
+        if (motivo.isEmpty()) {
+            throw new IllegalArgumentException("O motivo do cancelamento deve ser informado.");
+        }
+        if (motivo.length() > 1000) {
+            throw new IllegalArgumentException("O motivo do cancelamento deve ter no máximo 1000 caracteres.");
+        }
+        return motivo;
     }
 }
