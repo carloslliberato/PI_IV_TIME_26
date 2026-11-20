@@ -8,13 +8,14 @@ public class OrdemDeServico {
 
     private ObjectId ordemServicoId;
     private String codigo;
+    private ObjectId intervencaoConclusaoId;
     private ObjectId municipioId;
     private ObjectId arvoreId;
     private ObjectId ocorrenciaId;
     private ObjectId equipeId;
     private String titulo;
     private String descricao;
-    private String status; // **VERIFICAR QUAIS STATUS SERÃO UTILIZADOS E DE QUE FORMA SERÃO ESCOLHIDOS/ATRIBUIDOS 
+    private String status; // **VERIFICAR QUAIS STATUS SERÃO UTILIZADOS E DE QUE FORMA SERÃO ESCOLHIDOS/ATRIBUIDOS
     private String prioridade;
     private String observacoes;
     private Instant dataCriacao;
@@ -70,8 +71,32 @@ public class OrdemDeServico {
             Instant dataConclusao,
             String codigo){
 
+        this(ordemServicoId, municipioId, arvoreId, ocorrenciaId, equipeId,
+                titulo, descricao, status, prioridade, observacoes,
+                dataCriacao, dataAtualizacao, dataConclusao, codigo, null);
+    }
+
+    // Inclui o vínculo opcional com o relatório da conclusão; registros antigos continuam válidos.
+    public OrdemDeServico(
+            ObjectId ordemServicoId,
+            ObjectId municipioId,
+            ObjectId arvoreId,
+            ObjectId ocorrenciaId,
+            ObjectId equipeId,
+            String titulo,
+            String descricao,
+            String status,
+            String prioridade,
+            String observacoes,
+            Instant dataCriacao,
+            Instant dataAtualizacao,
+            Instant dataConclusao,
+            String codigo,
+            ObjectId intervencaoConclusaoId){
+
         this.ordemServicoId = ordemServicoId;
         this.codigo = codigo;
+        this.intervencaoConclusaoId = intervencaoConclusaoId;
         this.municipioId = municipioId;
         this.arvoreId = arvoreId;
         this.ocorrenciaId = ocorrenciaId;
@@ -85,7 +110,7 @@ public class OrdemDeServico {
         this.dataAtualizacao = dataAtualizacao;
         this.dataConclusao = dataConclusao;
     }
-    
+
     private void verificarSeEditavel() {
         if ("Concluída".equals(this.status) || "Cancelada".equals(this.status)) {
 
@@ -99,12 +124,16 @@ public class OrdemDeServico {
 
     public String getCodigo(){
         return codigo;
-    }   
+    }
+
+    public ObjectId getIntervencaoConclusaoId(){
+        return intervencaoConclusaoId;
+    }
 
     public ObjectId getMunicipioId(){
         return municipioId;
     }
-    
+
     public void setMunicipioId(ObjectId municipioId){
         verificarSeEditavel();
         this.municipioId = municipioId;
@@ -145,14 +174,6 @@ public class OrdemDeServico {
         this.equipeId = equipeId;
         this.status = "Em andamento";
         this.dataAtualizacao = Instant.now();
-    }
-
-    public void concluir(){
-        verificarSeEditavel();
-
-        this.status = "Concluída";
-        this.dataConclusao = Instant.now();
-        this.dataAtualizacao = this.dataConclusao;
     }
 
     // Cancela uma OS aberta ou em andamento.
@@ -224,5 +245,5 @@ public class OrdemDeServico {
     public Instant getDataConclusao(){
         return dataConclusao;
     }
-  
+
 }

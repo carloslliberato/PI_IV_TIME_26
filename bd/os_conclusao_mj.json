@@ -1,0 +1,17 @@
+[
+  {
+    "municipioId": { "$oid": "6ae666a7680e8a4330a1ab66" },
+    "arvoreId": { "$oid": "000000000000000000000001" },
+    "ocorrenciaId": null,
+    "equipeId": null,
+    "codigo": null,
+    "titulo": "[TESTE MJ] Conclusão de OS pela tela",
+    "descricao": "Registro de teste para validar a conclusão da OS e a gravação da intervenção.",
+    "status": "Aberta",
+    "prioridade": "Baixa",
+    "observacoes": "Teste da Pessoa 5. O identificador da árvore é fictício. Não representa um serviço real.",
+    "dataCriacao": { "$date": "2026-11-20T13:00:00.000Z" },
+    "dataAtualizacao": { "$date": "2026-11-20T13:00:00.000Z" },
+    "dataConclusao": null
+  }
+]

@@ -6,7 +6,12 @@ const serviceOrdersState ={
   detailsRequest: 0,
   previousFocus: null,
   currentOrderId: null,
-  cancellations: new Set()
+  details: new Map(),
+  orderRevisions: new Map(),
+  operations: new Map(),
+  completionDrafts: new Map(),
+  completionForms: new Set(),
+  feedback: new Map()
 };
 
 // Guarda os elementos da página usados por filtros, tabela e modal.
@@ -47,22 +52,50 @@ async function buscarOrdensDeServico(){
 
 // Consulta uma OS pelo identificador.
 async function buscarOrdemDeServico(id){
-  const resposta = await fetch(`/api/ordens-servico/${encodeURIComponent(id)}`,{ credentials: "same-origin" });
+  const resposta = await fetch(`/api/ordens-servico/${encodeURIComponent(id)}`, {
+    credentials: "same-origin", cache: "no-store"
+  });
+  const dados = await readServiceOrderResponse(resposta, "Não foi possível consultar a ordem de serviço.");
+  return validateServiceOrderResponse(dados, id);
+}
 
-  const dados = await resposta.json();
-
-  if (!resposta.ok){
-    const erro = new Error(dados.erro || "Não foi possível consultar a ordem de serviço.");
-
-    erro.status = resposta.status;
-    throw erro;
+// Uma resposta ilegível após uma alteração exige consulta antes de novo envio.
+async function readServiceOrderResponse(response, fallback){
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    const error = new Error("Não foi possível confirmar a resposta.");
+    error.status = response.status;
+    error.invalidResponse = true;
+    throw error;
   }
-
-  if (!dados || !dados.ordem || typeof dados.ordem !== "object" || Array.isArray(dados.ordem)){
-    throw new Error("A API retornou uma ordem inválida.");
+  if (!response.ok){
+    const error = new Error(typeof data?.erro === "string" ? data.erro : fallback);
+    error.status = response.status;
+    throw error;
   }
+  return data;
+}
 
-  return dados.ordem;
+function validateServiceOrderResponse(data, id){
+  const order = data?.ordem;
+  if (!order || typeof order !== "object" || Array.isArray(order)
+      || order.id !== id || typeof order.status !== "string"){
+    const error = new Error("Não foi possível confirmar os dados da ordem.");
+    error.invalidResponse = true;
+    throw error;
+  }
+  return order;
+}
+
+// O relatório precisa identificar esta OS e o mesmo registro de conclusão.
+function getServiceOrderCompletion(order){
+  const report = order.intervencaoConclusao;
+  return report && typeof report === "object" && !Array.isArray(report)
+    && typeof report.id === "string" && report.id
+    && report.ordemServicoId === order.id
+    && order.intervencaoConclusaoId === report.id ? report : null;
 }
 
 // Solicita o cancelamento e usa a ordem atualizada devolvida pelo servidor.
@@ -76,19 +109,32 @@ async function cancelarOrdemDeServico(id){
     }
   );
 
-  const dados = await resposta.json();
-
-  if (!resposta.ok){
-    const erro = new Error(dados?.erro || "Não foi possível cancelar a ordem de serviço.");
-    erro.status = resposta.status;
-    throw erro;
+  const dados = await readServiceOrderResponse(resposta, "Não foi possível cancelar a ordem de serviço.");
+  const order = validateServiceOrderResponse(dados, id);
+  if (order.status !== "Cancelada"){
+    const error = new Error("Não foi possível confirmar o cancelamento.");
+    error.invalidResponse = true;
+    throw error;
   }
+  return order;
+}
 
-  if (dados?.ordem?.id !== id || dados?.ordem?.status !== "Cancelada"){
-    throw new Error("A API retornou uma confirmação de cancelamento inválida.");
+// Envia uma vez o relatório de execução; eventuais falhas são verificadas por consulta.
+async function concluirOrdemDeServico(id, data){
+  const response = await fetch(`/api/ordens-servico/${encodeURIComponent(id)}/conclusao`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+  const body = await readServiceOrderResponse(response, "Não foi possível concluir a ordem de serviço.");
+  const order = validateServiceOrderResponse(body, id);
+  if (order.status !== "Concluída" || !getServiceOrderCompletion(order)){
+    const error = new Error("Não foi possível confirmar a conclusão.");
+    error.invalidResponse = true;
+    throw error;
   }
-
-  return dados.ordem;
+  return order;
 }
 
 // Escapa texto antes de inserir conteúdo dinâmico na tabela ou na janela de detalhes.
@@ -219,11 +265,151 @@ function getServiceOrdersErrorMessage(error, fallback){
   return fallback;
 }
 
-// Apresenta somente os campos retornados pela consulta da OS.
-function renderServiceOrderDetails(order){
-  const canCancel = order.status === "Aberta" || order.status === "Em andamento";
-  const cancelling = serviceOrdersState.cancellations.has(order.id);
+// Verifica o estado da OS antes de mostrar ou executar uma alteração.
+function canChangeServiceOrder(order){
+  return order && (order.status === "Aberta" || order.status === "Em andamento");
+}
 
+function isCurrentServiceOrder(orderId){
+  return !serviceOrdersPage.modal.hidden && serviceOrdersState.currentOrderId === orderId;
+}
+
+// Mantém o rascunho separado para cada OS, inclusive quando a janela é fechada.
+function getServiceOrderCompletionDraft(orderId){
+  if (!serviceOrdersState.completionDrafts.has(orderId)){
+    const now = new Date();
+    const part = value => String(value).padStart(2, "0");
+    const localDate = `${now.getFullYear()}-${part(now.getMonth() + 1)}-${part(now.getDate())}`
+      + `T${part(now.getHours())}:${part(now.getMinutes())}`;
+    serviceOrdersState.completionDrafts.set(orderId, {
+      tipo: "", descricao: "", dataExecucao: localDate, fotos: ""
+    });
+  }
+  return serviceOrdersState.completionDrafts.get(orderId);
+}
+
+function saveServiceOrderCompletionDraft(form){
+  const orderId = form.dataset.completeServiceOrder;
+  const draft = {};
+  for (const name of ["tipo", "descricao", "dataExecucao", "fotos"]){
+    draft[name] = form.elements.namedItem(name).value;
+  }
+  serviceOrdersState.completionDrafts.set(orderId, draft);
+  return draft;
+}
+
+// Aceita somente links de fotos que o usuário escolhe abrir, sem carregar imagens.
+function normalizeServiceOrderPhotoLink(value){
+  if (typeof value !== "string" || value.trim().length > 2048) return null;
+  try {
+    const url = new URL(value.trim());
+    if (!["http:", "https:"].includes(url.protocol) || !url.hostname
+        || url.username || url.password || url.href.length > 2048) return null;
+    return url.href;
+  } catch {
+    return null;
+  }
+}
+
+function validateServiceOrderCompletionDraft(draft){
+  const tipo = draft.tipo.trim();
+  const descricao = draft.descricao.trim();
+  if (!tipo || tipo.length > 80){
+    throw new Error("Informe o tipo de serviço com até 80 caracteres.");
+  }
+  if (!descricao || descricao.length > 4000){
+    throw new Error("Descreva o serviço realizado com até 4.000 caracteres.");
+  }
+  const executionDate = new Date(draft.dataExecucao);
+  if (!draft.dataExecucao || Number.isNaN(executionDate.getTime())){
+    throw new Error("Informe a data e o horário da execução.");
+  }
+  if (executionDate.getTime() > Date.now()){
+    throw new Error("A execução não pode estar no futuro.");
+  }
+  const lines = draft.fotos.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  if (lines.length > 10){
+    throw new Error("Informe no máximo 10 links de fotos, um por linha.");
+  }
+  const fotos = lines.map(normalizeServiceOrderPhotoLink);
+  if (fotos.some(link => !link)){
+    throw new Error("Use links http ou https, sem usuário ou senha e com até 2.048 caracteres.");
+  }
+  return { tipo, descricao, dataExecucao: executionDate.toISOString(), fotos };
+}
+
+function renderServiceOrderCompletionForm(order, blocked){
+  const draft = getServiceOrderCompletionDraft(order.id);
+  return `
+    <section class="service-order-completion-editor" aria-labelledby="serviceOrderCompletionTitle">
+      <h3 id="serviceOrderCompletionTitle">Registrar conclusão do serviço</h3>
+      <p>Descreva o que foi realizado. Após concluir, a ordem e este registro ficarão disponíveis para consulta.</p>
+      <form class="service-order-completion-form" data-complete-service-order="${escapeServiceOrderText(order.id)}">
+        <fieldset ${blocked ? "disabled" : ""}>
+          <legend class="visually-hidden">Dados da execução</legend>
+          <label for="serviceOrderCompletionType">Tipo de serviço
+            <input id="serviceOrderCompletionType" name="tipo" list="serviceOrderCompletionTypes"
+              maxlength="80" required value="${escapeServiceOrderText(draft.tipo)}"
+              placeholder="Ex.: Poda ou inspeção">
+          </label>
+          <datalist id="serviceOrderCompletionTypes"><option value="Poda"><option value="Inspeção"><option value="Outro"></datalist>
+          <label for="serviceOrderCompletionDate">Data e horário da execução
+            <input id="serviceOrderCompletionDate" name="dataExecucao" type="datetime-local"
+              required value="${escapeServiceOrderText(draft.dataExecucao)}" aria-describedby="serviceOrderExecutionHint">
+            <small id="serviceOrderExecutionHint">Use o horário do seu dispositivo.</small>
+          </label>
+          <label class="service-order-create-wide" for="serviceOrderCompletionDescription">Serviço realizado
+            <textarea id="serviceOrderCompletionDescription" name="descricao" rows="5"
+              maxlength="4000" required placeholder="Descreva a execução e o resultado do serviço">${escapeServiceOrderText(draft.descricao)}</textarea>
+          </label>
+          <label class="service-order-create-wide" for="serviceOrderCompletionPhotos">Links de fotos <span>(opcional)</span>
+            <textarea id="serviceOrderCompletionPhotos" name="fotos" rows="3" maxlength="20510"
+              placeholder="https://exemplo.com/foto.jpg" aria-describedby="serviceOrderPhotosHint">${escapeServiceOrderText(draft.fotos)}</textarea>
+            <small id="serviceOrderPhotosHint">Até 10 links http ou https, um por linha. As fotos devem estar publicadas em outro local.</small>
+          </label>
+          <div class="service-order-create-actions">
+            <button class="service-order-cancel-button" type="button" data-close-completion-form="${escapeServiceOrderText(order.id)}">Voltar aos detalhes</button>
+            <button class="service-orders-create-button" type="submit"><i class="bi bi-check2-circle" aria-hidden="true"></i>Concluir serviço</button>
+          </div>
+        </fieldset>
+      </form>
+    </section>`;
+}
+
+function renderServiceOrderCompletionReport(order){
+  if (order.status !== "Concluída") return "";
+  const report = getServiceOrderCompletion(order);
+  if (!report){
+    return `<p class="service-order-not-completed">Esta ordem está concluída. Não há relatório de execução disponível para consulta.</p>`;
+  }
+  const photos = (Array.isArray(report.fotos) ? report.fotos : [])
+    .map(normalizeServiceOrderPhotoLink).filter(Boolean);
+  return `
+    <section class="service-order-completion" aria-labelledby="serviceOrderReportTitle">
+      <h3 id="serviceOrderReportTitle"><i class="bi bi-check2-circle" aria-hidden="true"></i>Registro de conclusão</h3>
+      <dl class="service-order-report-metadata">
+        <div><dt>Tipo de serviço</dt><dd>${escapeServiceOrderText(report.tipo)}</dd></div>
+        <div><dt>Executado em</dt><dd>${escapeServiceOrderText(formatServiceOrderDate(report.dataExecucao))}</dd></div>
+        <div><dt>Registrado em</dt><dd>${escapeServiceOrderText(formatServiceOrderDate(report.dataCriacao))}</dd></div>
+        <div><dt>ID do responsável</dt><dd>${escapeServiceOrderText(report.usuarioId)}</dd></div>
+      </dl>
+      <h4>Serviço realizado</h4>
+      <p class="service-order-preserve-lines">${escapeServiceOrderText(report.descricao)}</p>
+      ${photos.length ? `<h4>Fotos</h4><ul class="service-order-photo-links">${photos.map((url, index) => `
+        <li><a href="${escapeServiceOrderText(url)}" target="_blank" rel="noopener noreferrer">Ver foto ${index + 1}<span class="visually-hidden"> (abre em outra aba)</span></a></li>
+      `).join("")}</ul>` : "<p>Nenhum link de foto informado.</p>"}
+      <span>Registro finalizado, disponível somente para consulta.</span>
+    </section>`;
+}
+
+// Apresenta os dados persistidos e as ações permitidas para a situação atual.
+function renderServiceOrderDetails(order){
+  const operation = serviceOrdersState.operations.get(order.id);
+  const blocked = Boolean(operation);
+  const editable = canChangeServiceOrder(order);
+  const formOpen = editable && serviceOrdersState.completionForms.has(order.id);
+  const feedback = serviceOrdersState.feedback.get(order.id);
+  const message = operation?.message || feedback?.message || "";
   const fields = [
     ["Título da OS", order.titulo],
     ["Prioridade", order.prioridade],
@@ -254,142 +440,253 @@ function renderServiceOrderDetails(order){
     </div>
     <section class="service-order-description">
       <h3>Descrição do serviço</h3>
-      <p>${escapeServiceOrderText(order.descricao)}</p>
+      <p class="service-order-preserve-lines">${escapeServiceOrderText(order.descricao)}</p>
     </section>
     <section class="service-order-description">
       <h3>Observações</h3>
-      <p>${escapeServiceOrderText(order.observacoes)}</p>
+      <p class="service-order-preserve-lines">${escapeServiceOrderText(order.observacoes)}</p>
     </section>
-    ${canCancel ? `
-      <div class="service-order-create-actions">
-        <button
-          class="service-order-cancel-button"
-          type="button"
-          data-cancel-service-order="${escapeServiceOrderText(order.id)}"
-          ${cancelling ? "disabled" : ""}>
-          ${cancelling ? "Cancelando..." : "Cancelar ordem de serviço"}
+    ${renderServiceOrderCompletionReport(order)}
+    ${formOpen ? renderServiceOrderCompletionForm(order, blocked) : ""}
+    ${editable && !formOpen ? `
+      <div class="service-order-create-actions service-order-detail-actions">
+        <button class="service-order-cancel-button" type="button"
+          data-cancel-service-order="${escapeServiceOrderText(order.id)}" ${blocked ? "disabled" : ""}>
+          ${operation?.kind === "cancel" && operation.phase === "sending" ? "Cancelando..." : "Cancelar ordem de serviço"}
         </button>
-      </div>
+        <button class="service-orders-create-button" type="button"
+          data-open-completion-form="${escapeServiceOrderText(order.id)}" ${blocked ? "disabled" : ""}>
+          <i class="bi bi-check2-circle" aria-hidden="true"></i>Concluir serviço
+        </button>
+      </div>` : ""}
+    <p id="serviceOrderStatusFeedback" class="service-order-status-feedback${feedback?.error || operation?.phase === "unknown" ? " is-error" : ""}"
+      role="status" aria-live="polite" tabindex="-1">${escapeServiceOrderText(message)}</p>
+    ${operation?.phase === "unknown" ? `
+      <button class="service-order-cancel-button" type="button" data-check-service-order="${escapeServiceOrderText(order.id)}">Consultar situação</button>
     ` : ""}
-    <p
-      id="serviceOrderStatusFeedback"
-      class="service-order-create-intro"
-      role="status"
-      aria-live="polite">${cancelling ? "Cancelando a ordem de serviço..." : ""}</p>
   `;
 }
 
-// Exibe a mensagem somente se os detalhes desta OS ainda estiverem abertos.
-function showServiceOrderStatusFeedback(orderId, message) {
-  if (serviceOrdersPage.modal.hidden || serviceOrdersState.currentOrderId !== orderId) return;
-
+function showServiceOrderStatusFeedback(orderId, message, error = false){
+  serviceOrdersState.feedback.set(orderId, { message, error });
+  if (!isCurrentServiceOrder(orderId)) return;
   const feedback = document.getElementById("serviceOrderStatusFeedback");
-  if (feedback) feedback.textContent = message;
+  if (feedback){
+    feedback.textContent = message;
+    feedback.classList.toggle("is-error", error);
+  }
 }
 
-// Confirma a ação, impede envios repetidos e atualiza a tela após o cancelamento.
-async function cancelServiceOrderFromDetails(orderId, button) {
-  if (serviceOrdersPage.modal.hidden
-      || serviceOrdersState.currentOrderId !== orderId
-      || serviceOrdersState.cancellations.has(orderId)) return;
+function rememberServiceOrder(order){
+  serviceOrdersState.details.set(order.id, order);
+  serviceOrdersState.orders = serviceOrdersState.orders.map(current => current.id === order.id ? order : current);
+  if (!canChangeServiceOrder(order)){
+    serviceOrdersState.completionForms.delete(order.id);
+    serviceOrdersState.completionDrafts.delete(order.id);
+  }
+  renderServiceOrdersTable();
+}
 
-  const title = document.getElementById("serviceOrderModalTitle").textContent;
-  const confirmed = window.confirm(
-    "Deseja cancelar " + title + "?\n\n"
-    + "Após o cancelamento, a OS poderá ser consultada, mas não poderá ser alterada."
-  );
+// Respostas de alteração invalidam consultas antigas da mesma OS.
+function acceptServiceOrderActionResult(order, message){
+  serviceOrdersState.orderRevisions.set(order.id, (serviceOrdersState.orderRevisions.get(order.id) || 0) + 1);
+  serviceOrdersState.feedback.set(order.id, { message, error: false });
+  rememberServiceOrder(order);
+  if (isCurrentServiceOrder(order.id)){
+    serviceOrdersState.detailsRequest += 1;
+    renderServiceOrderDetails(order);
+    document.getElementById("closeServiceOrderModal").focus();
+  }
+}
 
-  if (!confirmed) return;
+function renderCurrentServiceOrder(orderId){
+  const order = serviceOrdersState.details.get(orderId);
+  if (order && isCurrentServiceOrder(orderId)) renderServiceOrderDetails(order);
+}
 
-  serviceOrdersState.cancellations.add(orderId);
-  button.disabled = true;
-  button.textContent = "Cancelando...";
-  showServiceOrderStatusFeedback(orderId, "Cancelando a ordem de serviço...");
+function completionRecoveryMessage(order, operation){
+  if (order.status === "Concluída") return "A ordem de serviço está concluída.";
+  if (order.status === "Cancelada") return "A ordem de serviço está cancelada.";
+  const action = operation.kind === "complete" ? "conclusão" : "cancelamento";
+  return `A ${action} não foi confirmada. A ordem continua ${order.status.toLocaleLowerCase("pt-BR")}; você pode tentar novamente.`;
+}
+
+// Só consulta após uma resposta incerta. Nunca repete a alteração automaticamente.
+async function recoverServiceOrderOperation(orderId, operation){
+  if (!operation || serviceOrdersState.operations.get(orderId) !== operation) return;
+  if (operation.checkPromise) return operation.checkPromise;
+  operation.phase = "checking";
+  operation.message = "Consultando a situação da ordem...";
+  renderCurrentServiceOrder(orderId);
+
+  operation.checkPromise = (async () => {
+    try {
+      const order = await buscarOrdemDeServico(orderId);
+      if (serviceOrdersState.operations.get(orderId) !== operation) return;
+      serviceOrdersState.operations.delete(orderId);
+      acceptServiceOrderActionResult(order, completionRecoveryMessage(order, operation));
+    } catch (error){
+      if (serviceOrdersState.operations.get(orderId) !== operation) return;
+      operation.phase = "unknown";
+      operation.message = getServiceOrdersErrorMessage(error,
+        "Não foi possível confirmar a situação. Consulte novamente antes de tentar alterar a ordem.");
+      renderCurrentServiceOrder(orderId);
+      if (isCurrentServiceOrder(orderId)) document.getElementById("serviceOrderStatusFeedback")?.focus();
+    } finally {
+      operation.checkPromise = null;
+    }
+  })();
+  return operation.checkPromise;
+}
+
+async function runServiceOrderOperation(orderId, kind, send){
+  if (serviceOrdersState.operations.has(orderId)) return;
+  const operation = {
+    kind, phase: "sending", checkPromise: null,
+    message: kind === "complete" ? "Concluindo o serviço..." : "Cancelando a ordem de serviço..."
+  };
+  serviceOrdersState.operations.set(orderId, operation);
+  serviceOrdersState.feedback.delete(orderId);
+  renderCurrentServiceOrder(orderId);
+  if (isCurrentServiceOrder(orderId)) document.getElementById("closeServiceOrderModal").focus();
 
   try {
-    const order = await cancelarOrdemDeServico(orderId);
-    serviceOrdersState.cancellations.delete(orderId);
-
-    // Atualiza o registro pelo ID interno e reaplica os filtros da lista.
-    serviceOrdersState.orders = serviceOrdersState.orders.map(
-      current => current.id === order.id ? order : current
-    );
-    renderServiceOrdersTable();
-
-    if (!serviceOrdersPage.modal.hidden && serviceOrdersState.currentOrderId === orderId) {
-      // Impede que uma consulta anterior substitua o resultado do cancelamento.
-      serviceOrdersState.detailsRequest += 1;
-      renderServiceOrderDetails(order);
-      showServiceOrderStatusFeedback(orderId, "Ordem de serviço cancelada com sucesso.");
-      document.getElementById("closeServiceOrderModal").focus();
-    }
-  } catch (error) {
-    const fallback = error.status
-      ? error.message
-      : "Não foi possível confirmar o cancelamento. Atualize a página e consulte a OS.";
-
-    showServiceOrderStatusFeedback(
-      orderId,
-      getServiceOrdersErrorMessage(error, fallback)
-    );
-  } finally {
-    serviceOrdersState.cancellations.delete(orderId);
-
-    if (!serviceOrdersPage.modal.hidden && serviceOrdersState.currentOrderId === orderId) {
-      const currentButton = serviceOrdersPage.modalContent.querySelector("[data-cancel-service-order]");
-      if (currentButton) {
-        currentButton.disabled = false;
-        currentButton.textContent = "Cancelar ordem de serviço";
-      }
+    const order = await send();
+    if (serviceOrdersState.operations.get(orderId) !== operation) return;
+    serviceOrdersState.operations.delete(orderId);
+    acceptServiceOrderActionResult(order, kind === "complete"
+      ? "Serviço concluído. O registro de execução foi salvo."
+      : "Ordem de serviço cancelada com sucesso.");
+  } catch (error){
+    if (serviceOrdersState.operations.get(orderId) !== operation) return;
+    const rejected = !error.invalidResponse && [400, 401, 403, 404, 422].includes(error.status);
+    if (rejected){
+      serviceOrdersState.operations.delete(orderId);
+      showServiceOrderStatusFeedback(orderId, getServiceOrdersErrorMessage(error, error.message), true);
+      renderCurrentServiceOrder(orderId);
+      if (isCurrentServiceOrder(orderId)) document.getElementById("serviceOrderStatusFeedback")?.focus();
+    } else {
+      await recoverServiceOrderOperation(orderId, operation);
     }
   }
 }
 
-// Abre o modal e consulta os dados atualizados da OS selecionada.
+// Confirma e mantém um único pedido de cancelamento ou conclusão por OS.
+async function cancelServiceOrderFromDetails(orderId){
+  const order = serviceOrdersState.details.get(orderId);
+  if (!isCurrentServiceOrder(orderId) || !canChangeServiceOrder(order)
+      || serviceOrdersState.operations.has(orderId)) return;
+  const confirmed = window.confirm(
+    `Deseja cancelar a ordem ${order.codigo || order.id}?\n\n`
+    + "Após o cancelamento, a OS poderá ser consultada, mas não poderá ser alterada."
+  );
+  if (!confirmed) return;
+  await runServiceOrderOperation(orderId, "cancel", () => cancelarOrdemDeServico(orderId));
+}
+
+function openServiceOrderCompletionForm(orderId){
+  const order = serviceOrdersState.details.get(orderId);
+  if (!isCurrentServiceOrder(orderId) || !canChangeServiceOrder(order)
+      || serviceOrdersState.operations.has(orderId)) return;
+  serviceOrdersState.completionForms.add(orderId);
+  serviceOrdersState.feedback.delete(orderId);
+  renderServiceOrderDetails(order);
+  document.getElementById("serviceOrderCompletionType").focus();
+}
+
+function closeServiceOrderCompletionForm(orderId){
+  if (!isCurrentServiceOrder(orderId) || serviceOrdersState.operations.has(orderId)) return;
+  serviceOrdersState.completionForms.delete(orderId);
+  renderCurrentServiceOrder(orderId);
+  serviceOrdersPage.modalContent.querySelector("[data-open-completion-form]")?.focus();
+}
+
+async function completeServiceOrderFromDetails(form){
+  const orderId = form.dataset.completeServiceOrder;
+  const order = serviceOrdersState.details.get(orderId);
+  if (!isCurrentServiceOrder(orderId) || !canChangeServiceOrder(order)
+      || serviceOrdersState.operations.has(orderId)) return;
+  const draft = saveServiceOrderCompletionDraft(form);
+  if (!form.reportValidity()) return;
+  let data;
+  try {
+    data = validateServiceOrderCompletionDraft(draft);
+  } catch (error){
+    showServiceOrderStatusFeedback(orderId, error.message, true);
+    document.getElementById("serviceOrderStatusFeedback")?.focus();
+    return;
+  }
+  if (!window.confirm(`Concluir a ordem ${order.codigo || order.id}?\n\nConfira os dados: o registro de execução não poderá ser alterado após a conclusão.`)) return;
+  await runServiceOrderOperation(orderId, "complete", () => concluirOrdemDeServico(orderId, data));
+}
+
+// Abre o modal e reconsulta a OS; respostas de janelas anteriores são ignoradas.
 async function openServiceOrderDetails(orderId){
   const request = ++serviceOrdersState.detailsRequest;
+  const revision = serviceOrdersState.orderRevisions.get(orderId) || 0;
   serviceOrdersState.currentOrderId = orderId;
-  serviceOrdersState.previousFocus = document.activeElement;
-
+  if (serviceOrdersPage.modal.hidden) serviceOrdersState.previousFocus = document.activeElement;
   serviceOrdersPage.modalContent.innerHTML =
     '<h2 id="serviceOrderModalTitle">Detalhes da ordem</h2><p role="status">Carregando detalhes...</p>';
-
   serviceOrdersPage.modal.hidden = false;
   document.body.classList.add("service-order-modal-open");
   document.getElementById("closeServiceOrderModal").focus();
 
+  const operation = serviceOrdersState.operations.get(orderId);
+  if (operation && operation.phase !== "sending"){
+    renderCurrentServiceOrder(orderId);
+    await recoverServiceOrderOperation(orderId, operation);
+    return;
+  }
   try {
     const order = await buscarOrdemDeServico(orderId);
-
-    if (request !== serviceOrdersState.detailsRequest || serviceOrdersPage.modal.hidden) return;
-
+    if (request !== serviceOrdersState.detailsRequest || !isCurrentServiceOrder(orderId)
+        || revision !== (serviceOrdersState.orderRevisions.get(orderId) || 0)) return;
+    rememberServiceOrder(order);
     renderServiceOrderDetails(order);
   } catch (error){
-    if (request !== serviceOrdersState.detailsRequest || serviceOrdersPage.modal.hidden) return;
-
+    if (request !== serviceOrdersState.detailsRequest || !isCurrentServiceOrder(orderId)
+        || revision !== (serviceOrdersState.orderRevisions.get(orderId) || 0)) return;
     const message = getServiceOrdersErrorMessage(error, "Não foi possível carregar os detalhes. Feche esta janela e tente novamente.");
-
     serviceOrdersPage.modalContent.innerHTML = `
       <h2 id="serviceOrderModalTitle">Detalhes da ordem</h2>
       <p role="alert">${escapeServiceOrderText(message)}</p>`;
   }
 }
 
-// Fecha o modal e impede que uma resposta atrasada atualize seus dados.
+// Fecha o modal sem perder o rascunho nem liberar alterações ainda não confirmadas.
 function closeServiceOrderDetails(){
+  const form = serviceOrdersPage.modalContent.querySelector("[data-complete-service-order]");
+  if (form) saveServiceOrderCompletionDraft(form);
   serviceOrdersState.detailsRequest += 1;
   serviceOrdersState.currentOrderId = null;
   serviceOrdersPage.modal.hidden = true;
   serviceOrdersPage.modalContent.innerHTML = "";
   document.body.classList.remove("service-order-modal-open");
-
   if (serviceOrdersState.previousFocus?.isConnected){
     serviceOrdersState.previousFocus.focus();
   } else {
     serviceOrdersPage.search.focus();
   }
-
   serviceOrdersState.previousFocus = null;
+}
+
+// Mantém a navegação por teclado dentro do diálogo aberto.
+function trapServiceOrderModalFocus(event){
+  if (event.key !== "Tab" || serviceOrdersPage.modal.hidden) return;
+  const controls = [...serviceOrdersPage.modal.querySelectorAll(
+    'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href], [tabindex="0"]'
+  )].filter(element => element.getClientRects().length > 0);
+  if (!controls.length) return;
+  const first = controls[0];
+  const last = controls[controls.length - 1];
+  if (event.shiftKey && (document.activeElement === first || !controls.includes(document.activeElement))){
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && (document.activeElement === last || !controls.includes(document.activeElement))){
+    event.preventDefault();
+    first.focus();
+  }
 }
 
 // Liga os filtros e os controles de consulta dos detalhes.
@@ -404,8 +701,27 @@ function setupServiceOrdersEvents(){
   });
 
   serviceOrdersPage.modalContent.addEventListener("click", event => {
-    const trigger = event.target.closest("[data-cancel-service-order]");
-    if (trigger) cancelServiceOrderFromDetails(trigger.dataset.cancelServiceOrder, trigger);
+    const trigger = event.target.closest("button");
+    if (!trigger || trigger.disabled) return;
+    if (trigger.dataset.cancelServiceOrder) cancelServiceOrderFromDetails(trigger.dataset.cancelServiceOrder);
+    if (trigger.dataset.openCompletionForm) openServiceOrderCompletionForm(trigger.dataset.openCompletionForm);
+    if (trigger.dataset.closeCompletionForm) closeServiceOrderCompletionForm(trigger.dataset.closeCompletionForm);
+    if (trigger.dataset.checkServiceOrder){
+      const id = trigger.dataset.checkServiceOrder;
+      recoverServiceOrderOperation(id, serviceOrdersState.operations.get(id));
+    }
+  });
+
+  serviceOrdersPage.modalContent.addEventListener("input", event => {
+    const form = event.target.closest("[data-complete-service-order]");
+    if (form) saveServiceOrderCompletionDraft(form);
+  });
+
+  serviceOrdersPage.modalContent.addEventListener("submit", event => {
+    const form = event.target.closest("[data-complete-service-order]");
+    if (!form) return;
+    event.preventDefault();
+    completeServiceOrderFromDetails(form);
   });
 
   document.getElementById("closeServiceOrderModal").addEventListener("click", closeServiceOrderDetails);
@@ -415,6 +731,7 @@ function setupServiceOrdersEvents(){
   });
 
   document.addEventListener("keydown", event =>{
+    trapServiceOrderModalFocus(event);
     if (event.key === "Escape" && !serviceOrdersPage.modal.hidden){
       closeServiceOrderDetails();
     }

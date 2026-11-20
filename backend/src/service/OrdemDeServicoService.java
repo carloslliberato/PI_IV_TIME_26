@@ -3,14 +3,24 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Locale;
+import java.util.ArrayList;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.time.Year;
 import java.time.ZoneId;
 import org.bson.types.ObjectId;
 import model.Conta;
 import model.OrdemDeServico;
+import model.Intervencao;
+import model.ConclusaoOrdemDeServico;
 import repository.ContaRepository;
 import repository.OrdemDeServicoRepository;
 import dto.CadastroOrdemDeServicoDTO;
+import dto.ConclusaoOrdemDeServicoDTO;
 
 
 public class OrdemDeServicoService {
@@ -124,13 +134,100 @@ public class OrdemDeServicoService {
         return ordem;
     }
 
-    // Conclui uma OS do município informado e salva a alteração.
-    public OrdemDeServico concluir(ObjectId id, ObjectId municipioId){
-        OrdemDeServico ordem = buscarPorId(id, municipioId);
+    // A conclusão sempre inclui o registro da execução, persistido na mesma transação.
+    public ConclusaoOrdemDeServico concluir(
+            ObjectId id, ObjectId municipioId, ObjectId usuarioId,
+            ConclusaoOrdemDeServicoDTO dados){
+        Instant agora = Instant.now();
+        ConclusaoValidada conclusao = prepararConclusao(dados, agora);
+        return ordemRepository.concluirComIntervencao(id, municipioId, usuarioId,
+                conclusao.tipo(), conclusao.descricao(), conclusao.fotos(),
+                conclusao.dataExecucao(), agora);
+    }
 
-        ordem.concluir();
-        ordemRepository.atualizar(ordem);
-        return ordem;
+    public Optional<Intervencao> buscarIntervencaoConclusao(OrdemDeServico ordem){
+        return ordemRepository.buscarIntervencaoConclusao(ordem);
+    }
+
+    // A validação pura permite testar os limites e as datas sem abrir conexão com o banco.
+    public static ConclusaoValidada prepararConclusao(ConclusaoOrdemDeServicoDTO dados, Instant agora){
+        if (dados == null){
+            throw new IllegalArgumentException("Informe os dados da conclusão da OS.");
+        }
+        if (agora == null){
+            throw new IllegalArgumentException("O horário de referência da conclusão não foi informado.");
+        }
+
+        String tipo = validarTextoDeConclusao(dados.getTipo(), "O tipo de serviço", 80);
+        String descricao = validarTextoDeConclusao(dados.getDescricao(), "A descrição do serviço executado", 4000);
+        Instant dataExecucao = agora;
+
+        if (dados.getDataExecucao() != null){
+            try {
+                OffsetDateTime data = OffsetDateTime.parse(dados.getDataExecucao().strip());
+                if (data.getYear() < 1 || data.getYear() > 9999){
+                    throw new IllegalArgumentException("O ano da execução deve estar entre 1 e 9999.");
+                }
+                dataExecucao = data.toInstant();
+            } catch (DateTimeParseException erro){
+                throw new IllegalArgumentException("Informe a data de execução em formato ISO com fuso, por exemplo 2026-11-20T12:00:00-03:00.");
+            }
+        }
+
+        int anoUtc = dataExecucao.atOffset(ZoneOffset.UTC).getYear();
+        if (anoUtc < 1 || anoUtc > 9999){
+            throw new IllegalArgumentException("O ano da execução deve estar entre 1 e 9999.");
+        }
+        if (dataExecucao.isAfter(agora)){
+            throw new IllegalArgumentException("A data de execução não pode estar no futuro.");
+        }
+
+        List<String> referencias = dados.getFotos() == null ? List.of() : dados.getFotos();
+        if (referencias.size() > 10){
+            throw new IllegalArgumentException("Informe no máximo 10 referências de fotos.");
+        }
+
+        List<String> fotos = new ArrayList<>();
+        for (String referencia : referencias){
+            if (referencia == null || referencia.isBlank()){
+                throw new IllegalArgumentException("As referências de fotos não podem estar vazias.");
+            }
+            String foto = referencia.strip();
+            if (foto.length() > 2048){
+                throw new IllegalArgumentException("Cada referência de foto deve ter no máximo 2048 caracteres.");
+            }
+            try {
+                URI uri = new URI(foto);
+                boolean protocoloValido = "http".equalsIgnoreCase(uri.getScheme())
+                        || "https".equalsIgnoreCase(uri.getScheme());
+                if (!uri.isAbsolute() || !protocoloValido || uri.getHost() == null
+                        || uri.getRawUserInfo() != null){
+                    throw new IllegalArgumentException("Use referências de fotos HTTP ou HTTPS completas, com domínio e sem credenciais.");
+                }
+            } catch (URISyntaxException erro){
+                throw new IllegalArgumentException("Uma das referências de fotos não é uma URL válida.");
+            }
+            fotos.add(foto);
+        }
+
+        return new ConclusaoValidada(tipo, descricao, dataExecucao, fotos);
+    }
+
+    private static String validarTextoDeConclusao(String valor, String nome, int limite){
+        if (valor == null || valor.isBlank()){
+            throw new IllegalArgumentException(nome + " deve ser informado.");
+        }
+        String texto = valor.strip();
+        if (texto.length() > limite){
+            throw new IllegalArgumentException(nome + " deve ter no máximo " + limite + " caracteres.");
+        }
+        return texto;
+    }
+
+    public record ConclusaoValidada(String tipo, String descricao, Instant dataExecucao, List<String> fotos){
+        public ConclusaoValidada {
+            fotos = List.copyOf(fotos);
+        }
     }
 
     // Cancela uma OS do município informado e salva a alteração.
