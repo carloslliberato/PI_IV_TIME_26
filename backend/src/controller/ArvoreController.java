@@ -164,6 +164,14 @@ public class ArvoreController {
         });
     }
 
+    // CONSULTAR ÁRVORE PELO CÓDIGO CURTO
+    public void consultarPorCodigo(Context ctx) {
+        executar(ctx, () -> {
+            Arvore arvore = arvoreService.buscarPorCodARV(ctx.pathParam("codigoArv"));
+            responderJson(ctx, 200, arvore);
+        });
+    }
+
     // CADASTRAR NOVA ARVORE
 
     public void cadastrar(Context ctx) {

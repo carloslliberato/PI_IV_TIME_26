@@ -7,6 +7,7 @@ public class Arvore {
 
     // Identificação
     private ObjectId id;
+    private String codigoArv;
     private String nomePopular;
     private String nomeCientifico;
     private String especie;
@@ -75,6 +76,10 @@ public class Arvore {
 
     public ObjectId getId() {
         return id;
+    }
+
+    public String getCodigoArv() {
+        return codigoArv;
     }
 
     public String getNomePopular() {
@@ -165,6 +170,10 @@ public class Arvore {
 
     public void setId(ObjectId id) {
         this.id = id;
+    }
+
+    public void setCodigoArv(String codigoArv) {
+        this.codigoArv = codigoArv;
     }
 
     public void setNomePopular(String nomePopular) {

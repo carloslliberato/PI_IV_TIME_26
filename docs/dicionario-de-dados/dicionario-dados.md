@@ -46,6 +46,7 @@ Descrição: Armazena árvores cadastradas para consulta e gestão de manutenç�
 | Nome | Tipo | Obrigatoriedade | Descrição |
 | --- | --- | --- | --- |
 | _id | ObjectId | Sim | Identificador interno usado pelas referências entre coleções, incluindo `arvoreId` nas ordens de serviço. |
+| codigoArv | String | Sim | Código legível por município, no formato `ARV-HOR-00001`, gerado sequencialmente. |
 | municipioId | ObjectId | Sim | Identificador do documento do município associado. |
 | nomePopular | String | Sim | Nome popular da árvore. |
 | especie | String | Sim | Espécie da árvore. |

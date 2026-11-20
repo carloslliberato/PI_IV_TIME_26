@@ -188,6 +188,10 @@ public class ConfiguracaoRotas {
                 ctx -> arvoreController.proximas(ctx));
 
         servidorHttp.get(
+                "/api/arvores/codigo/{codigoArv}",
+                ctx -> arvoreController.consultarPorCodigo(ctx));
+
+        servidorHttp.get(
                 "/api/arvores/{id}",
                 ctx -> arvoreController.consultar(ctx));
 

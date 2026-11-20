@@ -3,10 +3,17 @@ package repository;
 import model.Arvore;
 import model.Risco;
 
+import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.FindOneAndUpdateOptions;
+import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.ReturnDocument;
+import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.Updates;
 
+import org.bson.BsonType;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
@@ -18,17 +25,27 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
 public class ArvoreRepository {
 
     private final MongoCollection<Document> colecao;
+    private final MongoCollection<Document> contadores;
 
     public ArvoreRepository() {
         this.colecao = ConexaoMongo
                 .getDatabase()
                 .getCollection("arvores");
+        this.contadores = ConexaoMongo
+                .getDatabase()
+                .getCollection("contadores_arvores");
+        this.colecao.createIndex(
+                com.mongodb.client.model.Indexes.ascending("codigoArv"),
+                new IndexOptions()
+                        .unique(true)
+                        .partialFilterExpression(Filters.type("codigoArv", BsonType.STRING)));
     }
 
     // LISTAR TODAS AS ARVORES
@@ -247,6 +264,20 @@ public class ArvoreRepository {
                 converterParaArvore(documento));
     }
 
+    // Busca pelo código curto e ignorando diferenças entre maiúsculas e minúsculas.
+    public Optional<Arvore> buscarPorCodARV(String codigoArv) {
+        if (codigoArv == null || codigoArv.isBlank()) {
+            return Optional.empty();
+        }
+        Pattern codigoExato = Pattern.compile(
+                "^" + Pattern.quote(codigoArv.trim()) + "$",
+                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+        Document documento = colecao.find(Filters.regex("codigoArv", codigoExato)).first();
+        return documento == null
+                ? Optional.empty()
+                : Optional.of(converterParaArvore(documento));
+    }
+
     // CADASTRAR ARVORE
 
     public void salvar(Arvore arvore) {
@@ -271,6 +302,53 @@ public class ArvoreRepository {
                 new ArrayList<>());
 
         colecao.insertOne(documento);
+    }
+
+    // Gera uma sequência atômica por município, retomando do maior código já cadastrado.
+    public String gerarCodigoArv(ObjectId municipioId, String nomeMunicipio) {
+        String nomeNormalizado = normalizarTexto(nomeMunicipio).replaceAll("[^A-Z]", "");
+        if (nomeNormalizado.length() < 3) {
+            throw new IllegalArgumentException("Nome de município inválido para gerar o código da árvore.");
+        }
+        String prefixo = "ARV-" + nomeNormalizado.substring(0, 3) + "-";
+        Pattern formato = Pattern.compile("^" + Pattern.quote(prefixo) + "(\\d+)$");
+        long maiorExistente = 0;
+
+        Bson filtroMunicipio = Filters.or(
+                Filters.eq("municipioId", municipioId),
+                Filters.eq("municipioId", municipioId.toHexString()));
+        for (Document documento : colecao.find(filtroMunicipio)
+                .projection(new Document("codigoArv", 1))) {
+            String codigo = documento.getString("codigoArv");
+            if (codigo == null) continue;
+            Matcher matcher = formato.matcher(codigo);
+            if (matcher.matches()) {
+                try {
+                    maiorExistente = Math.max(maiorExistente, Long.parseLong(matcher.group(1)));
+                } catch (NumberFormatException ignored) {
+                    // Ignora códigos malformados; o índice único ainda impede duplicatas.
+                }
+            }
+        }
+
+        Bson filtroContador = Filters.eq("_id", municipioId);
+        try {
+            contadores.updateOne(
+                    filtroContador,
+                    Updates.max("sequencia", maiorExistente),
+                    new UpdateOptions().upsert(true));
+        } catch (MongoWriteException e) {
+            // Outra requisição pode ter criado simultaneamente o contador desse município.
+            if (e.getError().getCode() != 11000) throw e;
+        }
+
+        Document contador = contadores.findOneAndUpdate(
+                filtroContador,
+                Updates.inc("sequencia", 1L),
+                new FindOneAndUpdateOptions()
+                        .returnDocument(ReturnDocument.AFTER));
+        long sequencia = ((Number) contador.get("sequencia")).longValue();
+        return String.format(Locale.ROOT, "%s%05d", prefixo, sequencia);
     }
 
     // ATUALIZAR DADOS DE UMA ARVORE
@@ -361,6 +439,8 @@ public class ArvoreRepository {
                         "municipioId",
                         arvore.getMunicipioId())
 
+                .append("codigoArv", arvore.getCodigoArv())
+
                 .append(
                         "endereco",
                         arvore.getEndereco())
@@ -426,6 +506,8 @@ public class ArvoreRepository {
         if (id instanceof ObjectId objectId) {
             arvore.setId(objectId);
         }
+
+        arvore.setCodigoArv(documento.getString("codigoArv"));
 
         arvore.setNomePopular(
                 documento.getString("nomePopular"));

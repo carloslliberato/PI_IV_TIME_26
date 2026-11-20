@@ -181,6 +181,7 @@
 
       const conteudo = normalizar([
         arvore.id,
+        arvore.codigoArv,
         arvore.nomePopular,
         arvore.nomeCientifico,
         arvore.especie,
@@ -216,8 +217,8 @@
               class="tree-id-link"
               type="button"
               data-open-tree="${escapeHtml(arvore.id)}"
-              title="${escapeHtml(arvore.id)}">
-              ${escapeHtml(String(arvore.id).slice(0, 12))}…
+              title="${escapeHtml(arvore.codigoArv || arvore.id)}">
+              ${escapeHtml(arvore.codigoArv || String(arvore.id).slice(0, 12))}
             </button>
           </td>
 
@@ -303,7 +304,8 @@
       arvore.nomePopular || arvore.especie || "Árvore";
 
     const dados = [
-      ["ID", arvore.id],
+      ["Código", arvore.codigoArv],
+      ["ObjectId", arvore.id],
       ["Nome popular", arvore.nomePopular],
       ["Nome científico", arvore.nomeCientifico],
       ["Espécie", arvore.especie],

@@ -118,6 +118,14 @@ public class ArvoreService {
                                 "Arvore nao encontrada."));
     }
 
+    public Arvore buscarPorCodARV(String codigoArv) {
+        if (codigoArv == null || codigoArv.isBlank()) {
+            throw new IllegalArgumentException("O código da árvore é obrigatório.");
+        }
+        return repository.buscarPorCodARV(codigoArv.trim())
+                .orElseThrow(() -> new NoSuchElementException("Árvore não encontrada para esse código."));
+    }
+
     public Arvore cadastrar(Arvore arvore) {
 
         validarNoServidor(arvore);
@@ -125,6 +133,9 @@ public class ArvoreService {
 
         // O identificador é sempre gerado como ObjectId pelo backend.
         arvore.setId(null);
+        String nomeMunicipio = municipioRepository.buscarNomePorId(arvore.getMunicipioId())
+                .orElseThrow(() -> new IllegalArgumentException("Municipio nao encontrado."));
+        arvore.setCodigoArv(repository.gerarCodigoArv(arvore.getMunicipioId(), nomeMunicipio));
         arvore.setAtiva(true);
 
         repository.salvar(arvore);
@@ -143,6 +154,7 @@ public class ArvoreService {
         Arvore arvoreAtual = buscarPorId(id);
 
         novosDados.setId(arvoreAtual.getId());
+        novosDados.setCodigoArv(arvoreAtual.getCodigoArv());
 
         novosDados.setAtiva(
                 arvoreAtual.isAtiva());
