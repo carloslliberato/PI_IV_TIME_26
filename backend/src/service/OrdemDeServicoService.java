@@ -8,16 +8,17 @@ import java.util.Locale;
 import java.time.Instant;
 import java.time.Year;
 import java.time.ZoneId;
+import org.bson.Document;
 import org.bson.types.ObjectId;
 import model.Conta;
 import model.OrdemDeServico;
 import model.EquipeParaOrdemDeServico;
 import dto.AtribuicaoEquipeOrdemDeServicoDTO;
+import dto.CadastroOrdemDeServicoDTO;
 import model.Intervencao;
 import model.ConclusaoOrdemDeServico;
 import repository.ContaRepository;
 import repository.OrdemDeServicoRepository;
-import dto.CadastroOrdemDeServicoDTO;
 import dto.CancelamentoOrdemDeServicoDTO;
 import dto.ConclusaoOrdemDeServicoDTO;
 
@@ -55,6 +56,10 @@ public class OrdemDeServicoService {
     public OrdemDeServico criar(ObjectId municipioId, CadastroOrdemDeServicoDTO dados){
         if (municipioId == null) throw new IllegalArgumentException("O município é obrigatório.");
         var cadastro = validador.prepararCadastro(dados);
+        if (cadastro.arvoreId() == null) {
+            throw new IllegalArgumentException(
+                    "Selecione uma árvore para criar uma ordem sem encaminhamento direto da ocorrência.");
+        }
         String codigo;
         try {
             codigo = gerarCodigo();
@@ -71,6 +76,69 @@ public class OrdemDeServicoService {
 
     public Map<String, Object> opcoesDeCadastro(ObjectId municipioId){
         return ordemRepository.opcoesDeCadastro(municipioId);
+    }
+
+    public List<EquipeParaOrdemDeServico> listarEquipesDisponiveisParaOcorrencia(
+            ObjectId ocorrenciaId, ObjectId municipioId) {
+        return ordemRepository.listarEquipesDisponiveisParaOcorrencia(
+                ocorrenciaId, municipioId);
+    }
+
+    public OrdemDeServico criarParaOcorrencia(
+            ObjectId ocorrenciaId, ObjectId municipioId, String equipeId) {
+        Document ocorrencia = ordemRepository.buscarOcorrenciaParaOrdem(
+                ocorrenciaId, municipioId);
+        String tipo = primeiroTexto(ocorrencia, "tipoProblema", "tipo", "tipoDescricao");
+        String protocolo = primeiroTexto(ocorrencia, "protocolo", "id");
+        String titulo = tipo == null
+                ? "Atendimento da ocorrência " + (protocolo == null ? ocorrenciaId : protocolo)
+                : tipo;
+        String descricao = primeiroTexto(ocorrencia, "descricao");
+        if (descricao == null) {
+            throw new IllegalArgumentException(
+                    "A ocorrência não possui descrição para criar a ordem de serviço.");
+        }
+        Object arvore = ocorrencia.get("arvoreId");
+        String arvoreId = arvore instanceof ObjectId id ? id.toHexString() : null;
+        String prioridade = primeiroTexto(ocorrencia, "urgencia", "prioridade");
+
+        var cadastro = validador.prepararCadastro(new CadastroOrdemDeServicoDTO(
+                arvoreId, ocorrenciaId.toHexString(), null, titulo, descricao,
+                prioridade, null));
+        ObjectId idEquipe = validador.validarIdEquipe(
+                new AtribuicaoEquipeOrdemDeServicoDTO(equipeId));
+        String codigo;
+        try {
+            codigo = gerarCodigo();
+        } catch (MongoException erro) {
+            if (erro.getCode() == 11000) {
+                throw new IllegalStateException(
+                        "Não foi possível reservar o código da OS. Tente novamente.");
+            }
+            throw erro;
+        }
+        OrdemDeServico ordem = new OrdemDeServico(
+                municipioId,
+                cadastro.arvoreId() == null ? null : new ObjectId(cadastro.arvoreId()),
+                ocorrenciaId,
+                idEquipe,
+                cadastro.titulo(),
+                cadastro.descricao(),
+                cadastro.prioridade(),
+                cadastro.observacoes(),
+                codigo);
+        return ordemRepository.criarParaOcorrencia(ordem,
+                "Ordem " + codigo + " atribuída à equipe " + idEquipe.toHexString());
+    }
+
+    private String primeiroTexto(Document documento, String... campos) {
+        for (String campo : campos) {
+            Object valor = documento.get(campo);
+            if (valor instanceof String texto && !texto.isBlank()) {
+                return texto.trim();
+            }
+        }
+        return null;
     }
 
     // Obtém o município da conta do funcionário identificado pela sessão.
@@ -105,6 +173,20 @@ public class OrdemDeServicoService {
         }
 
         return ordemRepository.listarPorMunicipio(municipioId);
+    }
+
+    public Map<ObjectId, String> buscarNomesEquipes(
+            List<OrdemDeServico> ordens,
+            ObjectId municipioId) {
+        if (ordens == null) {
+            throw new IllegalArgumentException("A lista de ordens é obrigatória.");
+        }
+        List<ObjectId> equipeIds = ordens.stream()
+                .map(OrdemDeServico::getEquipeId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+        return ordemRepository.buscarNomesEquipes(equipeIds, municipioId);
     }
 
     // Busca uma OS e verifica se ela pertence ao município informado.

@@ -34,8 +34,13 @@ public class ValidadorOrdemDeServicoRemoto {
         CadastroValidado cadastro = enviar(pedido).getCadastro();
         // A conversão confirma o contrato da resposta antes de reservar o código ou gravar.
         try {
-            new ObjectId(cadastro.arvoreId());
             if (cadastro.ocorrenciaId() != null) new ObjectId(cadastro.ocorrenciaId());
+            if (cadastro.arvoreId() != null) {
+                new ObjectId(cadastro.arvoreId());
+            } else if (cadastro.ocorrenciaId() == null) {
+                throw new IllegalArgumentException(
+                        "Resposta de cadastro sem árvore nem ocorrência.");
+            }
             if (cadastro.titulo() == null || cadastro.descricao() == null) {
                 throw new IllegalArgumentException("Resposta de cadastro incompleta.");
             }

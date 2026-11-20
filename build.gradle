@@ -3,6 +3,13 @@ subprojects {
     apply plugin: 'java'
     apply plugin: 'application'
 
+    // O OneDrive deste workspace bloqueia a limpeza dos outputs entre compilações.
+    if (rootProject.projectDir.toPath().any { it.toString().equalsIgnoreCase('OneDrive') }) {
+        layout.buildDirectory.set(new File(
+                System.getProperty('user.home'),
+                ".gradle/workspace-builds/${rootProject.name}/${project.name}"))
+    }
+
     repositories {
         mavenCentral()
     }

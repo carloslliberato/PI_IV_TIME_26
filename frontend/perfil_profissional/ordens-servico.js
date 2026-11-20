@@ -468,6 +468,7 @@ function getVisibleServiceOrders(){
       order.descricao,
       order.arvoreId,
       order.ocorrenciaId,
+      order.equipeNome,
       order.equipeId
     ];
 
@@ -510,7 +511,7 @@ function renderServiceOrdersTable(){
         </button>
       </td>
       <td>${escapeServiceOrderText(order.titulo)}</td>
-      <td>${escapeServiceOrderText(order.equipeId ?? "Não atribuída")}</td>
+      <td>${escapeServiceOrderText(order.equipeNome || "Não atribuída")}</td>
       <td><span class="service-order-status ${serviceOrderStatusClass(order.status)}">${escapeServiceOrderText(order.status)}</span></td>
     </tr>
   `).join("");

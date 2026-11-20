@@ -53,14 +53,16 @@ public final class ValidadorOrdemDeServico {
         if (!dados.isDadosPresentes()) throw new IllegalArgumentException("Informe os dados da nova ordem de serviço.");
         String titulo = textoDeCadastro(dados.getTitulo(), "O título", 160, true);
         String descricao = textoDeCadastro(dados.getDescricao(), "A descrição", 4000, true);
-        String arvoreId = textoDeCadastro(dados.getArvoreId(), "O identificador da árvore", 24, true);
-        if (!ObjectId.isValid(arvoreId)) throw new IllegalArgumentException("O identificador da árvore é inválido.");
         String ocorrenciaId = textoDeCadastro(dados.getOcorrenciaId(), "O identificador da ocorrência", 24, false);
         if (ocorrenciaId != null && !ObjectId.isValid(ocorrenciaId))
             throw new IllegalArgumentException("O identificador da ocorrência é inválido.");
+        String arvoreId = textoDeCadastro(dados.getArvoreId(), "O identificador da árvore", 24,
+                ocorrenciaId == null);
+        if (arvoreId != null && !ObjectId.isValid(arvoreId))
+            throw new IllegalArgumentException("O identificador da árvore é inválido.");
         if (dados.getEquipeId() != null && !dados.getEquipeId().isBlank())
             throw new IllegalArgumentException("Crie a OS sem equipe e use a opção Atribuir equipe após o cadastro.");
-        return new CadastroValidado(new ObjectId(arvoreId).toHexString(),
+        return new CadastroValidado(arvoreId == null ? null : new ObjectId(arvoreId).toHexString(),
                 ocorrenciaId == null ? null : new ObjectId(ocorrenciaId).toHexString(),
                 titulo, descricao, textoDeCadastro(dados.getPrioridade(), "A prioridade", 40, false),
                 textoDeCadastro(dados.getObservacoes(), "As observações", 4000, false));

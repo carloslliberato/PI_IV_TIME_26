@@ -23,6 +23,7 @@ import protocolo.ResultadoValidacaoOrdemDeServico.ConclusaoValidada;
  */
 class ValidadorOrdemDeServicoRemotoTest {
     private static final String ARVORE = "000000000000000000000001";
+    private static final String OCORRENCIA = "000000000000000000000003";
     private static final String EQUIPE = "000000000000000000000004";
     private static final Instant AGORA = Instant.parse("2026-11-20T17:00:00Z");
     private final Gson gson = new Gson();
@@ -43,6 +44,37 @@ class ValidadorOrdemDeServicoRemotoTest {
         assertEquals("Título normalizado", resultado.titulo());
         assertEquals("Descrição normalizada", resultado.descricao());
         assertEquals(1, conexao.chamadas);
+    }
+
+    @Test
+    void cadastroDeOcorrenciaSemArvoreNaoFechaConexao() {
+        ConexaoControlada conexao = new ConexaoControlada(pedido ->
+                ResultadoValidacaoOrdemDeServico.cadastroAprovado(pedido,
+                        new CadastroValidado(null, OCORRENCIA, "Atendimento", "Descrição", null, null)));
+        CadastroOrdemDeServicoDTO dto = gson.fromJson(
+                "{\"ocorrenciaId\":\"" + OCORRENCIA
+                        + "\",\"titulo\":\"Atendimento\",\"descricao\":\"Descrição\"}",
+                CadastroOrdemDeServicoDTO.class);
+
+        var resultado = new ValidadorOrdemDeServicoRemoto(conexao).prepararCadastro(dto);
+
+        assertNull(resultado.arvoreId());
+        assertEquals(OCORRENCIA, resultado.ocorrenciaId());
+        assertFalse(conexao.fechada);
+    }
+
+    @Test
+    void respostaSemArvoreNemOcorrenciaContinuaInvalida() {
+        ConexaoControlada conexao = new ConexaoControlada(pedido ->
+                ResultadoValidacaoOrdemDeServico.cadastroAprovado(pedido,
+                        new CadastroValidado(null, null, "Título", "Descrição", null, null)));
+        var dto = gson.fromJson(
+                "{\"titulo\":\"Título\",\"descricao\":\"Descrição\"}",
+                CadastroOrdemDeServicoDTO.class);
+
+        assertThrows(ValidacaoOrdemDeServicoIndisponivelException.class,
+                () -> new ValidadorOrdemDeServicoRemoto(conexao).prepararCadastro(dto));
+        assertTrue(conexao.fechada);
     }
 
     @Test
