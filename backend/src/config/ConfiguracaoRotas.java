@@ -4,6 +4,7 @@ import controller.ArvoreController;
 import controller.ContaController;
 import controller.EquipeController;
 import controller.EspecieController;
+import controller.IntervencaoController;
 import controller.OcorrenciaController;
 import controller.OrdemDeServicoController;
 import io.javalin.Javalin;
@@ -11,6 +12,7 @@ import repository.ArvoreRepository;
 import repository.ContaRepository;
 import repository.EquipeRepository;
 import repository.EspecieRepository;
+import repository.IntervencaoRepository;
 import repository.MunicipioRepository;
 import repository.OcorrenciaRepository;
 import repository.OrdemDeServicoRepository;
@@ -20,6 +22,7 @@ import service.ConexaoServidor;
 import service.ContaService;
 import service.EquipeService;
 import service.EspecieService;
+import service.IntervencaoService;
 import service.OcorrenciaService;
 import service.OrdemDeServicoService;
 import service.RecuperacaoSenhaService;
@@ -32,7 +35,8 @@ public class ConfiguracaoRotas {
     private final EspecieController especieController;
     private final EquipeController equipeController;
     private final OcorrenciaController ocorrenciaController;
-    private final OrdemDeServicoController ordemDeServicoController;    
+    private final OrdemDeServicoController ordemDeServicoController;
+    private final IntervencaoController intervencaoController; 
 
     public ConfiguracaoRotas(
             ConexaoServidor conexaoServidor) {
@@ -113,7 +117,18 @@ public class ConfiguracaoRotas {
                         contaRepository);
 
         this.ordemDeServicoController =
-                new OrdemDeServicoController(ordemService);        
+                new OrdemDeServicoController(ordemService);
+                
+        IntervencaoRepository intervencaoRepository =
+        new IntervencaoRepository();
+
+        IntervencaoService intervencaoService =
+                new IntervencaoService(
+                        intervencaoRepository,
+                        contaRepository);
+
+        this.intervencaoController =
+                new IntervencaoController(intervencaoService);
     }
 
     public void registrarRotas(Javalin servidorHttp) {
@@ -245,6 +260,10 @@ public class ConfiguracaoRotas {
         servidorHttp.patch(
                 "/api/ordens-servico/{id}/status",
                 ctx -> ordemDeServicoController.alterarStatus(ctx));
+
+        servidorHttp.get(
+                "/api/intervencoes",
+                ctx -> intervencaoController.listar(ctx));
         
     }
 }
