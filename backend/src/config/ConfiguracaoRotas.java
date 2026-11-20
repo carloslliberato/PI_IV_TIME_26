@@ -266,6 +266,15 @@ public class ConfiguracaoRotas {
                 "/api/ordens-servico",
                 ctx -> ordemDeServicoController.listar(ctx));
 
+        servidorHttp.post(
+                "/api/ordens-servico",
+                ctx -> ordemDeServicoController.criar(ctx));
+
+        // O caminho fixo precisa ser registrado antes de /{id}.
+        servidorHttp.get(
+                "/api/ordens-servico/opcoes-cadastro",
+                ctx -> ordemDeServicoController.opcoesCadastro(ctx));
+
         servidorHttp.get(
                 "/api/ordens-servico/{id}",
                 ctx -> ordemDeServicoController.consultar(ctx));

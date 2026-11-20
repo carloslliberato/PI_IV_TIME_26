@@ -151,3 +151,20 @@
 .service-order-team-editor select:disabled { opacity: .65; cursor: not-allowed; }
 .service-order-team-editor .service-order-create-actions { margin-top: 16px; flex-wrap: wrap; }
 .service-order-team-editor .service-order-team-error { color: #a03727; }
+
+/* Cadastro real da OS com preenchimento opcional e rascunho preservado. */
+.service-order-create-card { width: min(800px, 100%); }
+.service-order-create-form input, .service-order-create-form textarea, .service-order-create-form select { box-sizing: border-box; }
+.service-order-prefill { display: flex; align-items: center; gap: 14px; }
+.service-order-prefill small { color: #718078; font-size: 11px; line-height: 1.5; }
+.service-order-prefill button { flex: 0 0 auto; }
+.service-order-refresh-options { margin-top: 12px; }
+.service-order-create-warnings { padding: 12px 12px 12px 30px; border: 1px solid #eadcaa; border-radius: 8px; background: #fff9e9; color: #725c20; font-size: 12px; line-height: 1.6; }
+.service-order-create-feedback.is-error, .service-order-create-intro.is-error { color: #a03727; }
+.service-order-create-recovery { display: flex; flex-wrap: wrap; gap: 10px; }
+.service-order-create-form :disabled { opacity: .65; cursor: not-allowed; }
+.service-order-create-recovery [hidden], .service-order-create-warnings[hidden] { display: none; }
+@media (max-width: 720px) {
+  .service-order-prefill { align-items: stretch; flex-direction: column; }
+  .service-order-create-recovery { flex-direction: column; }
+}

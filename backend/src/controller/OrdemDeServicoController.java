@@ -10,6 +10,7 @@ import model.OrdemDeServico;
 import model.Intervencao;
 import model.ConclusaoOrdemDeServico;
 import dto.ConclusaoOrdemDeServicoDTO;
+import dto.CadastroOrdemDeServicoDTO;
 import dto.AtribuicaoEquipeOrdemDeServicoDTO;
 import model.EquipeParaOrdemDeServico;
 import service.OrdemDeServicoService;
@@ -31,6 +32,55 @@ public class OrdemDeServicoController {
         }
 
         this.ordemService = ordemService;
+    }
+
+    public void opcoesCadastro(Context ctx){
+        HttpSession sessao = obterSessaoDeFuncionario(ctx);
+        if (sessao == null) return;
+        try {
+            ObjectId municipioId = ordemService.obterMunicipioDoFuncionario(sessao.getAttribute("usuarioId").toString());
+            ctx.status(200).json(ordemService.opcoesDeCadastro(municipioId));
+        } catch (SecurityException erro){
+            ctx.status(403).json(Map.of("erro", erro.getMessage()));
+        } catch (Exception erro){
+            erro.printStackTrace();
+            ctx.status(500).json(Map.of("erro", "Não foi possível consultar as opções para cadastrar a OS."));
+        }
+    }
+
+    // O município vem da sessão; o cadastro recebe os valores finais editados pelo funcionário.
+    public void criar(Context ctx){
+        HttpSession sessao = obterSessaoDeFuncionario(ctx);
+        if (sessao == null) return;
+        try {
+            ObjectId municipioId = ordemService.obterMunicipioDoFuncionario(sessao.getAttribute("usuarioId").toString());
+            JsonElement raiz = JsonParser.parseString(ctx.body());
+            if (raiz == null || !raiz.isJsonObject())
+                throw new IllegalArgumentException("Informe um objeto JSON com os dados da nova OS.");
+            JsonObject objeto = raiz.getAsJsonObject();
+            for (String campo : List.of("titulo", "descricao", "arvoreId", "ocorrenciaId", "equipeId", "prioridade", "observacoes")){
+                JsonElement valor = objeto.get(campo);
+                if (valor != null && !valor.isJsonNull()
+                        && (!valor.isJsonPrimitive() || !valor.getAsJsonPrimitive().isString()))
+                    throw new IllegalArgumentException("O campo " + campo + " deve ser um texto.");
+            }
+            CadastroOrdemDeServicoDTO dados = gson.fromJson(objeto, CadastroOrdemDeServicoDTO.class);
+            OrdemDeServico ordem = ordemService.criar(municipioId, dados);
+            ctx.status(201).json(Map.of("ordem", paraRespostaComConclusao(ordem, null)));
+        } catch (JsonParseException erro){
+            ctx.status(400).json(Map.of("erro", "Formato JSON inválido."));
+        } catch (SecurityException erro){
+            ctx.status(403).json(Map.of("erro", erro.getMessage()));
+        } catch (IllegalArgumentException erro){
+            ctx.status(400).json(Map.of("erro", erro.getMessage()));
+        } catch (NoSuchElementException erro){
+            ctx.status(404).json(Map.of("erro", erro.getMessage()));
+        } catch (IllegalStateException erro){
+            ctx.status(409).json(Map.of("erro", erro.getMessage()));
+        } catch (Exception erro){
+            erro.printStackTrace();
+            ctx.status(500).json(Map.of("erro", "Não foi possível confirmar o cadastro. Consulte a lista de OS antes de tentar novamente."));
+        }
     }
 
     // Lista as OS do município do funcionário autenticado.
