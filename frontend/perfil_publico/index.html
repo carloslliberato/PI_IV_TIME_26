@@ -108,40 +108,33 @@
 
                 <div id="layerBody">
                   <label class="layer-row">
-                    <input type="checkbox" checked id="treesLayer">
+                    <input type="radio" checked id="treesLayer" name="publicMapLayer" value="trees">
                     <span class="check-custom"></span>
                     <span>Árvores cadastradas</span>
                   </label>
 
                   <label class="layer-row">
-                    <input type="checkbox" id="occurrencesLayer">
+                    <input type="radio" id="occurrencesLayer" name="publicMapLayer" value="occurrences">
                     <span class="check-custom"></span>
                     <span>Ocorrências</span>
                   </label>
 
-                  <label class="layer-row">
-                    <input type="checkbox" checked id="riskLayer">
-                    <span class="check-custom"></span>
-                    <span>Risco</span>
-                  </label>
-
                   <hr>
 
-                  <div class="legend-title">Legenda (Nível de risco)</div>
-                  <div class="legend-item"><span class="legend-dot low"><i class="bi bi-tree-fill"></i></span>Baixo
+                  <div id="treeLegend">
+                    <div class="legend-title">Legenda (Nível de risco)</div>
+                    <div class="legend-item"><span class="legend-dot low"><i class="bi bi-tree-fill"></i></span>Baixo</div>
+                    <div class="legend-item"><span class="legend-dot medium"><i class="bi bi-tree-fill"></i></span>Médio</div>
+                    <div class="legend-item"><span class="legend-dot high"><i class="bi bi-tree-fill"></i></span>Alto</div>
+                    <div class="legend-item"><span class="legend-dot critical"><i class="bi bi-tree-fill"></i></span>Crítico</div>
                   </div>
-                  <div class="legend-item"><span class="legend-dot medium"><i class="bi bi-tree-fill"></i></span>Médio
-                  </div>
-                  <div class="legend-item"><span class="legend-dot high"><i class="bi bi-tree-fill"></i></span>Alto
-                  </div>
-                  <div class="legend-item"><span class="legend-dot critical"><i
-                        class="bi bi-tree-fill"></i></span>Crítico</div>
                 </div>
               </div>
             </div>
 
             <div class="map-toast" id="mapToast">
               <i class="bi bi-info-circle"></i>
+
               <span>Clique em um marcador para ver as informações da árvore.</span>
             </div>
           </section>

@@ -159,12 +159,12 @@ loginForm.addEventListener('submit', async (event) => {
             // Se possui somente perfil de cidadão.
         } else if (possuiCidadao) {
 
-            acessarPerfil('CIDADAO');
+            await acessarPerfil('CIDADAO');
 
             // Se possui somente perfil de funcionário.
         } else if (possuiFuncionario) {
 
-            acessarPerfil('FUNCIONARIO');
+            await acessarPerfil('FUNCIONARIO');
 
         } else {
             throw new Error('Esta conta não possui um perfil de acesso válido.');

@@ -19,6 +19,26 @@ public class ConfiguracaoPaginas {
 
         // PÁGINAS PÚBLICAS
         servidorHttp.get("/", ctx -> {
+            var sessao = ctx.req().getSession(false);
+            if (sessao != null && sessao.getAttribute("usuarioId") != null) {
+                Object perfilAtivo = sessao.getAttribute("perfilAtivo");
+                Object perfisObjeto = sessao.getAttribute("perfis");
+                boolean somenteFuncionario = perfisObjeto instanceof java.util.List<?> perfis
+                        && perfis.size() == 1
+                        && perfis.contains("FUNCIONARIO");
+
+                // Conta somente de funcionário deve abrir o portal profissional
+                // mesmo quando o usuário retorna pelo endereço padrão.
+                if (somenteFuncionario && perfilAtivo == null) {
+                    sessao.setAttribute("perfilAtivo", "FUNCIONARIO");
+                    perfilAtivo = "FUNCIONARIO";
+                }
+                if ("FUNCIONARIO".equals(perfilAtivo)) {
+                    ctx.redirect("/perfil-profissional");
+                    return;
+                }
+            }
+
             Path arquivo = pastaFrontend.resolve("perfil_publico").resolve("index.html");
             ctx.html(Files.readString(arquivo));
         });

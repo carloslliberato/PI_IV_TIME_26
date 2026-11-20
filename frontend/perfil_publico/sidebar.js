@@ -81,8 +81,17 @@ if (sidebarContainer) {
     || "";
 
   if (isLoggedIn && userName) {
-    // Um perfil sem setor associado e tratado como cidadao no portal publico.
-    const isCitizen = setorId == null || String(setorId).trim() === "";
+    // Usa os perfis da conta para não confundir funcionário sem setor com cidadão.
+    const perfis = Array.isArray(currentUser?.perfis) ? currentUser.perfis : [];
+    const perfilAtivo = currentUser?.perfilAtivo;
+    const possuiCidadao = perfis.includes("CIDADAO");
+    const possuiFuncionario = perfis.includes("FUNCIONARIO");
+    const isCitizen = perfilAtivo === "CIDADAO"
+      || (!perfilAtivo && possuiCidadao && !possuiFuncionario)
+      // Compatibilidade com sessões antigas que ainda não salvavam a lista de perfis.
+      || (perfis.length === 0 && setorId == null);
+    const isEmployee = perfilAtivo === "FUNCIONARIO"
+      || (!perfilAtivo && possuiFuncionario && !possuiCidadao);
 
     if (isCitizen) {
       // Para cidadaos autenticados, troca o cadastro por um atalho de acompanhamento.
@@ -96,6 +105,18 @@ if (sidebarContainer) {
       const isTrackingPage = currentPage === "/acompanhar-chamado";
       accountLink.classList.toggle("active", isTrackingPage);
       if (isTrackingPage) accountLink.setAttribute("aria-current", "page");
+      else accountLink.removeAttribute("aria-current");
+    } else if (isEmployee) {
+      // Funcionários autenticados recebem um atalho para o portal profissional.
+      const accountLink = document.getElementById("navSignup");
+      accountLink.href = "/perfil-profissional";
+      accountLink.querySelector("i").className = "bi bi-briefcase";
+      accountLink.querySelector("span").textContent = "Portal do funcionário";
+      accountLink.removeAttribute("data-page");
+      accountLink.dataset.accountRole = "employee";
+      const isEmployeePage = currentPage === "/perfil-profissional";
+      accountLink.classList.toggle("active", isEmployeePage);
+      if (isEmployeePage) accountLink.setAttribute("aria-current", "page");
       else accountLink.removeAttribute("aria-current");
     }
 

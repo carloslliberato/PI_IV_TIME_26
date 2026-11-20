@@ -323,26 +323,25 @@ function setupEvents() {
   });
 
   document.getElementById("treesLayer").addEventListener("change", event => {
-    if (!map || !markerLayer) return;
-    if (event.target.checked) map.addLayer(markerLayer);
-    else map.removeLayer(markerLayer);
+    if (!event.target.checked || !map || !markerLayer) return;
+    map.removeLayer(occurrenceLayer);
+    occurrenceLayer.clearLayers();
+    markerLayer.addTo(map);
+    document.getElementById("treeLegend").classList.remove("d-none");
+    document.getElementById("occurrenceLegend").classList.add("d-none");
+    document.querySelector("#mapToast span").textContent = "Clique em um marcador para ver as informações da árvore.";
   });
 
-  document.getElementById("riskLayer").addEventListener("change", event => {
-    if (markerLayer) markerLayer.eachLayer(marker => marker.setOpacity(event.target.checked ? 1 : 0.18));
-  });
-
-  // Quando o usuário marca/desmarca "Ocorrências" nas camadas, busca e desenha as ocorrências reais do banco
+  // A seleção por rádio garante que somente uma camada fique ativa por vez.
   document.getElementById("occurrencesLayer").addEventListener("change", async event => {
-    if (!map || !occurrenceLayer) return;
-    if (event.target.checked) {
-      await carregarOcorrenciasPublicas();
-      if (!map.hasLayer(occurrenceLayer)) occurrenceLayer.addTo(map);
-      renderPublicOccurrencesOnMap();
-    } else {
-      map.removeLayer(occurrenceLayer);
-      occurrenceLayer.clearLayers();
-    }
+    if (!event.target.checked || !map || !occurrenceLayer) return;
+    map.removeLayer(markerLayer);
+    await carregarOcorrenciasPublicas();
+    occurrenceLayer.addTo(map);
+    renderPublicOccurrencesOnMap();
+    document.getElementById("treeLegend").classList.add("d-none");
+    document.getElementById("occurrenceLegend").classList.remove("d-none");
+    document.querySelector("#mapToast span").textContent = "Ocorrências registradas neste município.";
   });
 
   document.getElementById("toggleLayers").addEventListener("click", () => {

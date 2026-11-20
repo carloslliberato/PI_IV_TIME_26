@@ -42,6 +42,16 @@ public class ContaService {
         return contaRepository.existeEmail(email);
     }
 
+    // Resolve município da conta mesmo para sessões criadas antes de esse dado ser guardado na sessão.
+    public String buscarMunicipioId(String usuarioId) {
+        if (usuarioId == null || !ObjectId.isValid(usuarioId)) {
+            return "";
+        }
+        return contaRepository.buscarPorId(new ObjectId(usuarioId))
+                .map(conta -> conta.getMunicipioId().toHexString())
+                .orElse("");
+    }
+
     // Busca o ID do município pelo nome
     private ObjectId buscarMunicipio(String nomeMunicipio) {
 

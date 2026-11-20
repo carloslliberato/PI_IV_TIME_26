@@ -164,12 +164,18 @@ public class ContaController {
             return;
         }
 
+        Object municipioId = sessao.getAttribute("municipioId");
+        if (municipioId == null || municipioId.toString().isBlank()) {
+            municipioId = contaService.buscarMunicipioId(sessao.getAttribute("usuarioId").toString());
+            if (!municipioId.toString().isBlank()) {
+                sessao.setAttribute("municipioId", municipioId);
+            }
+        }
+
         // Retorna os dados armazenados na sessão.
         ctx.status(200).json(Map.of(
                 "id", sessao.getAttribute("usuarioId"),
-                "municipioId", sessao.getAttribute("municipioId") == null
-                        ? ""
-                        : sessao.getAttribute("municipioId"),
+                "municipioId", municipioId,
                 "nome", sessao.getAttribute("nome"),
                 "email", sessao.getAttribute("email"),
                 "perfis", sessao.getAttribute("perfis"),
