@@ -10,6 +10,7 @@ import org.bson.types.ObjectId;
 public class Equipe {
 
     private final ObjectId id;
+    private final String codigo;
     private final String nome;
     private final String regiaoAtuacao;
     private final String gestor;
@@ -33,6 +34,7 @@ public class Equipe {
 
         this(
                 new ObjectId(),
+                null,
                 nome,
                 regiaoAtuacao,
                 gestor,
@@ -59,6 +61,7 @@ public class Equipe {
             Instant dataCadastro) {
         this(
                 id,
+                null,
                 nome,
                 regiaoAtuacao,
                 gestor,
@@ -84,6 +87,34 @@ public class Equipe {
             String usuarioNome,
             Instant dataCadastro,
             List<Colaborador> colaboradores) {
+        this(
+                id,
+                null,
+                nome,
+                regiaoAtuacao,
+                gestor,
+                status,
+                municipioId,
+                municipioNome,
+                usuarioId,
+                usuarioNome,
+                dataCadastro,
+                colaboradores);
+    }
+
+    public Equipe(
+            ObjectId id,
+            String codigo,
+            String nome,
+            String regiaoAtuacao,
+            String gestor,
+            String status,
+            ObjectId municipioId,
+            String municipioNome,
+            ObjectId usuarioId,
+            String usuarioNome,
+            Instant dataCadastro,
+            List<Colaborador> colaboradores) {
 
         if (id == null || municipioId == null || usuarioId == null) {
             throw new IllegalArgumentException(
@@ -96,6 +127,7 @@ public class Equipe {
         }
 
         this.id = id;
+        this.codigo = codigo;
         this.nome = validarTexto(nome, "O nome da equipe é obrigatório.");
         this.regiaoAtuacao = validarTexto(
                 regiaoAtuacao,
@@ -126,6 +158,10 @@ public class Equipe {
     // Getters usados pelo repositório e pela resposta da API.
     public ObjectId getId() {
         return id;
+    }
+
+    public String getCodigo() {
+        return codigo;
     }
 
     public String getNome() {
@@ -167,5 +203,24 @@ public class Equipe {
     // Devolve uma cópia da lista embutida para impedir alterações externas.
     public List<Colaborador> getColaboradores() {
         return new ArrayList<>(colaboradores);
+    }
+
+    public Equipe comCodigo(String codigo) {
+        if (codigo == null || codigo.isBlank()) {
+            throw new IllegalArgumentException("O código da equipe é obrigatório.");
+        }
+        return new Equipe(
+                id,
+                codigo,
+                nome,
+                regiaoAtuacao,
+                gestor,
+                status,
+                municipioId,
+                municipioNome,
+                usuarioId,
+                usuarioNome,
+                dataCadastro,
+                colaboradores);
     }
 }

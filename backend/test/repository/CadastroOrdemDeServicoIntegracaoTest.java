@@ -123,6 +123,47 @@ class CadastroOrdemDeServicoIntegracaoTest {
     }
 
     @Test
+    void criaOSDaOcorrenciaEReservaEquipeDisponivelNaMesmaTransacao(){
+        ObjectId equipeId = new ObjectId("400000000000000000000001");
+        ObjectId equipeIndisponivelId = new ObjectId("400000000000000000000002");
+        ObjectId equipeOutroMunicipioId = new ObjectId("400000000000000000000003");
+        ObjectId equipeComOrdemAtivaId = new ObjectId("400000000000000000000004");
+        banco.getCollection("ocorrencias").insertOne(new Document("_id", OCORRENCIA)
+                .append("municipioId", MUNICIPIO).append("status", "Recebida"));
+        banco.getCollection("equipes").insertMany(List.of(
+                new Document("_id", equipeId).append("municipioId", MUNICIPIO)
+                        .append("nome", "Equipe Centro").append("status", "Disponível"),
+                new Document("_id", equipeIndisponivelId).append("municipioId", MUNICIPIO)
+                        .append("nome", "Equipe Ocupada").append("status", "Indisponível"),
+                new Document("_id", equipeOutroMunicipioId).append("municipioId", OUTRO_MUNICIPIO)
+                        .append("nome", "Equipe Externa").append("status", "Disponível"),
+                new Document("_id", equipeComOrdemAtivaId).append("municipioId", MUNICIPIO)
+                        .append("nome", "Equipe com OS").append("status", "Disponível")));
+        banco.getCollection("ordens_servico").insertOne(new Document("_id", new ObjectId())
+                .append("municipioId", MUNICIPIO).append("equipeId", equipeComOrdemAtivaId)
+                .append("status", "Em andamento"));
+        assertEquals("Equipe Centro", repositorio.buscarNomesEquipes(
+                List.of(equipeId), MUNICIPIO).get(equipeId));
+        assertEquals(List.of(equipeId), repositorio.listarEquipesDisponiveisParaOcorrencia(
+                OCORRENCIA, MUNICIPIO).stream().map(equipe -> equipe.id()).toList());
+
+        OrdemDeServico ordem = new OrdemDeServico(MUNICIPIO, null, OCORRENCIA, equipeId,
+                "Atendimento de ocorrência", "Descrição do atendimento.", "Alta", null, "OS020261");
+        OrdemDeServico salva = repositorio.criarParaOcorrencia(ordem,
+                "Ordem OS020261 atribuída à equipe Equipe Centro");
+
+        assertEquals("Em andamento", salva.getStatus());
+        assertEquals(equipeId, salva.getEquipeId());
+        assertNull(salva.getArvoreId());
+        assertEquals("Indisponível", banco.getCollection("equipes")
+                .find(eq("_id", equipeId)).first().getString("status"));
+        assertEquals("Em Atendimento", banco.getCollection("ocorrencias")
+                .find(eq("_id", OCORRENCIA)).first().getString("status"));
+        assertTrue(repositorio.listarEquipesDisponiveisParaOcorrencia(
+                OCORRENCIA, MUNICIPIO).isEmpty());
+    }
+
+    @Test
     void rejeitaArvoreAusenteArquivadaDeOutroMunicipioOuComTipoBsonIncompativel(){
         assertThrows(NoSuchElementException.class,
                 () -> repositorio.criarComReferencias(novaOrdem(ARVORE, null, "OS020261")));

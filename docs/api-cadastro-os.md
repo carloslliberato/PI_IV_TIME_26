@@ -73,6 +73,12 @@ Resposta 201: `{"ordem":{...}}`, com o id, código gerado e os dados persistidos
 
 Erros usam `{"erro":"mensagem"}`: entrada inválida 400, ausência de sessão 401, perfil ou conta sem autorização 403, referência inexistente ou fora do município 404, conflito de estado/código 409 e falha interna 500.
 
+## Encaminhar ocorrência para equipe
+
+`GET /api/ocorrencias/{ocorrenciaId}/equipes-disponiveis` lista equipes com status `Disponível` cujo `municipioId` corresponde ao município da ocorrência e que não estejam vinculadas a outra OS ativa.
+
+`POST /api/ocorrencias/{ocorrenciaId}/ordem-servico` recebe `{"equipeId":"ObjectId em hexadecimal"}`. O backend usa os dados da ocorrência, cria a ordem como `Em andamento`, atualiza a ocorrência para `Em Atendimento` e marca a equipe como `Indisponível` na mesma transação. Se a ocorrência não tiver árvore vinculada, a OS é criada sem `arvoreId`; se houver uma referência BSON ObjectId, ela também precisa pertencer ao mesmo município e estar ativa. A operação rejeita ocorrência já encaminhada, equipe indisponível e IDs que não sejam ObjectId canônicos.
+
 ## Teste inicial
 
 ```powershell

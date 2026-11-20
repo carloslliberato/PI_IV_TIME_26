@@ -67,6 +67,14 @@ class ValidadorOrdemDeServicoTest {
     }
 
     @Test
+    void ocorrenciaPodeCriarOsSemArvoreVinculada() {
+        var dados = aprovarCadastro(cadastro(null, OCORRENCIA, null,
+                "Atendimento de ocorrência", "Descrição informada na ocorrência.", null, null));
+        assertNull(dados.arvoreId());
+        assertEquals(OCORRENCIA, dados.ocorrenciaId());
+    }
+
+    @Test
     void naoConverteUuidProtocoloOuIdentificadorInvalidoEmObjectId() {
         for (String id : List.of("abc", "d9428888-122b-11e1-b85c-61cd3cbb3210", "oco_12345678",
                 "OC020261", "00000000000000000000001", "zzzzzzzzzzzzzzzzzzzzzzzz")) {

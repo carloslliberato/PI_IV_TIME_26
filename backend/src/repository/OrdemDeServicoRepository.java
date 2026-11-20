@@ -208,6 +208,168 @@ public class OrdemDeServicoRepository {
         }
     }
 
+    public Document buscarOcorrenciaParaOrdem(ObjectId ocorrenciaId, ObjectId municipioId) {
+        if (ocorrenciaId == null || municipioId == null) {
+            throw new IllegalArgumentException("Informe a ocorrência e o município.");
+        }
+        Document ocorrencia = ocorrencias.find(and(
+                eq("_id", ocorrenciaId),
+                eq("municipioId", municipioId))).first();
+        if (!referenciaCanonica(ocorrencia, municipioId)) {
+            throw new NoSuchElementException("Ocorrência não encontrada nesse município.");
+        }
+        return ocorrencia;
+    }
+
+    public List<EquipeParaOrdemDeServico> listarEquipesDisponiveisParaOcorrencia(
+            ObjectId ocorrenciaId,
+            ObjectId municipioId) {
+        buscarOcorrenciaParaOrdem(ocorrenciaId, municipioId);
+        List<EquipeParaOrdemDeServico> resposta = new ArrayList<>();
+        for (Document equipe : equipes.find(and(
+                eq("municipioId", municipioId),
+                eq("status", "Disponível"))).sort(ascending("nome"))) {
+            Object idArmazenado = equipe.get("_id");
+            if (!(idArmazenado instanceof ObjectId equipeId)) {
+                continue;
+            }
+            if (colecao.find(and(
+                    or(eq("equipeId", equipeId), eq("equipeId", equipeId.toHexString())),
+                    in("status", "Aberta", "Em andamento"))).first() == null) {
+                String nome = textoDaEquipe(equipe, "nome", "nomeEquipe");
+                resposta.add(new EquipeParaOrdemDeServico(
+                        equipeId,
+                        nome == null ? "Equipe " + equipeId.toHexString() : nome,
+                        textoDaEquipe(equipe, "regiao", "regiaoAtuacao"),
+                        true,
+                        false));
+            }
+        }
+        return resposta;
+    }
+
+    public Map<ObjectId, String> buscarNomesEquipes(
+            List<ObjectId> equipeIds,
+            ObjectId municipioId) {
+        if (equipeIds == null || municipioId == null) {
+            throw new IllegalArgumentException("Informe as equipes e o município.");
+        }
+        List<ObjectId> idsValidos = equipeIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<ObjectId, String> nomes = new HashMap<>();
+        if (idsValidos.isEmpty()) {
+            return nomes;
+        }
+        for (Document equipe : equipes.find(and(
+                eq("municipioId", municipioId),
+                in("_id", idsValidos)))) {
+            Object id = equipe.get("_id");
+            if (id instanceof ObjectId equipeId) {
+                String nome = textoDaEquipe(equipe, "nome", "nomeEquipe");
+                if (nome != null) {
+                    nomes.put(equipeId, nome);
+                }
+            }
+        }
+        return nomes;
+    }
+
+    public OrdemDeServico criarParaOcorrencia(OrdemDeServico ordem, String observacaoInterna) {
+        if (ordem == null || ordem.getOrdemServicoId() == null || ordem.getMunicipioId() == null
+                || ordem.getOcorrenciaId() == null || ordem.getEquipeId() == null
+                || ordem.getCodigo() == null || ordem.getCodigo().isBlank()
+                || !"Em andamento".equals(ordem.getStatus())) {
+            throw new IllegalArgumentException(
+                    "A OS da ocorrência deve possuir município, ocorrência, equipe e código.");
+        }
+        garantirIndiceCodigo();
+        garantirIndiceEquipeAtiva();
+        try (ClientSession sessao = Objects.requireNonNull(abrirSessao.get())) {
+            return sessao.withTransaction(() -> {
+                ObjectId municipioId = ordem.getMunicipioId();
+                Document ocorrencia = ocorrencias.find(sessao, and(
+                        eq("_id", ordem.getOcorrenciaId()),
+                        eq("municipioId", municipioId))).first();
+                if (!referenciaCanonica(ocorrencia, municipioId)) {
+                    throw new NoSuchElementException("Ocorrência não encontrada nesse município.");
+                }
+                String statusOcorrencia = ocorrencia.getString("status");
+                if (statusOcorrencia == null
+                        || List.of("Recebida", "Em Análise", "Pendente").stream()
+                                .noneMatch(statusOcorrencia::equalsIgnoreCase)) {
+                    throw new IllegalStateException(
+                            "A ocorrência não está pendente ou já foi encaminhada.");
+                }
+                if (colecao.find(sessao, and(
+                        eq("ocorrenciaId", ordem.getOcorrenciaId()),
+                        in("status", "Aberta", "Em andamento"))).first() != null) {
+                    throw new IllegalStateException(
+                            "A ocorrência já possui uma ordem de serviço ativa.");
+                }
+                if (ordem.getArvoreId() != null) {
+                    Document arvore = arvores.find(sessao, and(
+                            eq("_id", ordem.getArvoreId()),
+                            eq("municipioId", municipioId),
+                            ne("ativa", false))).first();
+                    if (!referenciaCanonica(arvore, municipioId)) {
+                        throw new NoSuchElementException(
+                                "Árvore não encontrada ou inativa nesse município.");
+                    }
+                }
+                Document equipe = equipes.find(sessao, and(
+                        eq("_id", ordem.getEquipeId()),
+                        eq("municipioId", municipioId),
+                        eq("status", "Disponível"))).first();
+                if (equipe == null) {
+                    throw new IllegalStateException(
+                            "A equipe não está mais disponível para esta ocorrência.");
+                }
+                if (colecao.find(sessao, and(
+                        filtroEquipeAtiva(ordem.getEquipeId()))).first() != null) {
+                    throw new IllegalStateException(
+                            "A equipe já está vinculada a outra OS ativa.");
+                }
+
+                UpdateResult reserva = equipes.updateOne(sessao, and(
+                        eq("_id", ordem.getEquipeId()),
+                        eq("municipioId", municipioId),
+                        eq("status", "Disponível")),
+                        new Document("$set", new Document("status", "Indisponível")));
+                if (reserva.getMatchedCount() != 1) {
+                    throw new IllegalStateException(
+                            "A equipe foi alterada. Atualize a lista e tente novamente.");
+                }
+
+                colecao.insertOne(sessao, converterParaDocumento(ordem));
+                UpdateResult atualizacaoOcorrencia = ocorrencias.updateOne(sessao,
+                        and(eq("_id", ordem.getOcorrenciaId()), eq("municipioId", municipioId)),
+                        new Document("$set", new Document()
+                                .append("status", "Em Atendimento")
+                                .append("observacaoInterna", observacaoInterna)
+                                .append("atualizadoEm", Instant.now().toString())));
+                if (atualizacaoOcorrencia.getMatchedCount() != 1) {
+                    throw new IllegalStateException(
+                            "A ocorrência foi alterada. Atualize os dados e tente novamente.");
+                }
+                Document persistida = colecao.find(sessao, and(
+                        eq("_id", ordem.getOrdemServicoId()),
+                        eq("municipioId", municipioId))).first();
+                if (persistida == null) {
+                    throw new RuntimeException("Não foi possível confirmar a criação da OS.");
+                }
+                return converterParaOrdemDeServico(persistida);
+            }, opcoesDaTransacao());
+        } catch (MongoException erro) {
+            if (erro.getCode() == 11000) {
+                throw new IllegalStateException(
+                        "A equipe ou o código da OS já está vinculado a um registro ativo.");
+            }
+            throw erro;
+        }
+    }
+
     // Insere uma nova ordem de servico no banco.
     public void salvar(OrdemDeServico ordem){
         if (ordem == null){

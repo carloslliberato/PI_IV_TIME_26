@@ -10,6 +10,26 @@ public class CadastroOrdemDeServicoDTO{
     private String prioridade;
     private String observacoes;
 
+    public CadastroOrdemDeServicoDTO() {
+    }
+
+    public CadastroOrdemDeServicoDTO(
+            String arvoreId,
+            String ocorrenciaId,
+            String equipeId,
+            String titulo,
+            String descricao,
+            String prioridade,
+            String observacoes) {
+        this.arvoreId = arvoreId;
+        this.ocorrenciaId = ocorrenciaId;
+        this.equipeId = equipeId;
+        this.titulo = titulo;
+        this.descricao = descricao;
+        this.prioridade = prioridade;
+        this.observacoes = observacoes;
+    }
+
     public String getArvoreId(){
         return arvoreId;
     }

@@ -268,6 +268,15 @@ public class ConfiguracaoRotas {
         servidorHttp.patch(
                 "/api/ocorrencias/{id}/notificacoes",
                 ctx -> ocorrenciaController.atualizarNotificacao(ctx));
+
+        servidorHttp.get(
+                "/api/ocorrencias/{id}/equipes-disponiveis",
+                ctx -> ordemDeServicoController.listarEquipesDisponiveisParaOcorrencia(ctx));
+
+        servidorHttp.post(
+                "/api/ocorrencias/{id}/ordem-servico",
+                ctx -> ordemDeServicoController.criarParaOcorrencia(ctx));
+
         servidorHttp.get(
                 "/api/ordens-servico",
                 ctx -> ordemDeServicoController.listar(ctx));
