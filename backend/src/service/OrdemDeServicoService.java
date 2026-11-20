@@ -1,5 +1,7 @@
 package service;
 import java.util.List;
+import java.util.Map;
+import com.mongodb.MongoException;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Locale;
@@ -52,29 +54,55 @@ public class OrdemDeServicoService {
         return String.format(Locale.ROOT,"OS%05d%d",ano,sequencial);
     }
 
-    // Verifica os campos obrigatórios para criar uma ordem de serviço.
-    private void validarDadosDeCriacao(CadastroOrdemDeServicoDTO dados){
-        if (dados == null){
-            throw new IllegalArgumentException("Os dados da ordem de serviço não foram informados.");
+    public OrdemDeServico criar(ObjectId municipioId, CadastroOrdemDeServicoDTO dados){
+        if (municipioId == null) throw new IllegalArgumentException("O município é obrigatório.");
+        CadastroValidado cadastro = prepararCadastro(dados);
+        String codigo;
+        try {
+            codigo = gerarCodigo();
+        } catch (MongoException erro){
+            if (erro.getCode() == 11000)
+                throw new IllegalStateException("Não foi possível reservar o código da OS. Tente novamente.");
+            throw erro;
         }
+        OrdemDeServico ordem = new OrdemDeServico(municipioId, cadastro.arvoreId(),
+                cadastro.ocorrenciaId(), null, cadastro.titulo(), cadastro.descricao(),
+                cadastro.prioridade(), cadastro.observacoes(), codigo);
+        return ordemRepository.criarComReferencias(ordem);
+    }
 
-        if (dados.getTitulo() == null || dados.getTitulo().isBlank()){
-            throw new IllegalArgumentException("O título da ordem de serviço é obrigatório.");
+    public Map<String, Object> opcoesDeCadastro(ObjectId municipioId){
+        return ordemRepository.opcoesDeCadastro(municipioId);
+    }
+
+    public static CadastroValidado prepararCadastro(CadastroOrdemDeServicoDTO dados){
+        if (dados == null) throw new IllegalArgumentException("Informe os dados da nova ordem de serviço.");
+        String titulo = textoDeCadastro(dados.getTitulo(), "O título", 160, true);
+        String descricao = textoDeCadastro(dados.getDescricao(), "A descrição", 4000, true);
+        String arvoreId = textoDeCadastro(dados.getArvoreId(), "O identificador da árvore", 24, true);
+        if (!ObjectId.isValid(arvoreId)) throw new IllegalArgumentException("O identificador da árvore é inválido.");
+        String ocorrenciaId = textoDeCadastro(dados.getOcorrenciaId(), "O identificador da ocorrência", 24, false);
+        if (ocorrenciaId != null && !ObjectId.isValid(ocorrenciaId))
+            throw new IllegalArgumentException("O identificador da ocorrência é inválido.");
+        if (dados.getEquipeId() != null && !dados.getEquipeId().isBlank())
+            throw new IllegalArgumentException("Crie a OS sem equipe e use a opção Atribuir equipe após o cadastro.");
+        return new CadastroValidado(new ObjectId(arvoreId), ocorrenciaId == null ? null : new ObjectId(ocorrenciaId),
+                titulo, descricao, textoDeCadastro(dados.getPrioridade(), "A prioridade", 40, false),
+                textoDeCadastro(dados.getObservacoes(), "As observações", 4000, false));
+    }
+
+    private static String textoDeCadastro(String valor, String nome, int limite, boolean obrigatorio){
+        if (valor == null || valor.isBlank()){
+            if (obrigatorio) throw new IllegalArgumentException(nome + " deve ser informado.");
+            return null;
         }
+        String texto = valor.strip();
+        if (texto.length() > limite) throw new IllegalArgumentException(nome + " deve ter no máximo " + limite + " caracteres.");
+        return texto;
+    }
 
-        if (dados.getDescricao() == null || dados.getDescricao().isBlank()){
-            throw new IllegalArgumentException("A descrição da ordem de serviço é obrigatória.");
-        }
-
-        String arvoreId = dados.getArvoreId();
-
-        if (arvoreId == null || arvoreId.isBlank()){
-            throw new IllegalArgumentException("Selecione uma árvore para a ordem de serviço.");
-        }
-
-        if (!ObjectId.isValid(arvoreId)){
-            throw new IllegalArgumentException("O identificador da árvore é inválido.");
-        }
+    public record CadastroValidado(ObjectId arvoreId, ObjectId ocorrenciaId, String titulo,
+            String descricao, String prioridade, String observacoes) {
     }
 
     // Obtém o município da conta do funcionário identificado pela sessão.

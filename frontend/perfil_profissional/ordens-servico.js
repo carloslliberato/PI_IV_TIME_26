@@ -33,6 +33,279 @@ const serviceOrdersPage ={
   createMunicipality: document.getElementById("createServiceOrderMunicipality")
 };
 
+// O cadastro conserva seus dados ao fechar a janela ou perder a resposta do envio.
+const serviceOrderCreationState = {
+  phase: "idle", options: null, optionsLoading: false, optionsError: "", optionsRequest: 0,
+  draft: { titulo: "", descricao: "", arvoreId: "", ocorrenciaId: "", prioridade: "", observacoes: "" },
+  feedback: "", feedbackError: false, previousFocus: null, createdOrder: null, reviewing: false
+};
+const serviceOrderCreationFields = ["titulo", "descricao", "arvoreId", "ocorrenciaId", "prioridade", "observacoes"];
+const isServiceOrderObjectId = value => typeof value === "string" && /^[a-f0-9]{24}$/.test(value);
+
+function saveServiceOrderCreationDraft(){
+  for (const name of serviceOrderCreationFields){
+    serviceOrderCreationState.draft[name] = serviceOrdersPage.createForm.elements.namedItem(name).value;
+  }
+}
+
+function showServiceOrderCreationFeedback(message, error = false){
+  serviceOrderCreationState.feedback = message;
+  serviceOrderCreationState.feedbackError = error;
+  serviceOrdersPage.createFeedback.textContent = message;
+  serviceOrdersPage.createFeedback.classList.toggle("is-error", error);
+}
+
+// Atualiza opções e controles sem preencher campos a partir de uma consulta tardia.
+function renderServiceOrderCreation(){
+  const state = serviceOrderCreationState;
+  const form = serviceOrdersPage.createForm;
+  const locked = state.phase !== "idle";
+  const options = state.options;
+  const trees = options?.arvores || [];
+  const occurrences = options?.ocorrencias || [];
+  const tree = form.elements.namedItem("arvoreId");
+  const occurrence = form.elements.namedItem("ocorrenciaId");
+  const option = (id, label) => `<option value="${escapeServiceOrderText(id)}">${escapeServiceOrderText(label)}</option>`;
+  tree.innerHTML = option("", "Selecione uma árvore") + trees.map(item => option(item.id,
+    [item.nome || "Árvore", item.endereco, item.bairro].filter(Boolean).join(" — "))).join("");
+  occurrence.innerHTML = option("", "Sem ocorrência vinculada") + occurrences.map(item => option(item.id,
+    [item.codigo || item.id, item.titulo].filter(Boolean).join(" — "))).join("");
+  if (state.draft.arvoreId && !trees.some(item => item.id === state.draft.arvoreId)){
+    tree.insertAdjacentHTML("beforeend", option(state.draft.arvoreId, "Árvore selecionada indisponível — selecione novamente"));
+  }
+  if (state.draft.ocorrenciaId && !occurrences.some(item => item.id === state.draft.ocorrenciaId)){
+    occurrence.insertAdjacentHTML("beforeend", option(state.draft.ocorrenciaId, "Ocorrência selecionada indisponível — revise o vínculo"));
+  }
+  for (const name of serviceOrderCreationFields){
+    const field = form.elements.namedItem(name);
+    field.value = state.draft[name];
+    field.disabled = locked;
+  }
+  tree.disabled = locked || state.optionsLoading || !options || !trees.length;
+  occurrence.disabled = locked || state.optionsLoading || !options;
+  document.getElementById("saveCreateServiceOrder").disabled = locked || state.optionsLoading || !options || !trees.length;
+  document.getElementById("saveCreateServiceOrder").textContent = state.phase === "sending" ? "Salvando..." : "Salvar ordem";
+  document.getElementById("refreshCreateServiceOrderOptions").disabled = locked || state.optionsLoading;
+  document.getElementById("prefillCreateServiceOrder").disabled = locked || state.optionsLoading
+    || !occurrences.some(item => item.id === state.draft.ocorrenciaId);
+  const status = document.getElementById("createServiceOrderOptionsStatus");
+  status.textContent = state.optionsLoading ? "Carregando árvores e ocorrências..."
+    : state.optionsError || (options && !trees.length
+      ? "Nenhuma árvore disponível para criar a ordem. Verifique o cadastro de árvores do município." : "");
+  status.classList.toggle("is-error", Boolean(state.optionsError));
+  const warnings = document.getElementById("createServiceOrderWarnings");
+  const messages = Array.isArray(options?.avisos) ? options.avisos.filter(item => typeof item === "string" && item.trim()) : [];
+  warnings.innerHTML = messages.map(message => `<li>${escapeServiceOrderText(message)}</li>`).join("");
+  warnings.hidden = !messages.length;
+  serviceOrdersPage.createMunicipality.textContent = "Município da sua conta";
+  document.getElementById("reviewCreateServiceOrder").hidden = !["unknown", "reviewed"].includes(state.phase);
+  document.getElementById("reviewCreateServiceOrder").disabled = state.reviewing;
+  document.getElementById("retryCreateServiceOrder").hidden = state.phase !== "reviewed";
+  document.getElementById("viewCreatedServiceOrder").hidden = state.phase !== "saved";
+  document.getElementById("newCreateServiceOrder").hidden = state.phase !== "saved";
+  showServiceOrderCreationFeedback(state.feedback, state.feedbackError);
+}
+
+async function loadServiceOrderCreationOptions(){
+  const state = serviceOrderCreationState;
+  if (state.phase !== "idle") return;
+  const request = ++state.optionsRequest;
+  state.optionsLoading = true;
+  state.optionsError = "";
+  renderServiceOrderCreation();
+  try {
+    const response = await fetch("/api/ordens-servico/opcoes-cadastro", { credentials: "same-origin", cache: "no-store" });
+    const body = await readServiceOrderResponse(response, "Não foi possível carregar as opções de cadastro.");
+    if (!isServiceOrderObjectId(body?.municipioId) || !Array.isArray(body.arvores)
+        || !Array.isArray(body.ocorrencias) || body.arvores.some(item => !item || !isServiceOrderObjectId(item.id))
+        || body.ocorrencias.some(item => !item || !isServiceOrderObjectId(item.id)
+          || (item.arvoreId != null && !isServiceOrderObjectId(item.arvoreId)))){
+      throw new Error("Não foi possível confirmar as opções de cadastro.");
+    }
+    if (request !== state.optionsRequest) return;
+    if (!serviceOrdersPage.createModal.hidden) saveServiceOrderCreationDraft();
+    state.options = body;
+  } catch (error){
+    if (request !== state.optionsRequest) return;
+    if (!serviceOrdersPage.createModal.hidden) saveServiceOrderCreationDraft();
+    state.options = null;
+    state.optionsError = getServiceOrdersErrorMessage(error,
+      "Não foi possível carregar as opções. Use Atualizar opções para tentar novamente.");
+  } finally {
+    if (request === state.optionsRequest){
+      state.optionsLoading = false;
+      renderServiceOrderCreation();
+    }
+  }
+}
+
+function openCreateServiceOrderModal(){
+  if (!serviceOrdersPage.modal.hidden) closeServiceOrderDetails();
+  if (serviceOrdersPage.createModal.hidden) serviceOrderCreationState.previousFocus = document.activeElement;
+  serviceOrdersPage.createModal.hidden = false;
+  document.body.classList.add("service-order-modal-open");
+  renderServiceOrderCreation();
+  if (serviceOrderCreationState.phase === "idle"){
+    document.getElementById("createServiceOrderTitle").focus();
+    loadServiceOrderCreationOptions();
+  } else {
+    document.getElementById("closeCreateServiceOrderModal").focus();
+  }
+}
+
+function closeCreateServiceOrderModal(){
+  saveServiceOrderCreationDraft();
+  serviceOrdersPage.createModal.hidden = true;
+  if (serviceOrdersPage.modal.hidden) document.body.classList.remove("service-order-modal-open");
+  const previous = serviceOrderCreationState.previousFocus;
+  if (previous?.isConnected) previous.focus();
+  else document.getElementById("openCreateServiceOrderModal").focus();
+  serviceOrderCreationState.previousFocus = null;
+}
+
+function prefillServiceOrderFromOccurrence(){
+  const state = serviceOrderCreationState;
+  if (state.phase !== "idle" || state.optionsLoading) return;
+  saveServiceOrderCreationDraft();
+  const occurrence = state.options?.ocorrencias.find(item => item.id === state.draft.ocorrenciaId);
+  if (!occurrence) return;
+  if (["titulo", "descricao", "arvoreId", "prioridade"].some(name => state.draft[name].trim())
+      && !window.confirm("Substituir título, descrição, árvore e prioridade pelos dados desta ocorrência? Você poderá editar esses campos antes de salvar.")) return;
+  state.draft.titulo = typeof occurrence.titulo === "string" ? occurrence.titulo : "";
+  state.draft.descricao = typeof occurrence.descricao === "string" ? occurrence.descricao : "";
+  state.draft.arvoreId = state.options.arvores.some(item => item.id === occurrence.arvoreId) ? occurrence.arvoreId : "";
+  const priority = typeof occurrence.prioridade === "string" ? occurrence.prioridade.trim() : "";
+  state.draft.prioridade = priority.length <= 40 ? priority : "";
+  state.feedback = state.draft.arvoreId
+    ? "Dados preenchidos. Revise e edite o que for necessário antes de salvar."
+    : "Dados preenchidos. Selecione uma árvore e revise os campos antes de salvar.";
+  state.feedbackError = false;
+  renderServiceOrderCreation();
+  document.getElementById("createServiceOrderTitle").focus();
+}
+
+function validateServiceOrderCreationDraft(){
+  const state = serviceOrderCreationState;
+  const draft = state.draft;
+  const titulo = draft.titulo.trim();
+  const descricao = draft.descricao.trim();
+  const prioridade = draft.prioridade.trim();
+  const observacoes = draft.observacoes.trim();
+  if (!titulo || titulo.length > 160) throw new Error("Informe um título com até 160 caracteres.");
+  if (!descricao || descricao.length > 4000) throw new Error("Informe a descrição do serviço com até 4.000 caracteres.");
+  if (!isServiceOrderObjectId(draft.arvoreId) || !state.options?.arvores.some(item => item.id === draft.arvoreId)){
+    throw new Error("Selecione uma árvore disponível para esta ordem.");
+  }
+  if (draft.ocorrenciaId && (!isServiceOrderObjectId(draft.ocorrenciaId)
+      || !state.options?.ocorrencias.some(item => item.id === draft.ocorrenciaId))){
+    throw new Error("Revise a ocorrência vinculada ou selecione Sem ocorrência vinculada.");
+  }
+  if (prioridade.length > 40) throw new Error("A prioridade deve ter até 40 caracteres.");
+  if (observacoes.length > 4000) throw new Error("As observações devem ter até 4.000 caracteres.");
+  return { titulo, descricao, arvoreId: draft.arvoreId, ocorrenciaId: draft.ocorrenciaId || null,
+    prioridade: prioridade || null, observacoes: observacoes || null };
+}
+
+async function submitServiceOrderCreation(){
+  const state = serviceOrderCreationState;
+  if (state.phase !== "idle" || state.optionsLoading || !state.options) return;
+  saveServiceOrderCreationDraft();
+  if (!serviceOrdersPage.createForm.reportValidity()) return;
+  let payload;
+  try { payload = validateServiceOrderCreationDraft(); }
+  catch (error){ showServiceOrderCreationFeedback(error.message, true); serviceOrdersPage.createFeedback.focus(); return; }
+  state.phase = "sending";
+  state.feedback = "Salvando a ordem de serviço...";
+  state.feedbackError = false;
+  renderServiceOrderCreation();
+  document.getElementById("closeCreateServiceOrderModal").focus();
+  try {
+    const response = await fetch("/api/ordens-servico", {
+      method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+    });
+    const body = await readServiceOrderResponse(response, "Não foi possível criar a ordem de serviço.");
+    const order = body?.ordem;
+    if (response.status !== 201 || !isServiceOrderObjectId(order?.id) || order.status !== "Aberta"
+        || typeof order.codigo !== "string" || !order.codigo.trim()){
+      const error = new Error("Não foi possível confirmar o cadastro."); error.invalidResponse = true; throw error;
+    }
+    state.phase = "saved";
+    state.createdOrder = order;
+    serviceOrdersState.orderRevisions.set(order.id, (serviceOrdersState.orderRevisions.get(order.id) || 0) + 1);
+    serviceOrdersState.orders = [order, ...serviceOrdersState.orders.filter(item => item.id !== order.id)];
+    serviceOrdersState.details.set(order.id, order);
+    serviceOrdersState.error = "";
+    renderServiceOrdersTable();
+    state.feedback = `Ordem ${order.codigo} criada com sucesso. A equipe pode ser atribuída nos detalhes.`;
+    state.feedbackError = false;
+  } catch (error){
+    const rejected = !error.invalidResponse && [400, 401, 403, 404, 409, 422].includes(error.status);
+    state.phase = rejected ? "idle" : "unknown";
+    state.feedback = rejected ? getServiceOrdersErrorMessage(error, error.message)
+      : "Não foi possível confirmar o cadastro. Seus dados foram mantidos. Confira a listagem antes de tentar novamente para evitar uma ordem duplicada.";
+    state.feedbackError = true;
+  } finally {
+    renderServiceOrderCreation();
+    if (!serviceOrdersPage.createModal.hidden) serviceOrdersPage.createFeedback.focus();
+  }
+}
+
+// Sem um ID confirmado, a listagem precisa ser conferida antes de liberar outro envio.
+async function reviewUncertainServiceOrderCreation(){
+  const state = serviceOrderCreationState;
+  if (!["unknown", "reviewed"].includes(state.phase) || state.reviewing) return;
+  state.reviewing = true;
+  closeCreateServiceOrderModal();
+  serviceOrdersState.loading = true;
+  serviceOrdersState.error = "";
+  renderServiceOrdersTable();
+  const revisions = new Map(serviceOrdersState.orderRevisions);
+  try {
+    const orders = await buscarOrdensDeServico();
+    serviceOrdersState.orders = orders.map(order =>
+      (serviceOrdersState.orderRevisions.get(order.id) || 0) !== (revisions.get(order.id) || 0)
+        ? serviceOrdersState.details.get(order.id) || order : order);
+    serviceOrdersPage.search.value = "";
+    serviceOrdersPage.statusFilter.value = "all";
+    serviceOrdersPage.sort.value = "recent";
+    state.phase = "reviewed";
+    state.feedback = "Listagem atualizada. Confira se a ordem já foi criada. Se não estiver na lista, libere uma nova tentativa e revise os dados antes de salvar.";
+  } catch (error){
+    state.phase = "unknown";
+    serviceOrdersState.error = getServiceOrdersErrorMessage(error, "Não foi possível atualizar a listagem. Abra o cadastro e tente conferir novamente.");
+    state.feedback = serviceOrdersState.error;
+  } finally {
+    state.reviewing = false;
+    serviceOrdersState.loading = false;
+    renderServiceOrdersTable();
+    renderServiceOrderCreation();
+  }
+}
+
+function allowServiceOrderCreationRetry(){
+  const state = serviceOrderCreationState;
+  if (state.phase !== "reviewed" || state.reviewing) return;
+  if (!window.confirm("Você conferiu a listagem e a ordem não foi criada? Uma nova tentativa enviará um novo cadastro.")) return;
+  state.phase = "idle";
+  state.feedback = "Dados preservados. Revise os campos antes de salvar novamente.";
+  state.feedbackError = false;
+  renderServiceOrderCreation();
+  loadServiceOrderCreationOptions();
+}
+
+function startAnotherServiceOrderCreation(){
+  const state = serviceOrderCreationState;
+  if (state.phase !== "saved") return;
+  state.phase = "idle";
+  state.createdOrder = null;
+  state.feedback = "";
+  state.feedbackError = false;
+  for (const name of serviceOrderCreationFields) state.draft[name] = "";
+  renderServiceOrderCreation();
+  loadServiceOrderCreationOptions();
+  document.getElementById("createServiceOrderTitle").focus();
+}
+
 // Consulta as OS do município do funcionário autenticado.
 async function buscarOrdensDeServico(){
   const resposta = await fetch("/api/ordens-servico",{credentials: "same-origin"});
@@ -823,8 +1096,10 @@ function closeServiceOrderDetails(){
 
 // Mantém a navegação por teclado dentro do diálogo aberto.
 function trapServiceOrderModalFocus(event){
-  if (event.key !== "Tab" || serviceOrdersPage.modal.hidden) return;
-  const controls = [...serviceOrdersPage.modal.querySelectorAll(
+  if (event.key !== "Tab") return;
+  const activeModal = !serviceOrdersPage.createModal.hidden ? serviceOrdersPage.createModal : serviceOrdersPage.modal;
+  if (activeModal.hidden) return;
+  const controls = [...activeModal.querySelectorAll(
     'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href], [tabindex="0"]'
   )].filter(element => element.getClientRects().length > 0);
   if (!controls.length) return;
@@ -896,14 +1171,38 @@ function setupServiceOrdersEvents(){
 
   document.addEventListener("keydown", event =>{
     trapServiceOrderModalFocus(event);
-    if (event.key === "Escape" && !serviceOrdersPage.modal.hidden){
-      closeServiceOrderDetails();
+    if (event.key === "Escape"){
+      if (!serviceOrdersPage.createModal.hidden) closeCreateServiceOrderModal();
+      else if (!serviceOrdersPage.modal.hidden) closeServiceOrderDetails();
     }
   });
 
-  // O cadastro permanece desativado até sua integração.
-  serviceOrdersPage.createForm.addEventListener("submit", event =>{
-    event.preventDefault();
+  document.getElementById("openCreateServiceOrderModal").addEventListener("click", openCreateServiceOrderModal);
+  document.getElementById("closeCreateServiceOrderModal").addEventListener("click", closeCreateServiceOrderModal);
+  document.getElementById("cancelCreateServiceOrder").addEventListener("click", closeCreateServiceOrderModal);
+  document.getElementById("refreshCreateServiceOrderOptions").addEventListener("click", () => {
+    saveServiceOrderCreationDraft(); loadServiceOrderCreationOptions();
+  });
+  document.getElementById("prefillCreateServiceOrder").addEventListener("click", prefillServiceOrderFromOccurrence);
+  document.getElementById("reviewCreateServiceOrder").addEventListener("click", reviewUncertainServiceOrderCreation);
+  document.getElementById("retryCreateServiceOrder").addEventListener("click", allowServiceOrderCreationRetry);
+  document.getElementById("newCreateServiceOrder").addEventListener("click", startAnotherServiceOrderCreation);
+  document.getElementById("viewCreatedServiceOrder").addEventListener("click", () => {
+    const id = serviceOrderCreationState.createdOrder?.id;
+    if (id){ closeCreateServiceOrderModal(); openServiceOrderDetails(id); }
+  });
+  serviceOrdersPage.createModal.addEventListener("click", event => {
+    if (event.target === serviceOrdersPage.createModal) closeCreateServiceOrderModal();
+  });
+  serviceOrdersPage.createForm.addEventListener("input", saveServiceOrderCreationDraft);
+  serviceOrdersPage.createForm.addEventListener("change", () => {
+    saveServiceOrderCreationDraft();
+    document.getElementById("prefillCreateServiceOrder").disabled = serviceOrderCreationState.phase !== "idle"
+      || serviceOrderCreationState.optionsLoading
+      || !serviceOrderCreationState.options?.ocorrencias.some(item => item.id === serviceOrderCreationState.draft.ocorrenciaId);
+  });
+  serviceOrdersPage.createForm.addEventListener("submit", event => {
+    event.preventDefault(); submitServiceOrderCreation();
   });
 }
 
@@ -911,9 +1210,19 @@ function setupServiceOrdersEvents(){
 async function initializeServiceOrdersPage(){
   setupServiceOrdersEvents();
   renderServiceOrdersTable();
+  const initialRevisions = new Map(serviceOrdersState.orderRevisions);
 
   try {
-    serviceOrdersState.orders = await buscarOrdensDeServico();
+    const orders = await buscarOrdensDeServico();
+    // Preserva cadastros e alterações confirmados enquanto a primeira consulta estava em curso.
+    const changed = serviceOrdersState.orders.filter(order =>
+      (serviceOrdersState.orderRevisions.get(order.id) || 0) !== (initialRevisions.get(order.id) || 0));
+    const changedById = new Map(changed.map(order => [order.id, order]));
+    const listedIds = new Set(orders.map(order => order.id));
+    serviceOrdersState.orders = [
+      ...changed.filter(order => !listedIds.has(order.id)),
+      ...orders.map(order => changedById.get(order.id) || order)
+    ];
   } catch (error){
     serviceOrdersState.error = getServiceOrdersErrorMessage(
       error, "Não foi possível carregar as ordens. Atualize a página para tentar novamente.");

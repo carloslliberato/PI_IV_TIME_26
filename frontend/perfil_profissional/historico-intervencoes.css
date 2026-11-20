@@ -1,0 +1,31 @@
+/* Estilos restritos ao componente; não alteram a página que o recebe. */
+.historico-intervencoes-root { box-sizing: border-box; width: 100%; min-width: 0; padding: 20px; border: 1px solid #dfe9e2; border-radius: 14px; background: #fff; color: #2d4035; font-family: inherit; }
+.historico-intervencoes-root * { box-sizing: border-box; }
+.historico-intervencoes-cabecalho { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.historico-intervencoes-titulos { min-width: 0; }
+.historico-intervencoes-titulo { margin: 0; font-size: 17px; line-height: 1.4; font-weight: 750; }
+.historico-intervencoes-fuso { margin: 5px 0 0; color: #708075; font-size: 11px; }
+.historico-intervencoes-atualizar { min-height: 40px; flex-shrink: 0; padding: 9px 15px; border: 1px solid #c9ded1; border-radius: 9px; background: #f6faf7; color: #176344; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.historico-intervencoes-atualizar:hover:not(:disabled) { background: #eaf4ee; border-color: #94bda3; }
+.historico-intervencoes-atualizar:focus-visible, .historico-intervencoes-link:focus-visible { outline: 3px solid #90bca0; outline-offset: 3px; }
+.historico-intervencoes-atualizar:disabled { opacity: .6; cursor: wait; }
+.historico-intervencoes-root[data-state="invalid"] .historico-intervencoes-atualizar:disabled { cursor: not-allowed; }
+.historico-intervencoes-situacao { margin: 16px 0 0; color: #65786b; font-size: 12px; line-height: 1.6; }
+.historico-intervencoes-root[data-state="error"] .historico-intervencoes-situacao, .historico-intervencoes-root[data-state="invalid"] .historico-intervencoes-situacao { color: #a23d2d; }
+.historico-intervencoes-lista { display: grid; gap: 14px; margin: 16px 0 0; padding: 0; list-style: none; }
+.historico-intervencoes-lista:empty { display: none; }
+.historico-intervencoes-item { min-width: 0; padding: 16px; border: 1px solid #e2ece5; border-left: 3px solid #7aa68b; border-radius: 0 10px 10px 0; background: #f7faf8; }
+.historico-intervencoes-item-cabecalho { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.historico-intervencoes-tipo { min-width: 0; margin: 0; color: #234e35; font-size: 14px; font-weight: 750; line-height: 1.5; overflow-wrap: anywhere; }
+.historico-intervencoes-execucao { margin: 0; color: #607568; font-size: 11px; line-height: 1.5; }
+.historico-intervencoes-descricao { margin: 10px 0 0; color: #3e5145; font-size: 13px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.historico-intervencoes-registro { margin: 10px 0 0; color: #708075; font-size: 11px; line-height: 1.5; }
+.historico-intervencoes-fotos { display: flex; flex-wrap: wrap; gap: 10px 20px; margin: 14px 0 0; padding: 0; list-style: none; }
+.historico-intervencoes-foto { margin: 0; }
+.historico-intervencoes-link { color: #176344; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 600px) {
+  .historico-intervencoes-root { padding: 15px; }
+  .historico-intervencoes-cabecalho { align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+  .historico-intervencoes-item { padding: 13px; }
+  .historico-intervencoes-item-cabecalho { align-items: flex-start; flex-direction: column; gap: 5px; }
+}
