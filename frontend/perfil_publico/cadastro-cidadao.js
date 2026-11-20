@@ -1,3 +1,4 @@
+// Autor: Gabrielle Mota
 
 // Prepara os controles do cadastro quando o DOM estiver disponivel.
 function initializeCitizenSignup() {

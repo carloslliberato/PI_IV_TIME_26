@@ -1,3 +1,5 @@
+/* Autor: Gabrielle Mota */
+
 /* Identidade visual e componentes específicos da tela Árvores. */
 .trees-page { max-width: 1500px; }
 .trees-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 25px; }

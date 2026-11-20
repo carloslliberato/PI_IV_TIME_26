@@ -1,3 +1,5 @@
+/* Autor: Gabrielle Mota */
+
 /* Estilos restritos ao componente; não alteram a página que o recebe. */
 .historico-intervencoes-root { box-sizing: border-box; width: 100%; min-width: 0; padding: 20px; border: 1px solid #dfe9e2; border-radius: 14px; background: #fff; color: #2d4035; font-family: inherit; }
 .historico-intervencoes-root * { box-sizing: border-box; }

@@ -1,3 +1,5 @@
+// Autor: Gabrielle Mota
+
 // Define a estrutura HTML reutilizada como menu lateral nas paginas do portal publico.
 const publicSidebarMarkup = `
 <aside class="sidebar">

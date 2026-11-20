@@ -1,3 +1,5 @@
+// Autor: Gabrielle Mota
+
 /* Histórico de intervenções: componente de consulta, sem ativação automática na página. */
 (function (global){
   "use strict";

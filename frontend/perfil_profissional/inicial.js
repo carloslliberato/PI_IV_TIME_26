@@ -1,4 +1,5 @@
-// feito por Sophia
+// Autor: Gabrielle Mota, Sophia Fernandes
+
 // Painel inicial profissional: carrega todos os indicadores reais diretamente do back-end (sem dados fictícios).
 
 // Mapeia cada indicador ao ID do elemento HTML e à mensagem exibida quando o valor no banco for zero

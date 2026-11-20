@@ -1,4 +1,5 @@
-// feito por Sophia
+// Autor: Gabrielle Mota, Sophia Fernandes
+
 // Arboriza — formulário de abertura de chamado integrado com a API Java (Javalin + MongoDB).
 
 // Inicializa os controles do formulário depois que a página carregar

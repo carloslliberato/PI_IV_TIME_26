@@ -1,3 +1,5 @@
+// Autor: Gabrielle Mota
+
 // Mantém descrições e agrupamentos disponíveis para cada assunto do painel.
 // Lista de equipes de demonstração; na integração, será carregada pelo município da sessão.
 // API/BD: cada equipe precisa fornecer id e nome para preencher o filtro.

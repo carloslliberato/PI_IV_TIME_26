@@ -1,4 +1,5 @@
-// Feito por Sophia, Gabrielle
+// Autor: Gabrielle Mota, Sophia Fernandes
+
 // Mapa profissional: exibe as árvores cadastradas e as ocorrências reais vindas do back-end (Javalin + MongoDB).
 
 // Guarda a configuração inicial do município e as listas carregadas da API

@@ -1,4 +1,5 @@
-// feito por Sophia
+// Autor: Gabrielle Mota, Sophia Fernandes
+
 // Painel profissional de gestão de ocorrências integrado com o back-end Java (Javalin + MongoDB).
 
 // Guarda na memória os dados reais vindos do banco de dados

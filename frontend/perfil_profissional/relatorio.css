@@ -1,3 +1,5 @@
+/* Autor: Gabrielle Mota */
+
 /* Organiza o cabeçalho do relatório e o identificador do município. */
 .reports-page { padding-top: 35px; }
 .reports-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 25px; }

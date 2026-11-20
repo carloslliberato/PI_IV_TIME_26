@@ -1,3 +1,5 @@
+// Autor: Gabrielle Mota
+
 // Mantém as equipes retornadas pela API; ordens ainda pertencem ao fluxo demonstrativo.
 const teamsData = {
   municipality: { id: "campinas-demo", name: "Campinas - SP" },
