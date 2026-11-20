@@ -28,7 +28,7 @@ Atributos principais:
 | Nome | Tipo | Obrigatoriedade | Descrição |
 | --- | --- | --- | --- |
 | _id | ObjectId | Sim | Identificador interno BSON atribuído na criação e usado nas referências entre coleções. |
-| id | String | Sim | Identificador personalizado da ocorrência, usado pelas telas e rotas da API. |
+| id | String | Sim | Identificador personalizado global da ocorrência (`OC-000001`), usado na tabela e nas buscas. |
 | protocolo | String | Sim | Código de acompanhamento apresentado ao cidadão. |
 | municipioId | ObjectId | Sim | Identificador do documento do município associado. |
 | cidadaoId | String | Sim | Identificador do cidadão associado ou valor anônimo. |
@@ -46,7 +46,7 @@ Descrição: Armazena o inventário de árvores do município, incluindo identif
 | Nome | Tipo | Obrigatoriedade | Descrição |
 | --- | --- | --- | --- |
 | _id | ObjectId | Sim | Identificador interno BSON. É usado em referências como `arvoreId` nas ordens de serviço. Gerado pelo backend. |
-| codigoArv | String | Sim | Código legível e único da árvore, gerado sequencialmente com base no município (por exemplo, `ARV-CAMP-00001`). |
+| codigoArv | String | Sim | Código legível e único global da árvore, gerado sequencialmente (por exemplo, `AR-00001`). |
 | municipioId | ObjectId | Sim | Identificador do município associado. |
 | nomePopular | String | Sim | Nome popular da árvore. Obrigatório no cadastro. |
 | nomeCientifico | String | Não | Nome científico da espécie. |

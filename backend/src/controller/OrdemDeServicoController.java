@@ -458,7 +458,7 @@ public class OrdemDeServicoController {
         Map<String, Object> resposta = new HashMap<>();
 
         resposta.put("id", converterId(ordem.getOrdemServicoId()));
-        resposta.put("codigo", ordem.getCodigo());
+        resposta.put("codigo", formatarCodigo(ordem.getCodigo()));
         resposta.put("intervencaoConclusaoId", converterId(ordem.getIntervencaoConclusaoId()));
         resposta.put("municipioId", converterId(ordem.getMunicipioId()));
         resposta.put("arvoreId", converterId(ordem.getArvoreId()));
@@ -475,6 +475,12 @@ public class OrdemDeServicoController {
         resposta.put("dataConclusao", converterData(ordem.getDataConclusao()));
 
         return resposta;
+    }
+
+    private String formatarCodigo(String codigo) {
+        return codigo != null && codigo.matches("OS[0-9]+")
+                ? "OS-" + codigo.substring(2)
+                : codigo;
     }
 
     // Usado apenas no detalhe e na conclusão, sem consultas adicionais para cada item da lista.

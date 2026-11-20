@@ -55,8 +55,8 @@ function renderTeamsTable() {
   const teams = teamsData.teams;
   teamsPage.tableBody.innerHTML = teams.map(team => `
     <tr>
-      <td>${escapeTeamText(team.code)}</td>
-      <td><button class="team-name-link" type="button" data-open-team="${escapeTeamText(team.id)}">${escapeTeamText(team.name)}</button></td>
+      <td><button class="team-code-link" type="button" data-open-team="${escapeTeamText(team.id)}">${escapeTeamText(team.code)}</button></td>
+      <td>${escapeTeamText(team.name)}</td>
       <td>${escapeTeamText(team.region)}</td>
       <td><span class="team-status-badge ${team.status === "Disponível" ? "available" : "unavailable"}">${escapeTeamText(team.status)}</span></td>
       <td>${escapeTeamText(team.manager)}</td>

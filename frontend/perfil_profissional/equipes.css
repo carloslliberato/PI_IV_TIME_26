@@ -33,9 +33,9 @@
 .teams-table td { padding: 15px 17px; border-top: 1px solid #edf1ee; color: #57645d; font-size: 12px; vertical-align: middle; }
 .teams-table tbody tr:hover { background: #fbfdfb; }
 .teams-table td strong { color: #2d3b33; font-size: 12px; font-weight: 750; }
-.team-name-link { padding: 0; border: 0; background: transparent; color: #176344; font: inherit; font-size: 12px; font-weight: 800; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-.team-name-link:hover { color: #0e4934; }
-.team-name-link:focus-visible, .team-delete-button:focus-visible { outline: 3px solid rgba(29, 118, 81, .25); outline-offset: 2px; }
+.team-code-link { padding: 0; border: 0; background: transparent; color: #176344; font: inherit; font-size: 12px; font-weight: 800; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.team-code-link:hover { color: #0e4934; }
+.team-code-link:focus-visible, .team-delete-button:focus-visible { outline: 3px solid rgba(29, 118, 81, .25); outline-offset: 2px; }
 .team-delete-button { width: 32px; height: 32px; display: inline-grid; place-items: center; border: 1px solid #f0d7d4; border-radius: 8px; background: #fff; color: #a63a32; cursor: pointer; }
 .team-delete-button:hover:not(:disabled) { border-color: #d9a09b; background: #fff5f4; }
 .team-delete-button:disabled { border-color: #e7eae8; background: #f5f6f5; color: #aeb5b0; cursor: wait; }

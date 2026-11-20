@@ -50,7 +50,7 @@ public class OrdemDeServicoService {
 
         long sequencial = ordemRepository.gerarProximoNumero(ano);
 
-        return String.format(Locale.ROOT,"OS%05d%d",ano,sequencial);
+        return String.format(Locale.ROOT,"OS-%05d%d",ano,sequencial);
     }
 
     public OrdemDeServico criar(ObjectId municipioId, CadastroOrdemDeServicoDTO dados){

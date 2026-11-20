@@ -3,9 +3,9 @@ package repository;
 import model.Arvore;
 import model.Risco;
 
-import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.IndexOptions;
@@ -24,28 +24,39 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
 public class ArvoreRepository {
 
+    private static final String ID_CONTADOR_CODIGO_GLOBAL = "codigo_arvore_global";
+    private static final String CAMPO_MIGRACAO_CODIGO_GLOBAL = "codigoGlobalMigrado";
+    private static final Pattern FORMATO_CODIGO_ARVORE = Pattern.compile(
+            "^(?:AR-(\\d+)|ARV-[A-Z]+-(\\d+))$",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+
     private final MongoCollection<Document> colecao;
     private final MongoCollection<Document> contadores;
 
     public ArvoreRepository() {
-        this.colecao = ConexaoMongo
-                .getDatabase()
-                .getCollection("arvores");
-        this.contadores = ConexaoMongo
-                .getDatabase()
-                .getCollection("contadores_arvores");
+        this(ConexaoMongo.getDatabase());
+    }
+
+    public ArvoreRepository(MongoDatabase banco) {
+        Objects.requireNonNull(banco, "O banco de árvores não pode ser nulo.");
+        this.colecao = banco.getCollection("arvores");
+        this.contadores = banco.getCollection("contadores_arvores");
         this.colecao.createIndex(
                 com.mongodb.client.model.Indexes.ascending("codigoArv"),
                 new IndexOptions()
                         .unique(true)
                         .partialFilterExpression(Filters.type("codigoArv", BsonType.STRING)));
+        migrarCodigosParaSequenciaGlobal();
     }
 
     // LISTAR TODAS AS ARVORES
@@ -304,51 +315,119 @@ public class ArvoreRepository {
         colecao.insertOne(documento);
     }
 
-    // Gera uma sequência atômica por município, retomando do maior código já cadastrado.
-    public String gerarCodigoArv(ObjectId municipioId, String nomeMunicipio) {
-        String nomeNormalizado = normalizarTexto(nomeMunicipio).replaceAll("[^A-Z]", "");
-        if (nomeNormalizado.length() < 3) {
-            throw new IllegalArgumentException("Nome de município inválido para gerar o código da árvore.");
+    // Gera códigos únicos globalmente, sem incorporar o município ao código.
+    public String gerarCodigoArv() {
+        Document contador = contadores.findOneAndUpdate(
+                Filters.eq("_id", ID_CONTADOR_CODIGO_GLOBAL),
+                Updates.inc("sequencia", 1L),
+                new FindOneAndUpdateOptions()
+                        .upsert(true)
+                        .returnDocument(ReturnDocument.AFTER));
+        if (contador == null) {
+            throw new IllegalStateException("Não foi possível gerar o código global da árvore.");
         }
-        String prefixo = "ARV-" + nomeNormalizado.substring(0, 3) + "-";
-        Pattern formato = Pattern.compile("^" + Pattern.quote(prefixo) + "(\\d+)$");
-        long maiorExistente = 0;
+        long sequencia = ((Number) contador.get("sequencia")).longValue();
+        return String.format(Locale.ROOT, "AR-%05d", sequencia);
+    }
 
-        Bson filtroMunicipio = Filters.or(
-                Filters.eq("municipioId", municipioId),
-                Filters.eq("municipioId", municipioId.toHexString()));
-        for (Document documento : colecao.find(filtroMunicipio)
-                .projection(new Document("codigoArv", 1))) {
-            String codigo = documento.getString("codigoArv");
-            if (codigo == null) continue;
-            Matcher matcher = formato.matcher(codigo);
-            if (matcher.matches()) {
-                try {
-                    maiorExistente = Math.max(maiorExistente, Long.parseLong(matcher.group(1)));
-                } catch (NumberFormatException ignored) {
-                    // Ignora códigos malformados; o índice único ainda impede duplicatas.
-                }
+    private void migrarCodigosParaSequenciaGlobal() {
+        Document contador = contadores.find(Filters.eq("_id", ID_CONTADOR_CODIGO_GLOBAL)).first();
+        if (contador != null && Boolean.TRUE.equals(contador.get(CAMPO_MIGRACAO_CODIGO_GLOBAL))) {
+            return;
+        }
+
+        List<Document> documentos = colecao.find()
+                .projection(new Document("_id", 1)
+                        .append("codigoArv", 1)
+                        .append("codigoArvMigracaoOrigem", 1))
+                .sort(com.mongodb.client.model.Sorts.ascending("_id"))
+                .into(new ArrayList<>());
+
+        Map<ObjectId, String> codigosOriginais = new java.util.LinkedHashMap<>();
+        Map<ObjectId, String> codigosAtuais = new java.util.LinkedHashMap<>();
+        for (Document documento : documentos) {
+            Object atual = documento.get("codigoArv");
+            String codigoAtual = atual instanceof String texto ? texto : null;
+            Object origem = documento.containsKey("codigoArvMigracaoOrigem")
+                    ? documento.get("codigoArvMigracaoOrigem")
+                    : atual;
+            String codigoOriginal = origem instanceof String texto ? texto : null;
+            ObjectId id = documento.getObjectId("_id");
+            codigosAtuais.put(id, codigoAtual);
+            codigosOriginais.put(id, codigoOriginal);
+        }
+
+        Map<ObjectId, String> codigosNovos = calcularCodigosGlobais(codigosOriginais);
+        long maiorSequenciaAtribuida = 0;
+        for (String codigo : codigosNovos.values()) {
+            maiorSequenciaAtribuida = Math.max(
+                    maiorSequenciaAtribuida,
+                    extrairSequenciaCodigo(codigo));
+        }
+
+        for (Map.Entry<ObjectId, String> entrada : codigosNovos.entrySet()) {
+            String codigoAtual = codigosAtuais.get(entrada.getKey());
+            if (!Objects.equals(codigoAtual, entrada.getValue())) {
+                String temporario = "MIGRANDO-AR-" + entrada.getKey().toHexString();
+                colecao.updateOne(
+                        Filters.eq("_id", entrada.getKey()),
+                        Updates.combine(
+                                Updates.set("codigoArv", temporario),
+                                Updates.set("codigoArvMigracaoOrigem", codigosOriginais.get(entrada.getKey()))));
             }
         }
 
-        Bson filtroContador = Filters.eq("_id", municipioId);
-        try {
-            contadores.updateOne(
-                    filtroContador,
-                    Updates.max("sequencia", maiorExistente),
-                    new UpdateOptions().upsert(true));
-        } catch (MongoWriteException e) {
-            // Outra requisição pode ter criado simultaneamente o contador desse município.
-            if (e.getError().getCode() != 11000) throw e;
+        for (Map.Entry<ObjectId, String> entrada : codigosNovos.entrySet()) {
+            colecao.updateOne(
+                    Filters.eq("_id", entrada.getKey()),
+                    Updates.combine(
+                            Updates.set("codigoArv", entrada.getValue()),
+                            Updates.unset("codigoArvMigracaoOrigem")));
         }
 
-        Document contador = contadores.findOneAndUpdate(
-                filtroContador,
-                Updates.inc("sequencia", 1L),
-                new FindOneAndUpdateOptions()
-                        .returnDocument(ReturnDocument.AFTER));
-        long sequencia = ((Number) contador.get("sequencia")).longValue();
-        return String.format(Locale.ROOT, "%s%05d", prefixo, sequencia);
+        contadores.updateOne(
+                Filters.eq("_id", ID_CONTADOR_CODIGO_GLOBAL),
+                Updates.combine(
+                        Updates.set("sequencia", maiorSequenciaAtribuida),
+                        Updates.set(CAMPO_MIGRACAO_CODIGO_GLOBAL, true)),
+                new UpdateOptions().upsert(true));
+    }
+
+    static Map<ObjectId, String> calcularCodigosGlobais(Map<ObjectId, String> codigosOriginais) {
+        long maiorSequenciaExistente = 0;
+        for (String codigo : codigosOriginais.values()) {
+            maiorSequenciaExistente = Math.max(
+                    maiorSequenciaExistente,
+                    extrairSequenciaCodigo(codigo));
+        }
+
+        Set<Long> sequenciasUsadas = new HashSet<>();
+        Map<ObjectId, String> codigosNovos = new java.util.LinkedHashMap<>();
+        long proximaSequencia = maiorSequenciaExistente;
+        for (Map.Entry<ObjectId, String> entrada : codigosOriginais.entrySet()) {
+            long sequencia = extrairSequenciaCodigo(entrada.getValue());
+            if (sequencia <= 0 || !sequenciasUsadas.add(sequencia)) {
+                do {
+                    if (proximaSequencia == Long.MAX_VALUE) {
+                        throw new IllegalStateException("A sequência global de códigos de árvores foi esgotada.");
+                    }
+                    sequencia = ++proximaSequencia;
+                } while (!sequenciasUsadas.add(sequencia));
+            }
+            codigosNovos.put(entrada.getKey(), String.format(Locale.ROOT, "AR-%05d", sequencia));
+        }
+        return codigosNovos;
+    }
+
+    private static long extrairSequenciaCodigo(String codigo) {
+        if (codigo == null) return 0;
+        Matcher matcher = FORMATO_CODIGO_ARVORE.matcher(codigo);
+        if (!matcher.matches()) return 0;
+        try {
+            return Long.parseLong(matcher.group(1) != null ? matcher.group(1) : matcher.group(2));
+        } catch (NumberFormatException erro) {
+            return 0;
+        }
     }
 
     // ATUALIZAR DADOS DE UMA ARVORE
