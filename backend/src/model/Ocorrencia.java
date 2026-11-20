@@ -2,7 +2,6 @@
 package model;
 
 import java.time.Instant;
-import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.bson.types.ObjectId;
