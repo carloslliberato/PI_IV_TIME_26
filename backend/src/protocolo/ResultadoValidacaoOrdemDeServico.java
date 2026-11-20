@@ -21,10 +21,11 @@ public final class ResultadoValidacaoOrdemDeServico extends Comunicado {
     private final CadastroValidado cadastro;
     private final ConclusaoValidada conclusao;
     private final String equipeId;
+    private final String motivoCancelamento;
 
     private ResultadoValidacaoOrdemDeServico(PedidoDeValidacaoOrdemDeServico pedido,
             boolean valido, String erro, CadastroValidado cadastro,
-            ConclusaoValidada conclusao, String equipeId) {
+            ConclusaoValidada conclusao, String equipeId, String motivoCancelamento) {
         this.requisicaoId = pedido == null ? null : pedido.getRequisicaoId();
         this.operacao = pedido == null ? null : pedido.getOperacao();
         this.valido = valido;
@@ -32,32 +33,40 @@ public final class ResultadoValidacaoOrdemDeServico extends Comunicado {
         this.cadastro = cadastro;
         this.conclusao = conclusao;
         this.equipeId = equipeId;
+        this.motivoCancelamento = motivoCancelamento;
     }
 
     public static ResultadoValidacaoOrdemDeServico cadastroAprovado(
             PedidoDeValidacaoOrdemDeServico pedido, CadastroValidado cadastro) {
         exigirOperacao(pedido, Operacao.CADASTRO);
         return new ResultadoValidacaoOrdemDeServico(pedido, true, null,
-                Objects.requireNonNull(cadastro), null, null);
+                Objects.requireNonNull(cadastro), null, null, null);
     }
 
     public static ResultadoValidacaoOrdemDeServico conclusaoAprovada(
             PedidoDeValidacaoOrdemDeServico pedido, ConclusaoValidada conclusao) {
         exigirOperacao(pedido, Operacao.CONCLUSAO);
         return new ResultadoValidacaoOrdemDeServico(pedido, true, null,
-                null, Objects.requireNonNull(conclusao), null);
+                null, Objects.requireNonNull(conclusao), null, null);
     }
 
     public static ResultadoValidacaoOrdemDeServico equipeAprovada(
             PedidoDeValidacaoOrdemDeServico pedido, String equipeId) {
         exigirOperacao(pedido, Operacao.ATRIBUICAO_EQUIPE);
         return new ResultadoValidacaoOrdemDeServico(pedido, true, null,
-                null, null, Objects.requireNonNull(equipeId));
+                null, null, Objects.requireNonNull(equipeId), null);
+    }
+
+    public static ResultadoValidacaoOrdemDeServico cancelamentoAprovado(
+            PedidoDeValidacaoOrdemDeServico pedido, String motivoCancelamento) {
+        exigirOperacao(pedido, Operacao.CANCELAMENTO);
+        return new ResultadoValidacaoOrdemDeServico(pedido, true, null,
+                null, null, null, Objects.requireNonNull(motivoCancelamento));
     }
 
     public static ResultadoValidacaoOrdemDeServico reprovado(
             PedidoDeValidacaoOrdemDeServico pedido, String erro) {
-        return new ResultadoValidacaoOrdemDeServico(pedido, false, erro, null, null, null);
+        return new ResultadoValidacaoOrdemDeServico(pedido, false, erro, null, null, null, null);
     }
 
     private static void exigirOperacao(PedidoDeValidacaoOrdemDeServico pedido, Operacao esperada) {
@@ -73,6 +82,7 @@ public final class ResultadoValidacaoOrdemDeServico extends Comunicado {
     public CadastroValidado getCadastro() { return cadastro; }
     public ConclusaoValidada getConclusao() { return conclusao; }
     public String getEquipeId() { return equipeId; }
+    public String getMotivoCancelamento() { return motivoCancelamento; }
 
     public static record CadastroValidado(String arvoreId, String ocorrenciaId,
             String titulo, String descricao, String prioridade, String observacoes)

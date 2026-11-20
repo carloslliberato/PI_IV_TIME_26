@@ -117,11 +117,39 @@ class OrdemDeServicoSocketTest {
     }
 
     @Test
+    void cancelamentoComMotivoERejeicaoPercorremOServidorReal() throws Exception {
+        try (ServidorDeTeste servidor = new ServidorDeTeste()) {
+            ConexaoServidor cliente = servidor.conectar();
+            PedidoDeValidacaoOrdemDeServico pedido = PedidoDeValidacaoOrdemDeServico.cancelamento(
+                    "  Solicitação duplicada.\nMantida a ordem original.  ");
+            ResultadoValidacaoOrdemDeServico resultado = cliente.validarOrdemDeServico(pedido);
+            assertTrue(resultado.isValido());
+            assertEquals(pedido.getRequisicaoId(), resultado.getRequisicaoId());
+            assertEquals(pedido.getOperacao(), resultado.getOperacao());
+            assertEquals("Solicitação duplicada.\nMantida a ordem original.", resultado.getMotivoCancelamento());
+            assertNull(resultado.getCadastro());
+            assertNull(resultado.getConclusao());
+            assertNull(resultado.getEquipeId());
+
+            ResultadoValidacaoOrdemDeServico negado = cliente.validarOrdemDeServico(
+                    PedidoDeValidacaoOrdemDeServico.cancelamento(" \n\t"));
+            assertFalse(negado.isValido());
+            assertEquals("O motivo do cancelamento deve ser informado.", negado.getErro());
+            assertNull(negado.getMotivoCancelamento());
+            assertNotNull(cliente.getParceiro(), "Reprovação de conteúdo mantém a conexão utilizável.");
+            assertTrue(cliente.validarOrdemDeServico(
+                    PedidoDeValidacaoOrdemDeServico.cancelamento("Motivo corrigido")).isValido());
+        }
+    }
+
+    @Test
     void mesmaConexaoPreservaDespachoDeArvoreCadastroDeContaEOrdens() throws Exception {
         try (ServidorDeTeste servidor = new ServidorDeTeste()) {
             ConexaoServidor cliente = servidor.conectar();
             assertTrue(cliente.validarArvore(new PedidoDeValidacaoArvore(-22.9, -47.0, 5.0, 30.0)).isValido());
             assertTrue(cliente.validarOrdemDeServico(cadastro("Inspeção")).isValido());
+            assertTrue(cliente.validarOrdemDeServico(
+                    PedidoDeValidacaoOrdemDeServico.cancelamento("Solicitação duplicada")).isValido());
             assertFalse(cliente.validarArvore(new PedidoDeValidacaoArvore(91.0, -47.0, 5.0, 30.0)).isValido());
 
             PedidoDeValidacaoCadastro conta = new PedidoDeValidacaoCadastro(
@@ -149,6 +177,12 @@ class OrdemDeServicoSocketTest {
     }
 
     @Test
+    void cancelamentoAprovadoSemMotivoOuComDadosDeOutraOperacaoFechaConexao() throws Exception {
+        verificarFalhaDeComunicacao(ModoDoPar.CANCELAMENTO_SEM_MOTIVO);
+        verificarFalhaDeComunicacao(ModoDoPar.CANCELAMENTO_COM_EQUIPE);
+    }
+
+    @Test
     void servidorQueNaoRespondeProvocaTimeoutEFechamentoDaConexao() throws Exception {
         verificarFalhaDeComunicacao(ModoDoPar.SEM_RESPOSTA);
     }
@@ -171,7 +205,9 @@ class OrdemDeServicoSocketTest {
                 titulo, "  Descrição final editada.  ", null, null);
     }
 
-    private enum ModoDoPar { OUTRO_TIPO, OUTRA_REQUISICAO, SEM_RESPOSTA }
+    private enum ModoDoPar {
+        OUTRO_TIPO, OUTRA_REQUISICAO, SEM_RESPOSTA, CANCELAMENTO_SEM_MOTIVO, CANCELAMENTO_COM_EQUIPE
+    }
 
     /** Somente os testes de protocolo usam um par incompatível, não um validador simulado. */
     private static void verificarFalhaDeComunicacao(ModoDoPar modo) throws Exception {
@@ -187,13 +223,24 @@ class OrdemDeServicoSocketTest {
                     saida.flush();
                     ObjectInputStream entrada = new ObjectInputStream(socket.getInputStream());
                     Object recebido = entrada.readObject();
-                    if (!(recebido instanceof PedidoDeValidacaoOrdemDeServico))
+                    if (!(recebido instanceof PedidoDeValidacaoOrdemDeServico pedido))
                         throw new AssertionError("O cliente deve enviar o pedido de OS de produção.");
 
                     if (modo != ModoDoPar.SEM_RESPOSTA) {
-                        Comunicado resposta = modo == ModoDoPar.OUTRA_REQUISICAO
-                                ? ResultadoValidacaoOrdemDeServico.reprovado(cadastro("Outra requisição"), "Reprovada.")
-                                : new ResultadoValidacaoArvore(true, List.of());
+                        Comunicado resposta;
+                        if (modo == ModoDoPar.CANCELAMENTO_SEM_MOTIVO || modo == ModoDoPar.CANCELAMENTO_COM_EQUIPE) {
+                            var incompleta = ResultadoValidacaoOrdemDeServico.cancelamentoAprovado(pedido, "Duplicada");
+                            // Simula um par antigo ou defeituoso que envia uma resposta de conteúdo incompatível.
+                            var campo = ResultadoValidacaoOrdemDeServico.class.getDeclaredField(
+                                    modo == ModoDoPar.CANCELAMENTO_SEM_MOTIVO ? "motivoCancelamento" : "equipeId");
+                            campo.setAccessible(true);
+                            campo.set(incompleta, modo == ModoDoPar.CANCELAMENTO_SEM_MOTIVO ? null : EQUIPE);
+                            resposta = incompleta;
+                        } else {
+                            resposta = modo == ModoDoPar.OUTRA_REQUISICAO
+                                    ? ResultadoValidacaoOrdemDeServico.reprovado(cadastro("Outra requisição"), "Reprovada.")
+                                    : new ResultadoValidacaoArvore(true, List.of());
+                        }
                         saida.writeObject(resposta);
                         saida.flush();
                     }
@@ -214,9 +261,12 @@ class OrdemDeServicoSocketTest {
             try {
                 assertTrue(cliente.conectar());
                 long inicio = System.nanoTime();
+                PedidoDeValidacaoOrdemDeServico pedido = modo == ModoDoPar.CANCELAMENTO_SEM_MOTIVO
+                        || modo == ModoDoPar.CANCELAMENTO_COM_EQUIPE
+                        ? PedidoDeValidacaoOrdemDeServico.cancelamento("Duplicada") : cadastro("Inspeção");
                 assertTimeout(Duration.ofSeconds(8), () -> assertThrows(
                         ValidacaoOrdemDeServicoIndisponivelException.class,
-                        () -> cliente.validarOrdemDeServico(cadastro("Inspeção"))));
+                        () -> cliente.validarOrdemDeServico(pedido)));
                 if (modo == ModoDoPar.SEM_RESPOSTA) {
                     assertTrue(System.nanoTime() - inicio >= TimeUnit.SECONDS.toNanos(4),
                             "A falha deve ocorrer após a espera real pela resposta, não por desconexão imediata.");

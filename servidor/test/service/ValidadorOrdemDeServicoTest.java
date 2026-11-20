@@ -20,7 +20,7 @@ import protocolo.ResultadoValidacaoOrdemDeServico.ConclusaoValidada;
 
 /**
  * Contribuição: Marialvo Corrêa de Freitas Junior.
- * Migra os 16 testes puros de cadastro, conclusão e equipe para o servidor.
+ * Verifica cadastro, conclusão, equipe e motivo obrigatório do cancelamento no servidor.
  * Exercita valores ausentes, válidos, inválidos e limites, sem Socket ou MongoDB.
  */
 class ValidadorOrdemDeServicoTest {
@@ -222,8 +222,46 @@ class ValidadorOrdemDeServicoTest {
         assertEquals(id, resultado.getEquipeId());
         assertNull(resultado.getCadastro());
         assertNull(resultado.getConclusao());
+        assertNull(resultado.getMotivoCancelamento());
         assertEquals("O identificador da equipe é inválido.",
                 reprovar(PedidoDeValidacaoOrdemDeServico.atribuicaoEquipe("EQ020261")));
+    }
+
+    @Test
+    void cancelamentoExigeMotivoMesmoQuandoNaoHaCorpoOuSoHaEspacos() {
+        String mensagem = "O motivo do cancelamento deve ser informado.";
+        assertEquals(mensagem, reprovar(PedidoDeValidacaoOrdemDeServico.semDados(Operacao.CANCELAMENTO, null)));
+        for (String vazio : Arrays.asList(null, "", "   ", "\n\t", "\u2003\n", "\u00A0", "\uFEFF\u00A0\t\u202F")) {
+            assertEquals(mensagem, reprovar(PedidoDeValidacaoOrdemDeServico.cancelamento(vazio)));
+        }
+    }
+
+    @Test
+    void cancelamentoNormalizaSomenteEspacosExternosEPreservaTextoEAcentos() {
+        String motivo = "Solicitação duplicada.\nMantida a ordem original <OS-123> & sua descrição.";
+        var pedido = PedidoDeValidacaoOrdemDeServico.cancelamento("\uFEFF\u00A0\u2003  " + motivo + " \t\n\u202F");
+        var resultado = aprovar(pedido);
+        assertEquals(motivo, resultado.getMotivoCancelamento());
+        assertNull(resultado.getCadastro());
+        assertNull(resultado.getConclusao());
+        assertNull(resultado.getEquipeId());
+        assertEquals("<script>alert('texto');</script>", aprovar(
+                PedidoDeValidacaoOrdemDeServico.cancelamento("<script>alert('texto');</script>"))
+                .getMotivoCancelamento(), "O transporte preserva texto; a apresentação deve escapá-lo.");
+    }
+
+    @Test
+    void cancelamentoAceitaLimitesERejeitaExcessoSemTruncar() {
+        assertEquals("X", aprovar(PedidoDeValidacaoOrdemDeServico.cancelamento(" X ")).getMotivoCancelamento());
+        String limite = "á".repeat(1000);
+        assertEquals(limite, aprovar(PedidoDeValidacaoOrdemDeServico.cancelamento(" " + limite + " "))
+                .getMotivoCancelamento());
+        String mensagem = "O motivo do cancelamento deve ter no máximo 1000 caracteres.";
+        assertEquals(mensagem, reprovar(PedidoDeValidacaoOrdemDeServico.cancelamento(limite + "X")));
+        String emojisNoLimite = "\uD83C\uDF33".repeat(500);
+        assertEquals(emojisNoLimite, aprovar(PedidoDeValidacaoOrdemDeServico.cancelamento(emojisNoLimite))
+                .getMotivoCancelamento());
+        assertEquals(mensagem, reprovar(PedidoDeValidacaoOrdemDeServico.cancelamento(emojisNoLimite + "X")));
     }
 
     private static PedidoDeValidacaoOrdemDeServico cadastro(String arvore, String ocorrencia,
@@ -251,6 +289,7 @@ class ValidadorOrdemDeServicoTest {
         assertNotNull(resultado.getCadastro());
         assertNull(resultado.getConclusao());
         assertNull(resultado.getEquipeId());
+        assertNull(resultado.getMotivoCancelamento());
         return resultado.getCadastro();
     }
 
@@ -259,6 +298,7 @@ class ValidadorOrdemDeServicoTest {
         assertNotNull(resultado.getConclusao());
         assertNull(resultado.getCadastro());
         assertNull(resultado.getEquipeId());
+        assertNull(resultado.getMotivoCancelamento());
         return resultado.getConclusao();
     }
 
@@ -270,6 +310,7 @@ class ValidadorOrdemDeServicoTest {
         assertNull(resultado.getCadastro());
         assertNull(resultado.getConclusao());
         assertNull(resultado.getEquipeId());
+        assertNull(resultado.getMotivoCancelamento());
         assertEquals(pedido == null ? null : pedido.getRequisicaoId(), resultado.getRequisicaoId());
         assertEquals(pedido == null ? null : pedido.getOperacao(), resultado.getOperacao());
         return resultado.getErro();

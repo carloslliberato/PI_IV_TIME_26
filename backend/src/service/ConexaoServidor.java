@@ -184,16 +184,20 @@ public class ConexaoServidor {
         if (!resultado.isValido()) {
             return resultado.getErro() != null && !resultado.getErro().isBlank()
                     && resultado.getCadastro() == null && resultado.getConclusao() == null
-                    && resultado.getEquipeId() == null;
+                    && resultado.getEquipeId() == null && resultado.getMotivoCancelamento() == null;
         }
         if (resultado.getErro() != null) return false;
         return switch (resultado.getOperacao()) {
             case CADASTRO -> resultado.getCadastro() != null && resultado.getConclusao() == null
-                    && resultado.getEquipeId() == null;
+                    && resultado.getEquipeId() == null && resultado.getMotivoCancelamento() == null;
             case CONCLUSAO -> resultado.getConclusao() != null && resultado.getCadastro() == null
-                    && resultado.getEquipeId() == null;
+                    && resultado.getEquipeId() == null && resultado.getMotivoCancelamento() == null;
             case ATRIBUICAO_EQUIPE -> resultado.getEquipeId() != null && resultado.getCadastro() == null
-                    && resultado.getConclusao() == null;
+                    && resultado.getConclusao() == null && resultado.getMotivoCancelamento() == null;
+            case CANCELAMENTO -> resultado.getMotivoCancelamento() != null
+                    && !resultado.getMotivoCancelamento().isBlank()
+                    && resultado.getCadastro() == null && resultado.getConclusao() == null
+                    && resultado.getEquipeId() == null;
         };
     }
 }

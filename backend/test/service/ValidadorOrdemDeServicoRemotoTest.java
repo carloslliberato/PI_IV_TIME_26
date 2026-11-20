@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.gson.Gson;
 import dto.AtribuicaoEquipeOrdemDeServicoDTO;
 import dto.CadastroOrdemDeServicoDTO;
+import dto.CancelamentoOrdemDeServicoDTO;
 import dto.ConclusaoOrdemDeServicoDTO;
 import java.time.Instant;
 import java.util.List;
@@ -83,7 +84,7 @@ class ValidadorOrdemDeServicoRemotoTest {
     }
 
     @Test
-    void corpoAusenteTambemEValidadoNoServidorNasTresOperacoes() {
+    void corpoAusenteTambemEValidadoNoServidorNasQuatroOperacoes() {
         ConexaoControlada conexao = new ConexaoControlada(pedido -> {
             assertFalse(pedido.isDadosPresentes());
             return ResultadoValidacaoOrdemDeServico.reprovado(pedido, "Dados ausentes.");
@@ -92,7 +93,8 @@ class ValidadorOrdemDeServicoRemotoTest {
         assertThrows(IllegalArgumentException.class, () -> validador.prepararCadastro(null));
         assertThrows(IllegalArgumentException.class, () -> validador.prepararConclusao(null, AGORA));
         assertThrows(IllegalArgumentException.class, () -> validador.validarIdEquipe(null));
-        assertEquals(3, conexao.chamadas);
+        assertThrows(IllegalArgumentException.class, () -> validador.validarCancelamento(null));
+        assertEquals(4, conexao.chamadas);
     }
 
     @Test
@@ -115,6 +117,57 @@ class ValidadorOrdemDeServicoRemotoTest {
         assertThrows(ValidacaoOrdemDeServicoIndisponivelException.class,
                 () -> new ValidadorOrdemDeServicoRemoto(conexao).prepararCadastro(dto));
         assertTrue(conexao.fechada);
+    }
+
+    @Test
+    void cancelamentoEnviaMotivoOriginalEUtilizaOTextoNormalizadoDoServidor() {
+        ConexaoControlada conexao = new ConexaoControlada(pedido -> {
+            assertEquals(PedidoDeValidacaoOrdemDeServico.Operacao.CANCELAMENTO, pedido.getOperacao());
+            assertEquals("  Solicitação duplicada  ", pedido.getMotivoCancelamento());
+            return ResultadoValidacaoOrdemDeServico.cancelamentoAprovado(pedido, "Solicitação duplicada");
+        });
+        var dto = gson.fromJson("{\"motivoCancelamento\":\"  Solicitação duplicada  \"}", CancelamentoOrdemDeServicoDTO.class);
+        assertEquals("Solicitação duplicada", new ValidadorOrdemDeServicoRemoto(conexao).validarCancelamento(dto));
+        assertEquals(1, conexao.chamadas);
+    }
+
+    @Test
+    void cancelamentoReprovadoMantemErroRemotoENaoTentaValidacaoLocal() {
+        ConexaoControlada conexao = new ConexaoControlada(pedido -> {
+            assertNull(pedido.getMotivoCancelamento());
+            return ResultadoValidacaoOrdemDeServico.reprovado(pedido, "O motivo do cancelamento deve ser informado.");
+        });
+        var dto = gson.fromJson("{}", CancelamentoOrdemDeServicoDTO.class);
+        IllegalArgumentException erro = assertThrows(IllegalArgumentException.class,
+                () -> new ValidadorOrdemDeServicoRemoto(conexao).validarCancelamento(dto));
+        assertEquals("O motivo do cancelamento deve ser informado.", erro.getMessage());
+        assertEquals(1, conexao.chamadas);
+        assertFalse(conexao.fechada);
+    }
+
+    @Test
+    void cancelamentoComRespostaInvalidaBloqueiaOperacaoEFechaConexao() {
+        var dto = gson.fromJson("{\"motivoCancelamento\":\"Duplicada\"}", CancelamentoOrdemDeServicoDTO.class);
+        for (String invalido : List.of("", " \n\t", "\u00A0", "\uFEFF\u00A0\u202F", " Não normalizado ",
+                "\u00A0Motivo\uFEFF", "X".repeat(1001))) {
+            ConexaoControlada conexao = new ConexaoControlada(pedido ->
+                    ResultadoValidacaoOrdemDeServico.cancelamentoAprovado(pedido, invalido));
+            assertThrows(ValidacaoOrdemDeServicoIndisponivelException.class,
+                    () -> new ValidadorOrdemDeServicoRemoto(conexao).validarCancelamento(dto));
+            assertTrue(conexao.fechada);
+            assertEquals(1, conexao.chamadas);
+        }
+    }
+
+    @Test
+    void cancelamentoIndisponivelInterrompeSemUsarMotivoLocalComoAprovacao() {
+        ConexaoControlada conexao = new ConexaoControlada(pedido -> {
+            throw new ValidacaoOrdemDeServicoIndisponivelException(new IllegalStateException("Socket desligado"));
+        });
+        var dto = gson.fromJson("{\"motivoCancelamento\":\"Duplicada\"}", CancelamentoOrdemDeServicoDTO.class);
+        assertThrows(ValidacaoOrdemDeServicoIndisponivelException.class,
+                () -> new ValidadorOrdemDeServicoRemoto(conexao).validarCancelamento(dto));
+        assertEquals(1, conexao.chamadas);
     }
 
     private static class ConexaoControlada extends ConexaoServidor {

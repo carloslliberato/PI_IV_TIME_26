@@ -18,6 +18,7 @@ import model.ConclusaoOrdemDeServico;
 import repository.ContaRepository;
 import repository.OrdemDeServicoRepository;
 import dto.CadastroOrdemDeServicoDTO;
+import dto.CancelamentoOrdemDeServicoDTO;
 import dto.ConclusaoOrdemDeServicoDTO;
 
 
@@ -155,9 +156,10 @@ public class OrdemDeServicoService {
         return ordemRepository.atribuirEquipe(id, municipioId, equipeId, Instant.now());
     }
 
-    // Cancela uma OS do município informado e salva a alteração.
-    public OrdemDeServico cancelar(ObjectId id, ObjectId municipioId){
-        return ordemRepository.cancelar(id, municipioId, Instant.now());
+    // O Socket aprova o motivo antes de qualquer alteração na OS ou na equipe.
+    public OrdemDeServico cancelar(ObjectId id, ObjectId municipioId, CancelamentoOrdemDeServicoDTO dados){
+        String motivo = validador.validarCancelamento(dados);
+        return ordemRepository.cancelar(id, municipioId, motivo, Instant.now());
     }
 
 }
