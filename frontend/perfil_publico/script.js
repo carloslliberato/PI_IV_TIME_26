@@ -1,4 +1,5 @@
-// feito por Gabrielle, editado por Sophia
+// Autor: Gabrielle Mota
+
 // ===============================
 // Arboriza - Mapa público com árvores e ocorrências reais da API
 // ===============================

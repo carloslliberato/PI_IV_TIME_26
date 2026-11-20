@@ -1,3 +1,4 @@
+// Autor: Gabrielle Mota
 
 // Sidebar compartilhado pelas telas do Perfil_Profissional.
 // Cada tela profissional inclui um elemento #sidebar-profissional. Este arquivo

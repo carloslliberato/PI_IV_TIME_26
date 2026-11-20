@@ -1,3 +1,5 @@
+/* Autor: Gabrielle Mota */
+
 /* Estrutura geral da página e cabeçalho. */
 .occurrences-page { padding-top: 35px; }
 .occurrences-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 25px; }

@@ -1,3 +1,4 @@
+// Autor: Gabrielle Mota
 
 const reportCatalog = {
   trees: {

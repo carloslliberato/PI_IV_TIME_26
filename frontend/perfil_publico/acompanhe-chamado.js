@@ -1,4 +1,5 @@
-// feito por Sophia
+// Autor: Gabrielle Mota, Sophia Fernandes
+
 // Página de acompanhamento de chamados do cidadão integrada com o back-end Java (Javalin + MongoDB).
 
 // Guarda na memória os chamados carregados do banco de dados

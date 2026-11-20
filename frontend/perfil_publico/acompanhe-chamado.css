@@ -1,3 +1,5 @@
+/* Autor: Gabrielle Mota */
+
 /* Estrutura da pagina de acompanhamento usando a identidade visual do portal publico. */
 .tracking-main{background:#fbfdfc;min-height:100vh;flex:1;min-width:0}
 .tracking-content{max-width:1240px;margin:0 auto;padding:38px clamp(22px,4vw,58px) 24px}

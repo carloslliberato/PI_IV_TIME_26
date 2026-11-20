@@ -133,9 +133,9 @@ public class ArvoreService {
 
         // O identificador é sempre gerado como ObjectId pelo backend.
         arvore.setId(null);
-        String nomeMunicipio = municipioRepository.buscarNomePorId(arvore.getMunicipioId())
+        municipioRepository.buscarNomePorId(arvore.getMunicipioId())
                 .orElseThrow(() -> new IllegalArgumentException("Municipio nao encontrado."));
-        arvore.setCodigoArv(repository.gerarCodigoArv(arvore.getMunicipioId(), nomeMunicipio));
+        arvore.setCodigoArv(repository.gerarCodigoArv());
         arvore.setAtiva(true);
 
         repository.salvar(arvore);

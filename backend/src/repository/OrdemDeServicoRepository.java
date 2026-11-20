@@ -129,7 +129,7 @@ public class OrdemDeServicoRepository {
                 if (arvore != null && !(arvore instanceof ObjectId)) incompativeis = true;
                 Map<String, Object> item = new HashMap<>();
                 item.put("id", documento.getObjectId("_id").toHexString());
-                item.put("codigo", primeiroTexto(documento, "codigo", "protocolo"));
+                item.put("codigo", primeiroTexto(documento, "id", "codigo", "protocolo"));
                 item.put("titulo", primeiroTexto(documento, "titulo", "tipoProblema"));
                 item.put("descricao", primeiroTexto(documento, "descricao"));
                 item.put("prioridade", primeiroTexto(documento, "prioridade", "urgencia"));

@@ -1,3 +1,4 @@
+// Autor: Gabrielle Mota
 
 // Localiza os elementos do formulário.
 const loginForm = document.getElementById('loginForm');

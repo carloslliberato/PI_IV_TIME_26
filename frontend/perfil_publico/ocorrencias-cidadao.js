@@ -1,4 +1,5 @@
-﻿// feito por Sophia
+﻿// Autor: Gabrielle Mota, Sophia Fernandes
+
 // Página de consulta de ocorrências do portal público Arboriza conectada ao back-end.
 
 // Guarda na memória as ocorrências que vieram do banco de dados (MongoDB)

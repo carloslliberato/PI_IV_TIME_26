@@ -1,3 +1,5 @@
+/* Autor: Gabrielle Mota */
+
 /* Alinha o cabeçalho da página e apresenta o município dos registros. */
 .service-orders-page { padding-top: 35px; }
 .service-orders-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 25px; }

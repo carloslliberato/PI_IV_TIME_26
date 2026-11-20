@@ -1,3 +1,5 @@
+// Autor: Gabrielle Mota
+
 // Guarda as ordens recebidas e o estado da tela.
 const serviceOrdersState ={
   orders: [],

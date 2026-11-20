@@ -1,3 +1,4 @@
+// Autor: Gabrielle Mota
 
 const registerForm = document.getElementById('registerForm');
 const message = document.getElementById('formMessage');

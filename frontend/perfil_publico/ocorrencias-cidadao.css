@@ -1,4 +1,6 @@
-﻿/* Estrutura e identidade visual da página de consulta de ocorrências. */
+﻿/* Autor: Gabrielle Mota */
+
+/* Estrutura e identidade visual da página de consulta de ocorrências. */
 .occurrences-main{background:#fbfdfc;min-height:100vh;flex:1;min-width:0}
 .occurrences-content{max-width:1240px;margin:0 auto;padding:38px clamp(22px,4vw,58px) 24px}
 .occurrences-page-heading{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:25px}

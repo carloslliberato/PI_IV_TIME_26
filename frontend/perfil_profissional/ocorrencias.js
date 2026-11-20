@@ -1,4 +1,5 @@
-// feito por Sophia
+// Autor: Gabrielle Mota, Sophia Fernandes
+
 // Painel profissional de gestão de ocorrências integrado com o back-end Java (Javalin + MongoDB).
 
 // Guarda na memória os dados reais vindos do banco de dados
@@ -74,7 +75,7 @@ function sortOccurrences(records) {
 function getVisibleOccurrences() {
   const query = normalizeOccurrenceText(occurrencePage.search ? occurrencePage.search.value.trim() : "");
   const filtered = occurrenceData.occurrences.filter(item => {
-    const searchableValues = [item.neighborhood, item.tree, item.treeId, item.type, item.id];
+    const searchableValues = [item.neighborhood, item.tree, item.treeId, item.type, item.codigo, item.protocolo, item.id];
     return !query || searchableValues.some(value => normalizeOccurrenceText(value).includes(query));
   });
   return sortOccurrences(filtered);
@@ -114,7 +115,7 @@ function renderOccurrencesTable() {
 
     return `
       <tr>
-        <td><button class="occurrence-id-link" type="button" data-open-occurrence="${escapeOccurrenceText(occurrence.id)}">${escapeOccurrenceText(occurrence.protocolo)}</button></td>
+        <td><button class="occurrence-id-link" type="button" data-open-occurrence="${escapeOccurrenceText(occurrence.id)}">${escapeOccurrenceText(occurrence.codigo || occurrence.protocolo)}</button></td>
         <td>${escapeOccurrenceText(occurrence.type)}</td>
         <td>${escapeOccurrenceText(occurrence.neighborhood)}</td>
         <td><span class="occurrence-risk-badge ${occurrenceRiskClass(occurrence.risk)}">${escapeOccurrenceText(occurrence.risk)}</span></td>
@@ -372,6 +373,7 @@ async function carregarDadosDoBackend() {
 
       return {
         id: databaseId,
+        codigo: doc.id || doc.codigo || doc.protocolo || doc._id,
         protocolo: doc.protocolo || doc.id || doc._id,
         type: doc.tipoProblema || "Ocorrência arbórea",
         date: dataIso,
