@@ -28,6 +28,19 @@ subprojects {
 
 // Configuração específica da pasta servidor/
 project(':servidor') {
+    sourceSets.test.java.srcDirs = ['test']
+
+    dependencies {
+        testImplementation 'org.junit.jupiter:junit-jupiter:5.13.4'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.13.4'
+        // Somente os testes usam o cliente real do backend para conferir o Socket.
+        testImplementation project(':backend')
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+    }
+
     application {
         mainClass = 'Servidor'
     }
