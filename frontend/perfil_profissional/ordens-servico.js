@@ -1,5 +1,5 @@
 // Guarda as ordens recebidas e o estado da tela.
-const serviceOrdersState = {
+const serviceOrdersState ={
   orders: [],
   loading: true,
   error: "",
@@ -10,7 +10,7 @@ const serviceOrdersState = {
 };
 
 // Guarda os elementos da página usados por filtros, tabela e modal.
-const serviceOrdersPage = {
+const serviceOrdersPage ={
   search: document.getElementById("serviceOrdersSearch"),
   sort: document.getElementById("serviceOrdersSort"),
   statusFilter: document.getElementById("serviceOrdersStatusFilter"),
@@ -46,7 +46,7 @@ async function buscarOrdensDeServico(){
 }
 
 // Consulta uma OS pelo identificador.
-async function buscarOrdemDeServico(id) {
+async function buscarOrdemDeServico(id){
   const resposta = await fetch(`/api/ordens-servico/${encodeURIComponent(id)}`,{ credentials: "same-origin" });
 
   const dados = await resposta.json();
@@ -66,9 +66,8 @@ async function buscarOrdemDeServico(id) {
 }
 
 // Solicita o cancelamento e usa a ordem atualizada devolvida pelo servidor.
-async function cancelarOrdemDeServico(id) {
-  const resposta = await fetch(
-    "/api/ordens-servico/" + encodeURIComponent(id) + "/status",
+async function cancelarOrdemDeServico(id){
+  const resposta = await fetch("/api/ordens-servico/" + encodeURIComponent(id) + "/status",
     {
       method: "PATCH",
       credentials: "same-origin",
@@ -79,13 +78,13 @@ async function cancelarOrdemDeServico(id) {
 
   const dados = await resposta.json();
 
-  if (!resposta.ok) {
+  if (!resposta.ok){
     const erro = new Error(dados?.erro || "Não foi possível cancelar a ordem de serviço.");
     erro.status = resposta.status;
     throw erro;
   }
 
-  if (dados?.ordem?.id !== id || dados?.ordem?.status !== "Cancelada") {
+  if (dados?.ordem?.id !== id || dados?.ordem?.status !== "Cancelada"){
     throw new Error("A API retornou uma confirmação de cancelamento inválida.");
   }
 
@@ -93,14 +92,13 @@ async function cancelarOrdemDeServico(id) {
 }
 
 // Escapa texto antes de inserir conteúdo dinâmico na tabela ou na janela de detalhes.
-function escapeServiceOrderText(value) {
-  return String(value ?? "—").replace(/[&<>"']/g, character => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  })[character]);
+function escapeServiceOrderText(value){
+  return String(value ?? "—").replace(/[&<>"']/g, character =>
+    ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"})[character]);
 }
 
 // Normaliza os termos para permitir buscas sem diferença entre caixa e acentos.
-function normalizeServiceOrderText(value) {
+function normalizeServiceOrderText(value){
   return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
 }
 
@@ -136,9 +134,8 @@ function getVisibleServiceOrders(){
   const query = normalizeServiceOrderText(serviceOrdersPage.search.value.trim());
   const selectedStatus = serviceOrdersPage.statusFilter.value;
 
-  const records = serviceOrdersState.orders.filter(order => {
-    const matchesStatus =
-      selectedStatus === "all" || order.status === selectedStatus;
+  const records = serviceOrdersState.orders.filter(order =>{
+    const matchesStatus = selectedStatus === "all" || order.status === selectedStatus;
 
     const searchFields = [
       order.codigo,
@@ -151,10 +148,7 @@ function getVisibleServiceOrders(){
     ];
 
     // Verifica se algum dos campos corresponde ao texto pesquisado.
-    const matchesSearch = !query || searchFields.some(
-      value => normalizeServiceOrderText(value).includes(query)
-    );
-
+    const matchesSearch = !query || searchFields.some(value => normalizeServiceOrderText(value).includes(query));
     return matchesStatus && matchesSearch;
   });
 
