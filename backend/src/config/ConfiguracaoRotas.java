@@ -321,5 +321,14 @@ public class ConfiguracaoRotas {
         servidorHttp.get(
                 "/api/relatorios/arvores",
                 ctx -> relatorioController.consultarArvores(ctx));
+        
+        servidorHttp.get(
+                "/api/relatorios/ocorrencias",
+                ctx -> relatorioController.consultarOcorrencias(ctx));
+
+        servidorHttp.get(
+                "/api/relatorios/equipes",
+                ctx -> relatorioController.consultarEquipes(ctx));
+
     }
 }

@@ -14,11 +14,15 @@ import com.mongodb.client.MongoDatabase;
 public class RelatorioRepository {
     private final MongoCollection<Document> colecao;
     private final MongoCollection<Document> colecaoArvores;
+    private final MongoCollection<Document> colecaoOcorrencias;
+    private final MongoCollection<Document> colecaoEquipes;
 
     public RelatorioRepository() {
         MongoDatabase banco = ConexaoMongo.getDatabase();
         this.colecao = banco.getCollection("ordens_servico");
         this.colecaoArvores = banco.getCollection("arvores");
+        this.colecaoOcorrencias = banco.getCollection("ocorrencias");
+        this.colecaoEquipes = banco.getCollection("equipes");
     }
 
     public List<Document> listarDadosDasOrdens(ObjectId municipioId) {
@@ -59,6 +63,67 @@ public class RelatorioRepository {
                 new Document("$match", filtro),
                 new Document("$facet", agrupamentos)
         )).first();
+    }
+
+    public Document listarDadosDasOcorrencias(ObjectId municipioId) {
+        if (municipioId == null) {
+            throw new IllegalArgumentException("O identificador do município não pode ser nulo.");
+        }
+
+        Document filtro = new Document("municipioId", municipioId);
+
+        Document agrupamentos = new Document("porStatus", etapasAgrupamento("status"))
+                .append("porBairro", etapasAgrupamento("bairro"))
+                .append("porUrgencia", etapasAgrupamento("urgencia"));
+
+        return colecaoOcorrencias.aggregate(List.of(
+                new Document("$match", filtro),
+                new Document("$facet", agrupamentos)
+        )).first();
+    }
+
+    public Document listarDadosDasEquipes(ObjectId municipioId) {
+        if (municipioId == null) {
+            throw new IllegalArgumentException("O identificador do município não pode ser nulo.");
+        }
+
+        List<Document> equipes = new ArrayList<>();
+        List<Document> ordens = new ArrayList<>();
+
+        Document camposEquipes = new Document("_id", 1)
+                .append("codigo", 1)
+                .append("nome", 1)
+                .append("nomeEquipe", 1)
+                .append("regiao", 1)
+                .append("regiaoAtuacao", 1);
+
+        try (MongoCursor<Document> cursor = colecaoEquipes
+                .find(eq("municipioId", municipioId))
+                .projection(camposEquipes)
+                .iterator()) {
+
+            while (cursor.hasNext()) {
+                equipes.add(cursor.next());
+            }
+        }
+
+        Document camposOrdens = new Document("_id", 0)
+                .append("equipeId", 1)
+                .append("status", 1)
+                .append("dataCriacao", 1);
+
+        try (MongoCursor<Document> cursor = colecao
+                .find(eq("municipioId", municipioId))
+                .projection(camposOrdens)
+                .iterator()) {
+
+            while (cursor.hasNext()) {
+                ordens.add(cursor.next());
+            }
+        }
+
+        return new Document("equipes", equipes)
+                .append("ordens", ordens);
     }
 
     private List<Document> etapasAgrupamento(String campo) {
