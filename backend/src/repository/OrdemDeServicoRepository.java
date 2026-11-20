@@ -1,5 +1,12 @@
 package repository;
 import model.OrdemDeServico;
+import model.EquipeParaOrdemDeServico;
+import com.mongodb.MongoException;
+import org.bson.conversions.Bson;
+import java.util.HashSet;
+import java.util.Set;
+import static com.mongodb.client.model.Filters.or;
+import static com.mongodb.client.model.Filters.ne;
 import model.Intervencao;
 import model.ConclusaoOrdemDeServico;
 import org.bson.Document;
@@ -34,6 +41,8 @@ import static com.mongodb.client.model.Filters.in;
 public class OrdemDeServicoRepository {
     private final MongoCollection<Document> colecao;
     private final MongoCollection<Document> sequencias;
+    private final MongoCollection<Document> equipes;
+    private volatile boolean indiceEquipeAtivaPronto;
     private final IntervencaoRepository intervencaoRepository;
     private final Supplier<ClientSession> abrirSessao;
 
@@ -48,6 +57,7 @@ public class OrdemDeServicoRepository {
         this.abrirSessao = Objects.requireNonNull(abrirSessao, "A abertura de sessão não pode ser nula.");
 
         this.colecao = banco.getCollection("ordens_servico");
+        this.equipes = banco.getCollection("equipes");
         this.sequencias = banco.getCollection("sequencias_ordens_servico");
         this.intervencaoRepository = new IntervencaoRepository(banco);
 
@@ -200,6 +210,7 @@ public class OrdemDeServicoRepository {
                 }
 
                 intervencaoRepository.salvar(sessao, intervencao);
+                liberarEquipeSeSemOrdemAtiva(sessao, ordem.getEquipeId(), municipioId);
 
                 // Lê o que foi persistido, incluindo a precisão de milissegundos das datas BSON.
                 Document documentoAtualizado = colecao.find(sessao, and(
@@ -216,6 +227,139 @@ public class OrdemDeServicoRepository {
         }
     }
 
+    // Consulta sem alterar equipes, inclusive as criadas por outro funcionário do município.
+    public List<EquipeParaOrdemDeServico> listarEquipesParaOrdem(ObjectId id, ObjectId municipioId){
+        Document os = colecao.find(and(eq("_id", id), eq("municipioId", municipioId))).first();
+        if (os == null) throw new NoSuchElementException("OS não encontrada nesse município.");
+        ObjectId atual = os.getObjectId("equipeId");
+        Set<String> ocupadas = new HashSet<>();
+        for (Document ativa : colecao.find(and(in("status", "Aberta", "Em andamento"), ne("_id", id)))){
+            Object vinculo = ativa.get("equipeId");
+            if (vinculo instanceof ObjectId oid) ocupadas.add(oid.toHexString());
+            else if (vinculo instanceof String texto) ocupadas.add(texto);
+        }
+        List<EquipeParaOrdemDeServico> resposta = new ArrayList<>();
+        for (Document equipe : equipes.find(eq("municipioId", municipioId)).sort(ascending("nome"))){
+            ObjectId equipeId = equipe.getObjectId("_id");
+            resposta.add(new EquipeParaOrdemDeServico(equipeId, textoDaEquipe(equipe, "nome", "nomeEquipe"),
+                    textoDaEquipe(equipe, "regiao", "regiaoAtuacao"), !ocupadas.contains(equipeId.toHexString()),
+                    equipeId.equals(atual)));
+        }
+        return resposta;
+    }
+
+    private String textoDaEquipe(Document equipe, String campo, String legado){
+        String texto = equipe.getString(campo);
+        return texto == null || texto.isBlank() ? equipe.getString(legado) : texto;
+    }
+
+    // Criado somente ao atribuir. Dados legados conflitantes geram 409 sem derrubar consultas.
+    private synchronized void garantirIndiceEquipeAtiva(){
+        if (indiceEquipeAtivaPronto) return;
+        try {
+            colecao.createIndex(ascending("equipeId"), new IndexOptions()
+                    .name("uma_os_ativa_por_equipe").unique(true)
+                    .partialFilterExpression(new Document("equipeId", new Document("$type", "objectId"))
+                            .append("status", new Document("$in", List.of("Aberta", "Em andamento")))));
+            indiceEquipeAtivaPronto = true;
+        } catch (MongoException erro){
+            if (erro.getCode() == 11000){
+                throw new IllegalStateException("Há equipes vinculadas a mais de uma OS ativa. Regularize esses registros antes de atribuir.");
+            }
+            throw erro;
+        }
+    }
+
+    public OrdemDeServico atribuirEquipe(ObjectId id, ObjectId municipioId, ObjectId equipeId, Instant agora){
+        if (id == null || municipioId == null || equipeId == null || agora == null)
+            throw new IllegalArgumentException("Informe a OS, o município e a equipe.");
+        Document previa = colecao.find(and(eq("_id", id), eq("municipioId", municipioId))).first();
+        if (previa == null) throw new NoSuchElementException("OS não encontrada nesse município.");
+        verificarOrdemAtiva(previa);
+        garantirIndiceEquipeAtiva();
+        try (ClientSession sessao = Objects.requireNonNull(abrirSessao.get())){
+            return sessao.withTransaction(() -> {
+                Document documento = buscarOrdemNaTransacao(sessao, id, municipioId);
+                verificarOrdemAtiva(documento);
+                Document equipe = equipes.find(sessao, and(eq("_id", equipeId), eq("municipioId", municipioId))).first();
+                if (equipe == null) throw new NoSuchElementException("Equipe não encontrada nesse município.");
+                if (colecao.find(sessao, and(filtroEquipeAtiva(equipeId), ne("_id", id))).first() != null)
+                    throw new IllegalStateException("A equipe já está vinculada a outra OS ativa.");
+                ObjectId anterior = documento.getObjectId("equipeId");
+
+                // A escrita na equipe disputa o documento com uma eventual exclusão concorrente.
+                UpdateResult reserva = equipes.updateOne(sessao,
+                        and(eq("_id", equipeId), eq("municipioId", municipioId)),
+                        new Document("$set", new Document("status", "Indisponível")));
+                if (reserva.getMatchedCount() != 1)
+                    throw new IllegalStateException("A equipe foi alterada. Consulte novamente antes de atribuir.");
+                // Corrige somente a reserva legada; uma atribuição já efetiva preserva as datas da OS.
+                if (equipeId.equals(anterior) && "Em andamento".equals(documento.getString("status")))
+                    return converterParaOrdemDeServico(documento);
+                UpdateResult atualizacao = colecao.updateOne(sessao,
+                        and(eq("_id", id), eq("municipioId", municipioId), in("status", "Aberta", "Em andamento")),
+                        new Document("$set", new Document("equipeId", equipeId).append("status", "Em andamento")
+                                .append("dataAtualizacao", Date.from(agora))));
+                if (atualizacao.getMatchedCount() != 1)
+                    throw new IllegalStateException("A OS foi alterada. Consulte novamente antes de atribuir.");
+                liberarEquipeSeSemOrdemAtiva(sessao, anterior, municipioId);
+                return converterParaOrdemDeServico(buscarOrdemNaTransacao(sessao, id, municipioId));
+            }, opcoesDaTransacao());
+        } catch (MongoException erro){
+            if (erro.getCode() == 11000)
+                throw new IllegalStateException("A equipe já está vinculada a outra OS ativa.");
+            throw erro;
+        }
+    }
+
+    public OrdemDeServico cancelar(ObjectId id, ObjectId municipioId, Instant agora){
+        if (id == null || municipioId == null || agora == null)
+            throw new IllegalArgumentException("Informe a OS e o município.");
+        try (ClientSession sessao = Objects.requireNonNull(abrirSessao.get())){
+            return sessao.withTransaction(() -> {
+                Document documento = buscarOrdemNaTransacao(sessao, id, municipioId);
+                verificarOrdemAtiva(documento);
+                UpdateResult resultado = colecao.updateOne(sessao,
+                        and(eq("_id", id), eq("municipioId", municipioId), in("status", "Aberta", "Em andamento")),
+                        new Document("$set", new Document("status", "Cancelada")
+                                .append("dataAtualizacao", Date.from(agora))));
+                if (resultado.getMatchedCount() != 1)
+                    throw new IllegalStateException("A OS foi alterada. Consulte novamente antes de cancelar.");
+                liberarEquipeSeSemOrdemAtiva(sessao, documento.getObjectId("equipeId"), municipioId);
+                return converterParaOrdemDeServico(buscarOrdemNaTransacao(sessao, id, municipioId));
+            }, opcoesDaTransacao());
+        }
+    }
+
+    private Document buscarOrdemNaTransacao(ClientSession sessao, ObjectId id, ObjectId municipioId){
+        Document documento = colecao.find(sessao, and(eq("_id", id), eq("municipioId", municipioId))).first();
+        if (documento == null) throw new NoSuchElementException("OS não encontrada nesse município.");
+        return documento;
+    }
+
+    private void verificarOrdemAtiva(Document ordem){
+        String status = ordem.getString("status");
+        if (!"Aberta".equals(status) && !"Em andamento".equals(status))
+            throw new IllegalStateException("Não é permitido alterar uma ordem de serviço concluída ou cancelada.");
+    }
+
+    private Bson filtroEquipeAtiva(ObjectId equipeId){
+        return and(in("status", "Aberta", "Em andamento"),
+                or(eq("equipeId", equipeId), eq("equipeId", equipeId.toHexString())));
+    }
+
+    private void liberarEquipeSeSemOrdemAtiva(ClientSession sessao, ObjectId equipeId, ObjectId municipioId){
+        if (equipeId == null || colecao.find(sessao, filtroEquipeAtiva(equipeId)).first() != null) return;
+        // Um vínculo fictício legado não impede cancelar/concluir uma OS de teste existente.
+        equipes.updateOne(sessao, and(eq("_id", equipeId), eq("municipioId", municipioId)),
+                new Document("$set", new Document("status", "Disponível")));
+    }
+
+    private TransactionOptions opcoesDaTransacao(){
+        return TransactionOptions.builder().readConcern(ReadConcern.SNAPSHOT)
+                .writeConcern(WriteConcern.MAJORITY).readPreference(ReadPreference.primary()).build();
+    }
+
     public Optional<Intervencao> buscarIntervencaoConclusao(OrdemDeServico ordem){
         Objects.requireNonNull(ordem, "A OS não pode ser nula.");
         if (ordem.getIntervencaoConclusaoId() == null){
@@ -227,8 +371,8 @@ public class OrdemDeServicoRepository {
 
     // Impede usar a gravação genérica para concluir sem a intervenção correspondente.
     private void rejeitarConclusaoForaDaTransacao(OrdemDeServico ordem){
-        if ("Concluída".equals(ordem.getStatus())){
-            throw new IllegalStateException("A conclusão deve ser registrada junto com a intervenção.");
+        if ("Concluída".equals(ordem.getStatus()) || "Cancelada".equals(ordem.getStatus())){
+            throw new IllegalStateException("Use a operação transacional para concluir ou cancelar a OS.");
         }
     }
 

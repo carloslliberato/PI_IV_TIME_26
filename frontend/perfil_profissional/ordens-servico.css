@@ -139,3 +139,15 @@
   .service-order-completion-form fieldset, .service-order-report-metadata { grid-template-columns: 1fr; }
   .service-order-completion-form .service-order-create-wide, .service-order-completion-form .service-order-create-actions { grid-column: 1 / -1; }
 }
+
+/* Seleciona equipes reais e mantém indisponíveis visíveis para consulta. */
+.service-order-team-editor { margin-top: 22px; padding-top: 20px; border-top: 1px solid #dfe8e2; }
+.service-order-team-editor h3 { margin: 0; color: #2d4035; font-size: 15px; }
+.service-order-team-editor p { margin: 8px 0 16px; color: #65766b; font-size: 12px; line-height: 1.6; }
+.service-order-team-editor a { color: #176344; text-underline-offset: 3px; }
+.service-order-team-editor label { display: flex; flex-direction: column; gap: 8px; color: #42594b; font-size: 12px; font-weight: 700; }
+.service-order-team-editor select { width: 100%; min-height: 44px; box-sizing: border-box; padding: 10px; border: 1px solid #d4e2d9; border-radius: 8px; background: #fff; color: #34443a; font: inherit; }
+.service-order-team-editor select:focus-visible { outline: 2px solid #8db69d; outline-offset: 2px; }
+.service-order-team-editor select:disabled { opacity: .65; cursor: not-allowed; }
+.service-order-team-editor .service-order-create-actions { margin-top: 16px; flex-wrap: wrap; }
+.service-order-team-editor .service-order-team-error { color: #a03727; }

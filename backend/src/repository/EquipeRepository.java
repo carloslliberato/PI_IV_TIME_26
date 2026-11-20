@@ -30,6 +30,7 @@ import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.elemMatch;
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Filters.exists;
+import static com.mongodb.client.model.Filters.in;
 import static com.mongodb.client.model.Filters.ne;
 import static com.mongodb.client.model.Filters.nor;
 import static com.mongodb.client.model.Filters.or;
@@ -43,7 +44,11 @@ public class EquipeRepository {
 
     // Obtém a coleção usando a conexão compartilhada pelo backend.
     public EquipeRepository() {
-        MongoDatabase banco = ConexaoMongo.getDatabase();
+        this(ConexaoMongo.getDatabase());
+    }
+
+    // Permite verificar a integração usando somente um banco exclusivo de testes.
+    public EquipeRepository(MongoDatabase banco) {
         this.colecao = banco.getCollection("equipes");
         this.ordensServico = banco.getCollection("ordens_servico");
 
@@ -130,7 +135,7 @@ public class EquipeRepository {
         }
     }
 
-    // Busca equipes da conta autenticada depois de normalizar status e dados antigos.
+    // Busca equipes da conta autenticada e deriva a ocupação pelas OS ativas.
     public List<Equipe> listarPorMunicipioEUsuario(
             ObjectId municipioId,
             String municipioNome,
@@ -148,7 +153,7 @@ public class EquipeRepository {
                         eq("usuarioId", usuarioId),
                         eq("funcionarioId", usuarioId)));
 
-        // Atualiza vínculos legados e o status de ordem antes de aplicar os filtros.
+        // Preserva a atualização de vínculos legados, sem escrever o status na consulta.
         for (Document documento : colecao.find(filtroBase)) {
             ObjectId equipeId = documento.getObjectId("_id");
 
@@ -161,20 +166,11 @@ public class EquipeRepository {
                             .append("usuarioId", usuarioId)
                             .append("usuarioNome", usuarioNome)));
 
-            // Marca como indisponível toda equipe com uma ordem de serviço vinculada.
-            if (temOrdemServico(equipeId)) {
-                colecao.updateOne(
-                        eq("_id", equipeId),
-                        new Document("$set", new Document("status", "Indisponível")));
-            }
         }
 
         // Combina o escopo autenticado, o status opcional e a busca textual.
         List<Bson> filtros = new ArrayList<>();
         filtros.add(filtroBase);
-        if (status != null) {
-            filtros.add(regex("status", "^" + Pattern.quote(status) + "$", "i"));
-        }
         if (busca != null && !busca.isBlank()) {
             filtros.add(criarFiltroDeBusca(busca.trim()));
         }
@@ -182,7 +178,14 @@ public class EquipeRepository {
         // Retorna somente os resultados correspondentes, ordenados pelo nome da equipe.
         for (Document documento : colecao.find(and(filtros))
                 .sort(Sorts.ascending("nome"))) {
-            equipes.add(converterParaEquipe(documento));
+            // Histórico concluído/cancelado não ocupa a equipe. Não persiste essa leitura:
+            // uma atribuição concorrente é protegida pela transação da OS.
+            String situacao = temOrdemServicoAtiva(documento.getObjectId("_id"))
+                    ? "Indisponível" : "Disponível";
+            documento.put("status", situacao);
+            if (status == null || situacao.equalsIgnoreCase(status)) {
+                equipes.add(converterParaEquipe(documento));
+            }
         }
         return equipes;
     }
@@ -301,24 +304,14 @@ public class EquipeRepository {
         return resultado.getModifiedCount() > 0;
     }
 
-    // Marca o estado da equipe na base quando há ordem de serviço relacionada.
+    // Consulta a ocupação atual sem gravar uma situação que pode ficar desatualizada.
     public boolean sincronizarStatusComOrdens(
             ObjectId equipeId,
             ObjectId usuarioId) {
-        Document equipe = colecao.find(
-                filtroEquipeDoUsuario(equipeId, usuarioId)).first();
-        if (equipe == null) {
+        if (colecao.find(filtroEquipeDoUsuario(equipeId, usuarioId)).first() == null) {
             return false;
         }
-
-        if (temOrdemServico(equipeId)) {
-            colecao.updateOne(
-                    eq("_id", equipeId),
-                    new Document("$set", new Document("status", "Indisponível")));
-            return true;
-        }
-
-        return "Indisponível".equals(equipe.getString("status"));
+        return temOrdemServicoAtiva(equipeId);
     }
 
     // Verifica se uma equipe existe e pertence à conta da sessão atual.
@@ -345,6 +338,13 @@ public class EquipeRepository {
         return ordensServico.find(filtroOrdem).first() != null;
     }
 
+    // Somente ordens abertas/em andamento reservam a equipe para um serviço.
+    private boolean temOrdemServicoAtiva(ObjectId equipeId) {
+        return ordensServico.find(and(
+                or(eq("equipeId", equipeId), eq("equipeId", equipeId.toHexString())),
+                in("status", "Aberta", "Em andamento"))).first() != null;
+    }
+
     private void validarElegibilidadeParaExclusao(
             Document equipe,
             ObjectId equipeId,
@@ -360,9 +360,6 @@ public class EquipeRepository {
         }
 
         if (temOrdemServico(equipeId)) {
-            colecao.updateOne(
-                    filtroPropriedade,
-                    new Document("$set", new Document("status", "Indisponível")));
             throw new IllegalStateException(
                     "Não é possível excluir a equipe porque há uma ordem de serviço vinculada.");
         }
