@@ -5,6 +5,8 @@ import com.mongodb.MongoException;
 import org.bson.conversions.Bson;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Map;
+import java.util.HashMap;
 import static com.mongodb.client.model.Filters.or;
 import static com.mongodb.client.model.Filters.ne;
 import model.Intervencao;
@@ -42,6 +44,9 @@ public class OrdemDeServicoRepository {
     private final MongoCollection<Document> colecao;
     private final MongoCollection<Document> sequencias;
     private final MongoCollection<Document> equipes;
+    private final MongoCollection<Document> arvores;
+    private final MongoCollection<Document> ocorrencias;
+    private volatile boolean indiceCodigoPronto;
     private volatile boolean indiceEquipeAtivaPronto;
     private final IntervencaoRepository intervencaoRepository;
     private final Supplier<ClientSession> abrirSessao;
@@ -58,6 +63,8 @@ public class OrdemDeServicoRepository {
 
         this.colecao = banco.getCollection("ordens_servico");
         this.equipes = banco.getCollection("equipes");
+        this.arvores = banco.getCollection("arvores");
+        this.ocorrencias = banco.getCollection("ocorrencias");
         this.sequencias = banco.getCollection("sequencias_ordens_servico");
         this.intervencaoRepository = new IntervencaoRepository(banco);
 
@@ -81,6 +88,124 @@ public class OrdemDeServicoRepository {
         }
 
         return contador.getLong("sequencia");
+    }
+
+    // Expõe somente referências canônicas e identificáveis no município autenticado.
+    public Map<String, Object> opcoesDeCadastro(ObjectId municipioId){
+        if (municipioId == null) throw new IllegalArgumentException("O município é obrigatório.");
+        List<Map<String, Object>> opcoesArvores = new ArrayList<>();
+        List<Map<String, Object>> opcoesOcorrencias = new ArrayList<>();
+        Set<ObjectId> arvoresDisponiveis = new HashSet<>();
+        boolean incompativeis = false;
+        Bson mesmoIdentificadorMunicipal = or(eq("municipioId", municipioId),
+                eq("municipioId", municipioId.toHexString()));
+        try (MongoCursor<Document> cursor = arvores.find(mesmoIdentificadorMunicipal).iterator()){
+            while (cursor.hasNext()){
+                Document documento = cursor.next();
+                if (!referenciaCanonica(documento, municipioId)){
+                    incompativeis = true;
+                    continue;
+                }
+                if (Boolean.FALSE.equals(documento.get("ativa"))) continue;
+                ObjectId id = documento.getObjectId("_id");
+                arvoresDisponiveis.add(id);
+                Map<String, Object> item = new HashMap<>();
+                item.put("id", id.toHexString());
+                String nome = primeiroTexto(documento, "nome", "nomePopular", "especie", "nomeCientifico");
+                item.put("nome", nome == null ? "Árvore " + id.toHexString() : nome);
+                item.put("endereco", primeiroTexto(documento, "endereco"));
+                item.put("bairro", primeiroTexto(documento, "bairro"));
+                opcoesArvores.add(item);
+            }
+        }
+        try (MongoCursor<Document> cursor = ocorrencias.find(mesmoIdentificadorMunicipal).iterator()){
+            while (cursor.hasNext()){
+                Document documento = cursor.next();
+                if (!referenciaCanonica(documento, municipioId)){
+                    incompativeis = true;
+                    continue;
+                }
+                Object arvore = documento.get("arvoreId");
+                if (arvore != null && !(arvore instanceof ObjectId)) incompativeis = true;
+                Map<String, Object> item = new HashMap<>();
+                item.put("id", documento.getObjectId("_id").toHexString());
+                item.put("codigo", primeiroTexto(documento, "codigo", "protocolo"));
+                item.put("titulo", primeiroTexto(documento, "titulo", "tipoProblema"));
+                item.put("descricao", primeiroTexto(documento, "descricao"));
+                item.put("prioridade", primeiroTexto(documento, "prioridade", "urgencia"));
+                item.put("arvoreId", arvore instanceof ObjectId id && arvoresDisponiveis.contains(id) ? id.toHexString() : null);
+                opcoesOcorrencias.add(item);
+            }
+        }
+        Map<String, Object> resposta = new HashMap<>();
+        resposta.put("municipioId", municipioId.toHexString());
+        resposta.put("arvores", opcoesArvores);
+        resposta.put("ocorrencias", opcoesOcorrencias);
+        resposta.put("referenciasIncompativeis", incompativeis);
+        resposta.put("avisos", incompativeis
+                ? List.of("Há registros deste município com identificadores incompatíveis. Somente as referências compatíveis podem ser selecionadas.")
+                : List.of());
+        return resposta;
+    }
+
+    private boolean referenciaCanonica(Document documento, ObjectId municipioId){
+        return documento != null && documento.get("_id") instanceof ObjectId
+                && documento.get("municipioId") instanceof ObjectId id && municipioId.equals(id);
+    }
+
+    private String primeiroTexto(Document documento, String... campos){
+        for (String campo : campos){
+            Object valor = documento.get(campo);
+            if (valor instanceof String texto && !texto.isBlank()) return texto;
+        }
+        return null;
+    }
+
+    // Índice parcial preserva os documentos antigos sem código ou com código nulo.
+    private synchronized void garantirIndiceCodigo(){
+        if (indiceCodigoPronto) return;
+        try {
+            colecao.createIndex(ascending("codigo"), new IndexOptions().name("codigo_os_unico")
+                    .unique(true).partialFilterExpression(new Document("codigo", new Document("$type", "string"))));
+            indiceCodigoPronto = true;
+        } catch (MongoException erro){
+            if (erro.getCode() == 11000)
+                throw new IllegalStateException("Há códigos de OS repetidos no banco. Regularize esses registros antes de cadastrar.");
+            throw erro;
+        }
+    }
+
+    // Confere referências reais e persiste os valores finais enviados pelo funcionário.
+    public OrdemDeServico criarComReferencias(OrdemDeServico ordem){
+        if (ordem == null || ordem.getOrdemServicoId() == null || ordem.getMunicipioId() == null
+                || ordem.getArvoreId() == null || ordem.getCodigo() == null || ordem.getCodigo().isBlank()
+                || ordem.getEquipeId() != null || !"Aberta".equals(ordem.getStatus()))
+            throw new IllegalArgumentException("A nova OS deve estar aberta, possuir código e árvore, e não ter equipe inicial.");
+        garantirIndiceCodigo();
+        try (ClientSession sessao = Objects.requireNonNull(abrirSessao.get())){
+            return sessao.withTransaction(() -> {
+                ObjectId municipioId = ordem.getMunicipioId();
+                Document arvore = arvores.find(sessao, and(eq("_id", ordem.getArvoreId()),
+                        eq("municipioId", municipioId), ne("ativa", false))).first();
+                if (!referenciaCanonica(arvore, municipioId))
+                    throw new NoSuchElementException("Árvore não encontrada ou inativa nesse município.");
+                if (ordem.getOcorrenciaId() != null){
+                    Document ocorrencia = ocorrencias.find(sessao, and(eq("_id", ordem.getOcorrenciaId()),
+                            eq("municipioId", municipioId))).first();
+                    if (!referenciaCanonica(ocorrencia, municipioId))
+                        throw new NoSuchElementException("Ocorrência não encontrada nesse município.");
+                }
+                colecao.insertOne(sessao, converterParaDocumento(ordem));
+                Document persistida = colecao.find(sessao, and(eq("_id", ordem.getOrdemServicoId()),
+                        eq("municipioId", municipioId))).first();
+                if (persistida == null) throw new RuntimeException("Não foi possível confirmar a criação da OS.");
+                return converterParaOrdemDeServico(persistida);
+            }, opcoesDaTransacao());
+        } catch (MongoException erro){
+            if (erro.getCode() == 11000)
+                throw new IllegalStateException("Não foi possível gravar um código exclusivo para esta OS. Consulte a lista antes de tentar novamente.");
+            throw erro;
+        }
     }
 
     // Insere uma nova ordem de servico no banco.
