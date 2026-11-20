@@ -15,6 +15,7 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 import model.Conta;
 import repository.ContaRepository;
+import repository.MunicipioRepository;
 import repository.RelatorioRepository;
 
 public class RelatorioService {
@@ -25,10 +26,18 @@ public class RelatorioService {
 
     private final RelatorioRepository relatorioRepository;
     private final ContaRepository contaRepository;
+    private final MunicipioRepository municipioRepository;
 
     public RelatorioService(
             RelatorioRepository relatorioRepository,
             ContaRepository contaRepository) {
+        this(relatorioRepository, contaRepository, new MunicipioRepository());
+    }
+
+    public RelatorioService(
+            RelatorioRepository relatorioRepository,
+            ContaRepository contaRepository,
+            MunicipioRepository municipioRepository) {
         if (relatorioRepository == null) {
             throw new IllegalArgumentException("O repositório de relatórios não pode ser nulo.");
         }
@@ -37,8 +46,13 @@ public class RelatorioService {
             throw new IllegalArgumentException("O repositório de contas não pode ser nulo.");
         }
 
+        if (municipioRepository == null) {
+            throw new IllegalArgumentException("O repositório de municípios não pode ser nulo.");
+        }
+
         this.relatorioRepository = relatorioRepository;
         this.contaRepository = contaRepository;
+        this.municipioRepository = municipioRepository;
     }
 
     public ObjectId obterMunicipioDoFuncionario(String usuarioId) {
@@ -65,6 +79,15 @@ public class RelatorioService {
         return funcionario.getMunicipioId();
     }
 
+    public String obterNomeMunicipio(ObjectId municipioId) {
+        if (municipioId == null) {
+            throw new IllegalArgumentException("O identificador do município não pode ser nulo.");
+        }
+
+        return municipioRepository.buscarNomePorId(municipioId)
+                .orElseThrow(() -> new IllegalArgumentException("Município não encontrado."));
+    }
+
     public Map<String, Object> consultarOrdensDeServico(ObjectId municipioId, String anoInformado) {
         if (municipioId == null) {
             throw new IllegalArgumentException("O identificador do município não pode ser nulo.");
@@ -72,8 +95,11 @@ public class RelatorioService {
 
         int anoSelecionado = selecionarAno(anoInformado);
         List<Document> ordens = relatorioRepository.listarDadosDasOrdens(municipioId);
+        Map<String, Object> relatorio = agruparOrdens(ordens, municipioId, anoSelecionado);
 
-        return agruparOrdens(ordens, municipioId, anoSelecionado);
+        relatorio.put("municipioNome", obterNomeMunicipio(municipioId));
+
+        return relatorio;
     }
 
     public Map<String, Object> consultarArvores(ObjectId municipioId) {
@@ -93,6 +119,7 @@ public class RelatorioService {
 
         Map<String, Object> relatorio = new LinkedHashMap<>();
         relatorio.put("municipioId", municipioId.toHexString());
+        relatorio.put("municipioNome", obterNomeMunicipio(municipioId));
         relatorio.put("totalArvores", totalArvores);
         relatorio.put("porBairro", porBairro);
         relatorio.put("porEspecie", porEspecie);
