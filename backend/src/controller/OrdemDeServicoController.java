@@ -10,6 +10,8 @@ import model.OrdemDeServico;
 import model.Intervencao;
 import model.ConclusaoOrdemDeServico;
 import dto.ConclusaoOrdemDeServicoDTO;
+import dto.AtribuicaoEquipeOrdemDeServicoDTO;
+import model.EquipeParaOrdemDeServico;
 import service.OrdemDeServicoService;
 import io.javalin.http.Context;
 import jakarta.servlet.http.HttpSession;
@@ -142,6 +144,69 @@ public class OrdemDeServicoController {
             erro.printStackTrace();
 
             ctx.status(500).json(Map.of("erro", "Erro interno ao cancelar a ordem de serviço."));
+        }
+    }
+
+    // Lista equipes do município independentemente de quem as cadastrou.
+    public void listarEquipes(Context ctx){
+        HttpSession sessao = obterSessaoDeFuncionario(ctx);
+        if (sessao == null) return;
+        try {
+            ObjectId municipioId = ordemService.obterMunicipioDoFuncionario(sessao.getAttribute("usuarioId").toString());
+            String id = ctx.pathParam("id");
+            if (!ObjectId.isValid(id)) throw new IllegalArgumentException("O identificador da OS é inválido.");
+            List<Map<String, Object>> equipes = new ArrayList<>();
+            for (EquipeParaOrdemDeServico equipe : ordemService.listarEquipesParaOrdem(new ObjectId(id), municipioId)){
+                Map<String, Object> item = new HashMap<>();
+                item.put("id", converterId(equipe.id()));
+                item.put("nome", equipe.nome());
+                item.put("regiaoAtuacao", equipe.regiaoAtuacao());
+                item.put("disponivel", equipe.disponivel());
+                item.put("atual", equipe.atual());
+                equipes.add(item);
+            }
+            ctx.status(200).json(Map.of("equipes", equipes));
+        } catch (SecurityException erro){
+            ctx.status(403).json(Map.of("erro", erro.getMessage()));
+        } catch (IllegalArgumentException erro){
+            ctx.status(400).json(Map.of("erro", erro.getMessage()));
+        } catch (NoSuchElementException erro){
+            ctx.status(404).json(Map.of("erro", erro.getMessage()));
+        } catch (Exception erro){
+            erro.printStackTrace();
+            ctx.status(500).json(Map.of("erro", "Não foi possível consultar as equipes para esta OS."));
+        }
+    }
+
+    public void atribuirEquipe(Context ctx){
+        HttpSession sessao = obterSessaoDeFuncionario(ctx);
+        if (sessao == null) return;
+        try {
+            ObjectId municipioId = ordemService.obterMunicipioDoFuncionario(sessao.getAttribute("usuarioId").toString());
+            String id = ctx.pathParam("id");
+            if (!ObjectId.isValid(id)) throw new IllegalArgumentException("O identificador da OS é inválido.");
+            JsonElement raiz = JsonParser.parseString(ctx.body());
+            if (raiz == null || !raiz.isJsonObject())
+                throw new IllegalArgumentException("Informe um objeto JSON com a equipe selecionada.");
+            JsonElement equipeId = raiz.getAsJsonObject().get("equipeId");
+            if (equipeId == null || !equipeId.isJsonPrimitive() || !equipeId.getAsJsonPrimitive().isString())
+                throw new IllegalArgumentException("Informe o identificador da equipe como texto.");
+            AtribuicaoEquipeOrdemDeServicoDTO dados = gson.fromJson(raiz, AtribuicaoEquipeOrdemDeServicoDTO.class);
+            OrdemDeServico ordem = ordemService.atribuirEquipe(new ObjectId(id), municipioId, dados);
+            ctx.status(200).json(Map.of("ordem", paraRespostaComConclusao(ordem, null)));
+        } catch (JsonParseException erro){
+            ctx.status(400).json(Map.of("erro", "Formato JSON inválido."));
+        } catch (SecurityException erro){
+            ctx.status(403).json(Map.of("erro", erro.getMessage()));
+        } catch (IllegalArgumentException erro){
+            ctx.status(400).json(Map.of("erro", erro.getMessage()));
+        } catch (NoSuchElementException erro){
+            ctx.status(404).json(Map.of("erro", erro.getMessage()));
+        } catch (IllegalStateException erro){
+            ctx.status(409).json(Map.of("erro", erro.getMessage()));
+        } catch (Exception erro){
+            erro.printStackTrace();
+            ctx.status(500).json(Map.of("erro", "Não foi possível confirmar a atribuição. Consulte a OS antes de tentar novamente."));
         }
     }
 

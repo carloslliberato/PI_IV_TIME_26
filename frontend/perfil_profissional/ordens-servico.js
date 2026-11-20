@@ -11,6 +11,9 @@ const serviceOrdersState ={
   operations: new Map(),
   completionDrafts: new Map(),
   completionForms: new Set(),
+  teamForms: new Set(),
+  teamOptions: new Map(),
+  teamDrafts: new Map(),
   feedback: new Map()
 };
 
@@ -402,12 +405,132 @@ function renderServiceOrderCompletionReport(order){
     </section>`;
 }
 
+// Consulta apenas as equipes autorizadas e a disponibilidade calculada para esta OS.
+async function buscarEquipesDaOrdem(orderId){
+  const response = await fetch(`/api/ordens-servico/${encodeURIComponent(orderId)}/equipes`, {
+    credentials: "same-origin", cache: "no-store"
+  });
+  const body = await readServiceOrderResponse(response, "Não foi possível consultar as equipes.");
+  if (!Array.isArray(body?.equipes) || body.equipes.some(team => !team
+      || typeof team.id !== "string" || !/^[a-f0-9]{24}$/i.test(team.id)
+      || typeof team.nome !== "string" || typeof team.disponivel !== "boolean"
+      || typeof team.atual !== "boolean")){
+    throw new Error("Não foi possível confirmar a lista de equipes.");
+  }
+  return body.equipes;
+}
+
+async function atribuirEquipeDaOrdem(orderId, equipeId){
+  const response = await fetch(`/api/ordens-servico/${encodeURIComponent(orderId)}/equipe`, {
+    method: "PATCH", credentials: "same-origin",
+    headers: { "Content-Type": "application/json" }, body: JSON.stringify({ equipeId })
+  });
+  const body = await readServiceOrderResponse(response, "Não foi possível atribuir a equipe.");
+  const order = validateServiceOrderResponse(body, orderId);
+  if (order.status !== "Em andamento" || order.equipeId !== equipeId){
+    const error = new Error("Não foi possível confirmar a equipe da ordem.");
+    error.invalidResponse = true;
+    throw error;
+  }
+  return order;
+}
+
+function renderServiceOrderTeamForm(order, blocked){
+  const state = serviceOrdersState.teamOptions.get(order.id);
+  const teams = state?.items || [];
+  const disabled = blocked || !state || state.loading || Boolean(state.error);
+  const selected = serviceOrdersState.teamDrafts.get(order.id) || "";
+  return `<section class="service-order-team-editor" aria-labelledby="serviceOrderTeamTitle">
+    <h3 id="serviceOrderTeamTitle">${order.equipeId ? "Trocar equipe" : "Atribuir equipe"}</h3>
+    <p>Selecione uma equipe disponível do município para executar esta ordem.</p>
+    ${state?.loading ? '<p role="status">Consultando equipes...</p>' : ""}
+    ${state?.error ? `<p class="service-order-team-error" role="status">${escapeServiceOrderText(state.error)}</p>` : ""}
+    ${state && !state.loading && !state.error && !teams.length ? `
+      <p>Nenhuma equipe cadastrada para este município. <a href="/equipes">Abra a página Equipes</a> para cadastrar e depois atualize a lista.</p>` : ""}
+    <form data-assign-service-order="${escapeServiceOrderText(order.id)}">
+      <label for="serviceOrderTeamSelect">Equipe
+        <select id="serviceOrderTeamSelect" name="equipeId" required ${disabled || !teams.length ? "disabled" : ""}>
+          <option value="">Selecione uma equipe</option>
+          ${teams.map(team => `<option value="${escapeServiceOrderText(team.id)}" ${selected === team.id ? "selected" : ""}
+            ${!team.disponivel && !team.atual ? "disabled" : ""}>${escapeServiceOrderText(team.nome)}${team.regiaoAtuacao ? " — " + escapeServiceOrderText(team.regiaoAtuacao) : ""}${team.atual ? " (Atual)" : !team.disponivel ? " (Ocupada)" : ""}</option>`).join("")}
+        </select>
+      </label>
+      <div class="service-order-create-actions">
+        <button class="service-order-cancel-button" type="button" data-close-team-form="${escapeServiceOrderText(order.id)}" ${blocked ? "disabled" : ""}>Voltar aos detalhes</button>
+        <button class="service-order-cancel-button" type="button" data-refresh-order-teams="${escapeServiceOrderText(order.id)}" ${blocked || state?.loading ? "disabled" : ""}>Atualizar equipes</button>
+        <button class="service-orders-create-button" type="submit" ${disabled || !teams.some(team => team.disponivel || team.atual) ? "disabled" : ""}>Salvar equipe</button>
+      </div>
+    </form>
+  </section>`;
+}
+
+async function loadServiceOrderTeams(orderId){
+  if (!isCurrentServiceOrder(orderId) || serviceOrdersState.operations.has(orderId)) return;
+  const state = { items: [], loading: true, error: "" };
+  const revision = serviceOrdersState.orderRevisions.get(orderId) || 0;
+  serviceOrdersState.teamOptions.set(orderId, state);
+  renderCurrentServiceOrder(orderId);
+  try {
+    const teams = await buscarEquipesDaOrdem(orderId);
+    if (serviceOrdersState.teamOptions.get(orderId) !== state
+        || revision !== (serviceOrdersState.orderRevisions.get(orderId) || 0)) return;
+    state.items = teams;
+    const previous = serviceOrdersState.teamDrafts.get(orderId);
+    if (!teams.some(team => team.id === previous && (team.disponivel || team.atual))){
+      serviceOrdersState.teamDrafts.set(orderId, teams.find(team => team.atual)?.id || "");
+    }
+  } catch (error){
+    if (serviceOrdersState.teamOptions.get(orderId) !== state) return;
+    state.error = getServiceOrdersErrorMessage(error, "Não foi possível carregar as equipes. Atualize a lista para tentar novamente.");
+  } finally {
+    if (serviceOrdersState.teamOptions.get(orderId) === state){
+      state.loading = false;
+      renderCurrentServiceOrder(orderId);
+      if (isCurrentServiceOrder(orderId) && serviceOrdersState.teamForms.has(orderId)
+          && !serviceOrdersState.operations.has(orderId)) document.getElementById("serviceOrderTeamSelect")?.focus();
+    }
+  }
+}
+
+function openServiceOrderTeamForm(orderId){
+  if (!isCurrentServiceOrder(orderId) || !canChangeServiceOrder(serviceOrdersState.details.get(orderId))
+      || serviceOrdersState.operations.has(orderId)) return;
+  serviceOrdersState.completionForms.delete(orderId);
+  serviceOrdersState.teamForms.add(orderId);
+  serviceOrdersState.feedback.delete(orderId);
+  loadServiceOrderTeams(orderId);
+}
+
+function closeServiceOrderTeamForm(orderId){
+  if (!isCurrentServiceOrder(orderId) || serviceOrdersState.operations.has(orderId)) return;
+  serviceOrdersState.teamForms.delete(orderId);
+  renderCurrentServiceOrder(orderId);
+  serviceOrdersPage.modalContent.querySelector("[data-open-team-form]")?.focus();
+}
+
+async function assignServiceOrderTeamFromDetails(form){
+  const orderId = form.dataset.assignServiceOrder;
+  const order = serviceOrdersState.details.get(orderId);
+  if (!isCurrentServiceOrder(orderId) || !canChangeServiceOrder(order)
+      || serviceOrdersState.operations.has(orderId)) return;
+  const equipeId = form.elements.namedItem("equipeId").value;
+  const options = serviceOrdersState.teamOptions.get(orderId);
+  const team = options?.items.find(item => item.id === equipeId);
+  if (options?.loading || options?.error || !team || (!team.disponivel && !team.atual)){
+    showServiceOrderStatusFeedback(orderId, "Selecione uma equipe disponível. Atualize a lista se necessário.", true);
+    return;
+  }
+  serviceOrdersState.teamDrafts.set(orderId, equipeId);
+  await runServiceOrderOperation(orderId, "assign", () => atribuirEquipeDaOrdem(orderId, equipeId), { equipeId });
+}
+
 // Apresenta os dados persistidos e as ações permitidas para a situação atual.
 function renderServiceOrderDetails(order){
   const operation = serviceOrdersState.operations.get(order.id);
   const blocked = Boolean(operation);
   const editable = canChangeServiceOrder(order);
   const formOpen = editable && serviceOrdersState.completionForms.has(order.id);
+  const teamFormOpen = editable && serviceOrdersState.teamForms.has(order.id);
   const feedback = serviceOrdersState.feedback.get(order.id);
   const message = operation?.message || feedback?.message || "";
   const fields = [
@@ -448,8 +571,13 @@ function renderServiceOrderDetails(order){
     </section>
     ${renderServiceOrderCompletionReport(order)}
     ${formOpen ? renderServiceOrderCompletionForm(order, blocked) : ""}
-    ${editable && !formOpen ? `
+    ${teamFormOpen ? renderServiceOrderTeamForm(order, blocked) : ""}
+    ${editable && !formOpen && !teamFormOpen ? `
       <div class="service-order-create-actions service-order-detail-actions">
+        <button class="service-order-cancel-button" type="button"
+          data-open-team-form="${escapeServiceOrderText(order.id)}" ${blocked ? "disabled" : ""}>
+          ${order.equipeId ? "Trocar equipe" : "Atribuir equipe"}
+        </button>
         <button class="service-order-cancel-button" type="button"
           data-cancel-service-order="${escapeServiceOrderText(order.id)}" ${blocked ? "disabled" : ""}>
           ${operation?.kind === "cancel" && operation.phase === "sending" ? "Cancelando..." : "Cancelar ordem de serviço"}
@@ -483,6 +611,9 @@ function rememberServiceOrder(order){
   if (!canChangeServiceOrder(order)){
     serviceOrdersState.completionForms.delete(order.id);
     serviceOrdersState.completionDrafts.delete(order.id);
+    serviceOrdersState.teamForms.delete(order.id);
+    serviceOrdersState.teamOptions.delete(order.id);
+    serviceOrdersState.teamDrafts.delete(order.id);
   }
   renderServiceOrdersTable();
 }
@@ -507,6 +638,11 @@ function renderCurrentServiceOrder(orderId){
 function completionRecoveryMessage(order, operation){
   if (order.status === "Concluída") return "A ordem de serviço está concluída.";
   if (order.status === "Cancelada") return "A ordem de serviço está cancelada.";
+  if (operation.kind === "assign"){
+    return order.equipeId === operation.equipeId
+      ? "Equipe atribuída. A ordem está em andamento."
+      : "A atribuição não foi confirmada. Atualize as equipes antes de tentar novamente.";
+  }
   const action = operation.kind === "complete" ? "conclusão" : "cancelamento";
   return `A ${action} não foi confirmada. A ordem continua ${order.status.toLocaleLowerCase("pt-BR")}; você pode tentar novamente.`;
 }
@@ -524,6 +660,11 @@ async function recoverServiceOrderOperation(orderId, operation){
       const order = await buscarOrdemDeServico(orderId);
       if (serviceOrdersState.operations.get(orderId) !== operation) return;
       serviceOrdersState.operations.delete(orderId);
+      if (operation.kind === "assign"){
+        if (order.equipeId === operation.equipeId) serviceOrdersState.teamForms.delete(orderId);
+        const options = serviceOrdersState.teamOptions.get(orderId);
+        if (options) options.error = "Atualize a lista de equipes para continuar.";
+      }
       acceptServiceOrderActionResult(order, completionRecoveryMessage(order, operation));
     } catch (error){
       if (serviceOrdersState.operations.get(orderId) !== operation) return;
@@ -539,11 +680,11 @@ async function recoverServiceOrderOperation(orderId, operation){
   return operation.checkPromise;
 }
 
-async function runServiceOrderOperation(orderId, kind, send){
+async function runServiceOrderOperation(orderId, kind, send, metadata = {}){
   if (serviceOrdersState.operations.has(orderId)) return;
   const operation = {
-    kind, phase: "sending", checkPromise: null,
-    message: kind === "complete" ? "Concluindo o serviço..." : "Cancelando a ordem de serviço..."
+    ...metadata, kind, phase: "sending", checkPromise: null,
+    message: kind === "assign" ? "Salvando a equipe..." : kind === "complete" ? "Concluindo o serviço..." : "Cancelando a ordem de serviço..."
   };
   serviceOrdersState.operations.set(orderId, operation);
   serviceOrdersState.feedback.delete(orderId);
@@ -554,7 +695,14 @@ async function runServiceOrderOperation(orderId, kind, send){
     const order = await send();
     if (serviceOrdersState.operations.get(orderId) !== operation) return;
     serviceOrdersState.operations.delete(orderId);
-    acceptServiceOrderActionResult(order, kind === "complete"
+    if (kind === "assign"){
+      serviceOrdersState.teamForms.delete(orderId);
+      serviceOrdersState.teamOptions.delete(orderId);
+      serviceOrdersState.teamDrafts.delete(orderId);
+    }
+    acceptServiceOrderActionResult(order, kind === "assign"
+      ? "Equipe atribuída. A ordem está em andamento."
+      : kind === "complete"
       ? "Serviço concluído. O registro de execução foi salvo."
       : "Ordem de serviço cancelada com sucesso.");
   } catch (error){
@@ -588,6 +736,7 @@ function openServiceOrderCompletionForm(orderId){
   const order = serviceOrdersState.details.get(orderId);
   if (!isCurrentServiceOrder(orderId) || !canChangeServiceOrder(order)
       || serviceOrdersState.operations.has(orderId)) return;
+  serviceOrdersState.teamForms.delete(orderId);
   serviceOrdersState.completionForms.add(orderId);
   serviceOrdersState.feedback.delete(orderId);
   renderServiceOrderDetails(order);
@@ -644,6 +793,7 @@ async function openServiceOrderDetails(orderId){
         || revision !== (serviceOrdersState.orderRevisions.get(orderId) || 0)) return;
     rememberServiceOrder(order);
     renderServiceOrderDetails(order);
+    if (serviceOrdersState.teamForms.has(orderId) && !serviceOrdersState.operations.has(orderId)) loadServiceOrderTeams(orderId);
   } catch (error){
     if (request !== serviceOrdersState.detailsRequest || !isCurrentServiceOrder(orderId)
         || revision !== (serviceOrdersState.orderRevisions.get(orderId) || 0)) return;
@@ -706,6 +856,9 @@ function setupServiceOrdersEvents(){
     if (trigger.dataset.cancelServiceOrder) cancelServiceOrderFromDetails(trigger.dataset.cancelServiceOrder);
     if (trigger.dataset.openCompletionForm) openServiceOrderCompletionForm(trigger.dataset.openCompletionForm);
     if (trigger.dataset.closeCompletionForm) closeServiceOrderCompletionForm(trigger.dataset.closeCompletionForm);
+    if (trigger.dataset.openTeamForm) openServiceOrderTeamForm(trigger.dataset.openTeamForm);
+    if (trigger.dataset.closeTeamForm) closeServiceOrderTeamForm(trigger.dataset.closeTeamForm);
+    if (trigger.dataset.refreshOrderTeams) loadServiceOrderTeams(trigger.dataset.refreshOrderTeams);
     if (trigger.dataset.checkServiceOrder){
       const id = trigger.dataset.checkServiceOrder;
       recoverServiceOrderOperation(id, serviceOrdersState.operations.get(id));
@@ -717,7 +870,18 @@ function setupServiceOrdersEvents(){
     if (form) saveServiceOrderCompletionDraft(form);
   });
 
+  serviceOrdersPage.modalContent.addEventListener("change", event => {
+    const form = event.target.closest("[data-assign-service-order]");
+    if (form) serviceOrdersState.teamDrafts.set(form.dataset.assignServiceOrder, form.elements.namedItem("equipeId").value);
+  });
+
   serviceOrdersPage.modalContent.addEventListener("submit", event => {
+    const teamForm = event.target.closest("[data-assign-service-order]");
+    if (teamForm){
+      event.preventDefault();
+      assignServiceOrderTeamFromDetails(teamForm);
+      return;
+    }
     const form = event.target.closest("[data-complete-service-order]");
     if (!form) return;
     event.preventDefault();

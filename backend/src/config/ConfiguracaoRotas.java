@@ -274,6 +274,14 @@ public class ConfiguracaoRotas {
                 "/api/ordens-servico/{id}/status",
                 ctx -> ordemDeServicoController.alterarStatus(ctx));
 
+        servidorHttp.get(
+                "/api/ordens-servico/{id}/equipes",
+                ctx -> ordemDeServicoController.listarEquipes(ctx));
+
+        servidorHttp.patch(
+                "/api/ordens-servico/{id}/equipe",
+                ctx -> ordemDeServicoController.atribuirEquipe(ctx));
+
         servidorHttp.post(
                 "/api/ordens-servico/{id}/conclusao",
                 ctx -> ordemDeServicoController.concluir(ctx));

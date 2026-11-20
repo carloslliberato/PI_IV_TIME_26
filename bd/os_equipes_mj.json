@@ -1,0 +1,50 @@
+[
+  {
+    "municipioId": {
+      "$oid": "6ae666a7680e8a4330a1ab66"
+    },
+    "arvoreId": {
+      "$oid": "000000000000000000000001"
+    },
+    "ocorrenciaId": null,
+    "equipeId": null,
+    "codigo": null,
+    "titulo": "[TESTE MJ] OS A - atribuição de equipe",
+    "descricao": "Documento de teste da OS A para validar atribuição, troca e disponibilidade de equipe real do município. O identificador da árvore é fictício.",
+    "status": "Aberta",
+    "prioridade": "Baixa",
+    "observacoes": "[TESTE MJ] Usar equipe real do mesmo município. Este documento não cria árvore, ocorrência ou equipe. Não representa serviço operacional.",
+    "dataCriacao": {
+      "$date": "2026-11-20T13:00:00Z"
+    },
+    "dataAtualizacao": {
+      "$date": "2026-11-20T13:00:00Z"
+    },
+    "dataConclusao": null,
+    "intervencaoConclusaoId": null
+  },
+  {
+    "municipioId": {
+      "$oid": "6ae666a7680e8a4330a1ab66"
+    },
+    "arvoreId": {
+      "$oid": "000000000000000000000001"
+    },
+    "ocorrenciaId": null,
+    "equipeId": null,
+    "codigo": null,
+    "titulo": "[TESTE MJ] OS B - atribuição de equipe",
+    "descricao": "Documento de teste da OS B para validar atribuição, troca e disponibilidade de equipe real do município. O identificador da árvore é fictício.",
+    "status": "Aberta",
+    "prioridade": "Baixa",
+    "observacoes": "[TESTE MJ] Usar equipe real do mesmo município. Este documento não cria árvore, ocorrência ou equipe. Não representa serviço operacional.",
+    "dataCriacao": {
+      "$date": "2026-11-20T13:00:00Z"
+    },
+    "dataAtualizacao": {
+      "$date": "2026-11-20T13:00:00Z"
+    },
+    "dataConclusao": null,
+    "intervencaoConclusaoId": null
+  }
+]

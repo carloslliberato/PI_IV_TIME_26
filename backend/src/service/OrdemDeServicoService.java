@@ -15,6 +15,8 @@ import java.time.ZoneId;
 import org.bson.types.ObjectId;
 import model.Conta;
 import model.OrdemDeServico;
+import model.EquipeParaOrdemDeServico;
+import dto.AtribuicaoEquipeOrdemDeServicoDTO;
 import model.Intervencao;
 import model.ConclusaoOrdemDeServico;
 import repository.ContaRepository;
@@ -230,13 +232,27 @@ public class OrdemDeServicoService {
         }
     }
 
+    public List<EquipeParaOrdemDeServico> listarEquipesParaOrdem(ObjectId id, ObjectId municipioId){
+        return ordemRepository.listarEquipesParaOrdem(id, municipioId);
+    }
+
+    public OrdemDeServico atribuirEquipe(ObjectId id, ObjectId municipioId, AtribuicaoEquipeOrdemDeServicoDTO dados){
+        ObjectId equipeId = validarIdEquipe(dados);
+        return ordemRepository.atribuirEquipe(id, municipioId, equipeId, Instant.now());
+    }
+
+    public static ObjectId validarIdEquipe(AtribuicaoEquipeOrdemDeServicoDTO dados){
+        if (dados == null || dados.getEquipeId() == null || dados.getEquipeId().isBlank())
+            throw new IllegalArgumentException("Selecione uma equipe para a ordem de serviço.");
+        String equipeId = dados.getEquipeId().strip();
+        if (!ObjectId.isValid(equipeId))
+            throw new IllegalArgumentException("O identificador da equipe é inválido.");
+        return new ObjectId(equipeId);
+    }
+
     // Cancela uma OS do município informado e salva a alteração.
     public OrdemDeServico cancelar(ObjectId id, ObjectId municipioId){
-        OrdemDeServico ordem = buscarPorId(id, municipioId);
-
-        ordem.cancelar();
-        ordemRepository.atualizar(ordem);
-        return ordem;
+        return ordemRepository.cancelar(id, municipioId, Instant.now());
     }
 
 }
