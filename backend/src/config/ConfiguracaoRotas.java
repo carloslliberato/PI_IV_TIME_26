@@ -309,5 +309,8 @@ public class ConfiguracaoRotas {
                 "/api/relatorios/ordens-servico",
                 ctx -> relatorioController.consultarOrdensDeServico(ctx));
 
+        servidorHttp.get(
+                "/api/relatorios/arvores",
+                ctx -> relatorioController.consultarArvores(ctx));
     }
 }
