@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -29,7 +30,7 @@ public class OcorrenciaRepository {
 
     // Salva uma nova ocorrência no MongoDB
     public Document criar(Ocorrencia o) {
-        Document doc = new Document("_id", o.getId())
+        Document doc = new Document("_id", o.getOcorrenciaId())
                 .append("id", o.getId())
                 .append("protocolo", o.getProtocolo())
                 .append("municipioId", o.getMunicipioId())
@@ -61,7 +62,12 @@ public class OcorrenciaRepository {
         List<Bson> filtros = new ArrayList<>();
 
         if (municipioId != null && !municipioId.isBlank()) {
-            filtros.add(Filters.regex("municipioId", "^" + municipioId + "$", "i"));
+            if (ObjectId.isValid(municipioId)) {
+                filtros.add(Filters.eq("municipioId", new ObjectId(municipioId)));
+            } else {
+                // Compatibilidade com registros antigos que guardavam o município como texto.
+                filtros.add(Filters.regex("municipioId", "^" + municipioId + "$", "i"));
+            }
         }
         if (tipoProblema != null && !tipoProblema.isBlank()) {
             filtros.add(Filters.regex("tipoProblema", tipoProblema, "i"));
@@ -84,7 +90,7 @@ public class OcorrenciaRepository {
 
     // Busca uma ocorrência específica pelo ID
     public Document buscarPorId(String id) {
-        return colecao.find(Filters.eq("_id", id)).first();
+        return colecao.find(filtroPorId(id)).first();
     }
 
     // Busca uma ocorrência pelo número de protocolo (ex: CH-123456)
@@ -100,13 +106,13 @@ public class OcorrenciaRepository {
         if (observacao != null && !observacao.isBlank()) {
             updates.add(Updates.set("observacaoInterna", observacao));
         }
-        return colecao.updateOne(Filters.eq("_id", id), Updates.combine(updates)).getModifiedCount() > 0;
+        return colecao.updateOne(filtroPorId(id), Updates.combine(updates)).getModifiedCount() > 0;
     }
 
     // Atualiza a prioridade (urgência) do chamado no banco
     public boolean atualizarPrioridade(String id, String novaUrgencia) {
         return colecao.updateOne(
-                Filters.eq("_id", id),
+                filtroPorId(id),
                 Updates.combine(
                         Updates.set("urgencia", novaUrgencia),
                         Updates.set("atualizadoEm", Instant.now().toString())
@@ -117,7 +123,7 @@ public class OcorrenciaRepository {
     // Atualiza a preferência de notificações de um chamado no MongoDB
     public boolean atualizarNotificacao(String id, boolean receber, String nome, String email, String telefone) {
         return colecao.updateOne(
-                Filters.eq("_id", id),
+                filtroPorId(id),
                 Updates.combine(
                         Updates.set("receberNotificacoes", receber),
                         Updates.set("nomeContato", nome),
@@ -126,5 +132,20 @@ public class OcorrenciaRepository {
                         Updates.set("atualizadoEm", Instant.now().toString())
                 )
         ).getModifiedCount() > 0;
+    }
+
+    // A API aceita o ID textual personalizado; ObjectId e registros antigos também são aceitos.
+    private Bson filtroPorId(String id) {
+        List<Bson> alternativas = new ArrayList<>();
+        alternativas.add(Filters.eq("id", id));
+        // Também localiza documentos legados cujo identificador textual estava em _id.
+        alternativas.add(Filters.eq("_id", id));
+        if (ObjectId.isValid(id)) {
+            ObjectId objectId = new ObjectId(id);
+            alternativas.add(Filters.eq("_id", objectId));
+            // Compatibilidade com documentos criados antes da migração para _id ObjectId.
+            alternativas.add(Filters.eq("ocorrenciaId", objectId));
+        }
+        return Filters.or(alternativas);
     }
 }

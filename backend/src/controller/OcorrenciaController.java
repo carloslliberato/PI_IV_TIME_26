@@ -5,8 +5,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.bson.Document;
+import org.bson.types.ObjectId;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializer;
 
 import dto.AtualizacaoOcorrenciaDTO;
 import dto.CadastroOcorrenciaDTO;
@@ -17,7 +21,10 @@ import service.OcorrenciaService;
 public class OcorrenciaController {
 
     private final OcorrenciaService service;
-    private final Gson gson = new Gson();
+    private final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(ObjectId.class,
+                    (JsonSerializer<ObjectId>) (id, tipo, contexto) -> new JsonPrimitive(id.toHexString()))
+            .create();
 
     public OcorrenciaController(OcorrenciaService service) {
         this.service = service;

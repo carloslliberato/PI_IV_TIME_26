@@ -62,6 +62,12 @@ function initializeCitizenOccurrences() {
   // Formata o nome do município (ex: transforma "campinas" em "Campinas")
   function formatarMunicipio(mun) {
     if (!mun) return "Campinas";
+    const nomesPorId = {
+      "6ae666a7680e8a4330a1ab66": "Campinas",
+      "6ae7854cb9962492d01e6af6": "Hortolândia",
+      "6ae7856ab9962492d01e6af7": "Sumaré"
+    };
+    if (nomesPorId[mun]) return nomesPorId[mun];
     return mun.charAt(0).toUpperCase() + mun.slice(1);
   }
 

@@ -3,12 +3,18 @@ package model;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+
+import org.bson.types.ObjectId;
+
+import java.time.Year;
 
 // Classe que representa uma Ocorrência (chamado) dentro do sistema
 public class Ocorrencia {
+    private ObjectId ocorrenciaId;
     private String id;
     private String protocolo;
-    private String municipioId;
+    private ObjectId municipioId;
     private String cidadaoId;
     private String arvoreId;
     private String tipoProblema;
@@ -30,11 +36,13 @@ public class Ocorrencia {
 
     // Construtor que já gera ID automático, protocolo único e valores iniciais
     public Ocorrencia() {
-        this.id = "oco_" + UUID.randomUUID().toString().substring(0, 8);
-        this.protocolo = "CH-" + System.currentTimeMillis();
+        this.ocorrenciaId = new ObjectId();
+        long currentTimeMillis = System.currentTimeMillis();
+        this.protocolo = "CH-" + currentTimeMillis;
+        int aleatorio = ThreadLocalRandom.current().nextInt(10_000); // 4 dígitos aleatórios
+        this.id = "OCO" + Year.now().getValue() + aleatorio + currentTimeMillis;
         this.status = "Recebida";
         this.urgencia = "Média";
-        this.municipioId = "campinas";
         this.cidadaoId = "cid_anonimo";
         String agora = Instant.now().toString();
         this.criadoEm = agora;
@@ -42,14 +50,18 @@ public class Ocorrencia {
     }
 
     // Métodos Getters e Setters para acessar e alterar os dados da ocorrência
+
+    public ObjectId getOcorrenciaId() { return ocorrenciaId; }
+    public void setOcorrenciaId(ObjectId ocorrenciaId) { this.ocorrenciaId = ocorrenciaId;}
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
     public String getProtocolo() { return protocolo; }
     public void setProtocolo(String protocolo) { this.protocolo = protocolo; }
 
-    public String getMunicipioId() { return municipioId; }
-    public void setMunicipioId(String municipioId) { this.municipioId = municipioId; }
+    public ObjectId getMunicipioId() { return municipioId; }
+    public void setMunicipioId(ObjectId municipioId) { this.municipioId = municipioId; }
 
     public String getCidadaoId() { return cidadaoId; }
     public void setCidadaoId(String cidadaoId) { this.cidadaoId = cidadaoId; }
@@ -104,4 +116,6 @@ public class Ocorrencia {
 
     public String getAtualizadoEm() { return atualizadoEm; }
     public void setAtualizadoEm(String atualizadoEm) { this.atualizadoEm = atualizadoEm; }
+
+
 }

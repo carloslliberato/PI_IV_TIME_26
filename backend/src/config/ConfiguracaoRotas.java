@@ -108,7 +108,7 @@ public class ConfiguracaoRotas {
                 new OcorrenciaRepository();
 
         OcorrenciaService ocorrenciaService =
-                new OcorrenciaService(ocorrenciaRepository);
+                new OcorrenciaService(ocorrenciaRepository, municipioRepository);
 
         this.ocorrenciaController =
                 new OcorrenciaController(ocorrenciaService);

@@ -18,6 +18,7 @@ public class CadastroOcorrenciaDTO {
     public String telefoneContato;
 
     // Dados complementares do chamado
+    // Recebe o nome do município, resolvido para ObjectId pelo MunicipioRepository.
     public String municipioId;
     public String cidadaoId;
     public String arvoreId;

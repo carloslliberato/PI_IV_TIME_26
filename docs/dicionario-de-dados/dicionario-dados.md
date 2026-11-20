@@ -20,7 +20,27 @@ Atributos:
 | dataCadastro | Date | Sim | Data e horário de criação da conta. |
 | dataAtualizacao | Date | Não | Data e horário da última atualização dos dados da conta. |
 
-### 2. Equipe
+### 2. Ocorrência
+Descrição: Armazena chamados de cidadãos relacionados à arborização urbana.
+
+Atributos principais:
+
+| Nome | Tipo | Obrigatoriedade | Descrição |
+| --- | --- | --- | --- |
+| _id | ObjectId | Sim | Identificador interno BSON atribuído na criação e usado nas referências entre coleções. |
+| id | String | Sim | Identificador personalizado da ocorrência, usado pelas telas e rotas da API. |
+| protocolo | String | Sim | Código de acompanhamento apresentado ao cidadão. |
+| municipioId | ObjectId | Sim | Identificador do documento do município associado. |
+| cidadaoId | String | Sim | Identificador do cidadão associado ou valor anônimo. |
+| tipoProblema | String | Sim | Categoria do problema informado. |
+| descricao | String | Sim | Descrição do problema. |
+| localizacao | String | Sim | Endereço ou localização informada. |
+| urgencia | String | Sim | Prioridade da ocorrência. |
+| status | String | Sim | Situação atual do chamado. |
+
+As ordens de serviço referenciam a ocorrência pelo ObjectId armazenado em `_id`, no campo `ocorrenciaId` da ordem.
+
+### 3. Equipe
 Descrição: Armazena equipes municipais criadas por funcionários autenticados.
 
 Atributos:

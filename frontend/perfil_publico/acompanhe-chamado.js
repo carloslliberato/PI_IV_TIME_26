@@ -44,6 +44,12 @@ function initializeTicketTracking() {
   // Formata o nome do município (ex: "campinas" vira "Campinas - SP")
   function formatarMunicipio(mun) {
     if (!mun) return "Campinas - SP";
+    const nomesPorId = {
+      "6ae666a7680e8a4330a1ab66": "Campinas - SP",
+      "6ae7854cb9962492d01e6af6": "Hortolândia - SP",
+      "6ae7856ab9962492d01e6af7": "Sumaré - SP"
+    };
+    if (nomesPorId[mun]) return nomesPorId[mun];
     if (mun.includes("-")) return mun;
     return mun.charAt(0).toUpperCase() + mun.slice(1) + " - SP";
   }

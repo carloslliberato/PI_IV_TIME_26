@@ -44,6 +44,16 @@
           <form id="reportForm" novalidate>
             <div class="row g-3">
               <div class="col-md-6">
+                <label class="form-label" for="reportMunicipality">Município <span>*</span></label>
+                <select class="form-select" id="reportMunicipality" name="municipioId" required>
+                  <option value="" selected disabled>Selecione o município</option>
+                  <option value="Campinas">Campinas - SP</option>
+                  <option value="Hortolândia">Hortolândia - SP</option>
+                  <option value="Sumaré">Sumaré - SP</option>
+                </select>
+                <div class="invalid-feedback">Selecione o município da ocorrência.</div>
+              </div>
+              <div class="col-md-6">
                 <label class="form-label" for="reportType">Tipo de ocorrência <span>*</span></label>
                 <select class="form-select" id="reportType" name="tipo" required>
                   <option value="" selected disabled>Selecione o tipo de ocorrência</option>

@@ -5,6 +5,11 @@
 
 // ID de referência de Campinas na coleção de árvores
 const MUNICIPIO_ID_PUBLICO_CAMPINAS = "6ae666a7680e8a4330a1ab66";
+const MUNICIPIO_IDS_PARA_CHAVE = {
+  "6ae666a7680e8a4330a1ab66": "campinas",
+  "6ae7854cb9962492d01e6af6": "hortolandia",
+  "6ae7856ab9962492d01e6af7": "sumare"
+};
 let trees = [];
 let publicOccurrences = [];
 
@@ -45,12 +50,14 @@ async function carregarArvoresPublicas() {
 }
 
 // Caso uma ocorrência antiga não tenha latitude/longitude, posiciona pelo bairro em Campinas
-function coordenadasFallbackPublico(bairro) {
+function coordenadasFallbackPublico(bairro, municipioId) {
   const b = String(bairro || "").toLowerCase();
   if (b.includes("taquaral")) return { lat: -22.8754, lng: -47.0475 };
   if (b.includes("cambu")) return { lat: -22.8942, lng: -47.0531 };
   if (b.includes("chapad")) return { lat: -22.8895, lng: -47.0742 };
   if (b.includes("barao") || b.includes("barão")) return { lat: -22.8228, lng: -47.0805 };
+  if (municipioId === "sumare") return { lat: -22.8214, lng: -47.2660 };
+  if (municipioId === "hortolandia") return { lat: -22.8583, lng: -47.2200 };
   return { lat: -22.9056, lng: -47.0608 };
 }
 
@@ -65,12 +72,13 @@ async function carregarOcorrenciasPublicas() {
 
     publicOccurrences = dados.map(oco => {
       const bairro = oco.bairro || "Centro";
-      const fallback = coordenadasFallbackPublico(bairro);
+      const municipioId = MUNICIPIO_IDS_PARA_CHAVE[oco.municipioId] || String(oco.municipioId || "campinas").toLowerCase();
+      const fallback = coordenadasFallbackPublico(bairro, municipioId);
       const temCoords = Number.isFinite(oco.latitude) && Number.isFinite(oco.longitude);
 
       return {
         id: String(oco.protocolo || oco.id || oco._id),
-        municipioId: (oco.municipioId || "campinas").toLowerCase(),
+        municipioId,
         lat: temCoords ? oco.latitude : fallback.lat,
         lng: temCoords ? oco.longitude : fallback.lng,
         tipo: oco.tipoProblema || "Ocorrência arbórea",

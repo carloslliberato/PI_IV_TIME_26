@@ -5,16 +5,19 @@ import java.util.List;
 import java.util.Set;
 
 import org.bson.Document;
+import org.bson.types.ObjectId;
 
 import dto.AtualizacaoOcorrenciaDTO;
 import dto.CadastroOcorrenciaDTO;
 import model.Ocorrencia;
+import repository.MunicipioRepository;
 import repository.OcorrenciaRepository;
 
 // Classe com as regras de negócio e validações das ocorrências
 public class OcorrenciaService {
 
     private final OcorrenciaRepository repository;
+    private final MunicipioRepository municipioRepository;
 
     // Lista de status e prioridades permitidos no sistema
     private static final Set<String> STATUS_VALIDOS = Set.of(
@@ -25,8 +28,9 @@ public class OcorrenciaService {
             "Baixa", "Média", "Alta", "Crítica"
     );
 
-    public OcorrenciaService(OcorrenciaRepository repository) {
+    public OcorrenciaService(OcorrenciaRepository repository, MunicipioRepository municipioRepository) {
         this.repository = repository;
+        this.municipioRepository = municipioRepository;
     }
 
     // Valida os campos do formulário e cria um novo chamado
@@ -48,6 +52,12 @@ public class OcorrenciaService {
         if (dto.descricao == null || dto.descricao.isBlank()) {
             throw new IllegalArgumentException("Informe a descrição do problema.");
         }
+        if (dto.municipioId == null || dto.municipioId.isBlank()) {
+            throw new IllegalArgumentException("Selecione o município da ocorrência.");
+        }
+        String municipioNome = dto.municipioId.trim();
+        ObjectId municipioId = municipioRepository.buscarIdPorNome(municipioNome)
+                .orElseThrow(() -> new IllegalArgumentException("Município não encontrado."));
 
         // Se o cidadão marcou que quer receber notificações, valida se preencheu nome, email e telefone
         boolean querNotificacao = Boolean.TRUE.equals(dto.receberNotificacoes);
@@ -76,9 +86,7 @@ public class OcorrenciaService {
         if (dto.urgencia != null && !dto.urgencia.isBlank()) {
             nova.setUrgencia(dto.urgencia);
         }
-        if (dto.municipioId != null && !dto.municipioId.isBlank()) {
-            nova.setMunicipioId(dto.municipioId.toLowerCase());
-        }
+        nova.setMunicipioId(municipioId);
         if (dto.cidadaoId != null && !dto.cidadaoId.isBlank()) {
             nova.setCidadaoId(dto.cidadaoId);
         }
@@ -89,7 +97,7 @@ public class OcorrenciaService {
             nova.setLatitude(dto.latitude);
             nova.setLongitude(dto.longitude);
         } else {
-            double[] coords = obterCoordenadasPorBairro(nova.getBairro());
+            double[] coords = obterCoordenadasPorBairro(nova.getBairro(), municipioNome);
             nova.setLatitude(coords[0]);
             nova.setLongitude(coords[1]);
         }
@@ -152,13 +160,15 @@ public class OcorrenciaService {
                 dto != null ? dto.telefoneContato : null);
     }
 
-    // Retorna coordenadas aproximadas em Campinas para que ocorrências sem GPS apareçam no mapa
-    private double[] obterCoordenadasPorBairro(String bairro) {
+    // Retorna coordenadas aproximadas para que ocorrências sem GPS apareçam no mapa.
+    private double[] obterCoordenadasPorBairro(String bairro, String municipioNome) {
         String b = (bairro != null) ? bairro.toLowerCase() : "";
         if (b.contains("taquaral")) return new double[]{-22.8754, -47.0475};
         if (b.contains("cambu")) return new double[]{-22.8942, -47.0531};
         if (b.contains("chapad")) return new double[]{-22.8895, -47.0742};
         if (b.contains("barao") || b.contains("barão")) return new double[]{-22.8228, -47.0805};
+        if ("Sumaré".equalsIgnoreCase(municipioNome)) return new double[]{-22.8214, -47.2660};
+        if ("Hortolândia".equalsIgnoreCase(municipioNome)) return new double[]{-22.8583, -47.2200};
         // Padrão: Centro de Campinas (com leve variação para não sobrepor pinos)
         double offset = (Math.random() - 0.5) * 0.006;
         return new double[]{-22.9056 + offset, -47.0608 + offset};
