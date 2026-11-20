@@ -14,6 +14,15 @@ function atualizarCardsDashboard(indicadores) {
     const elemento = document.getElementById(metrica.elemento);
     if (!elemento) return;
 
+    // A falha de consulta de um indicador não deve aparecer como quantidade zero.
+    if (indicadores[metrica.chave] === null) {
+      const mensagem = "Não foi possível carregar este indicador.";
+      elemento.textContent = mensagem;
+      elemento.classList.add("dashboard-value-empty");
+      elemento.setAttribute("aria-label", mensagem);
+      return;
+    }
+
     const valor = Number(indicadores[metrica.chave]) || 0;
 
     // Se não houver registros no banco, mostra a mensagem informativa em vez do número
@@ -62,6 +71,31 @@ async function buscarListaDaApi(url) {
   }
 }
 
+// Consulta o total de OS no relatório autorizado pelo município da conta.
+async function buscarTotalDeOrdens() {
+  try {
+    const resposta = await fetch("/api/relatorios/ordens-servico", {
+      credentials: "same-origin",
+      cache: "no-store"
+    });
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+      throw new Error(dados?.erro || "Não foi possível consultar o total de ordens de serviço.");
+    }
+
+    const total = dados?.relatorio?.totalOrdens;
+    if (!Number.isSafeInteger(total) || total < 0) {
+      throw new Error("A API retornou um total de ordens de serviço inválido.");
+    }
+
+    return total;
+  } catch (erro) {
+    console.error("Erro ao consultar o indicador de ordens de serviço:", erro);
+    return null;
+  }
+}
+
 // Busca os dados da sessão do profissional logado (nome e município) no back-end
 async function carregarDadosSessaoProfissional() {
   let nome = localStorage.getItem("nome")
@@ -96,11 +130,11 @@ async function carregarDadosSessaoProfissional() {
 async function carregarDashboardProfissional() {
   await carregarDadosSessaoProfissional();
 
-  // Busca em paralelo as árvores, ocorrências e ordens de serviço cadastradas no banco
-  const [arvores, ocorrencias, ordens] = await Promise.all([
+  // Busca árvores e ocorrências em paralelo com o total municipal de OS.
+  const [arvores, ocorrencias, totalOrdens] = await Promise.all([
     buscarListaDaApi("/api/arvores"),
     buscarListaDaApi("/api/ocorrencias"),
-    buscarListaDaApi("/api/ordens-servico")
+    buscarTotalDeOrdens()
   ]);
 
   // Conta quantas árvores estão classificadas com risco Alto ou Crítico
@@ -113,7 +147,7 @@ async function carregarDashboardProfissional() {
   const indicadoresReais = {
     totalArvores: arvores.length,
     totalOcorrencias: ocorrencias.length,
-    totalOrdens: ordens.length
+    totalOrdens
   };
 
   atualizarCardsDashboard(indicadoresReais);

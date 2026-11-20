@@ -53,29 +53,37 @@
         </section>
 
         <!-- Resume o relatório selecionado e apresenta contagem e distribuição visual. -->
-        <section class="reports-card" aria-labelledby="reportTitle">
+        <section class="reports-card" id="reportCard" aria-labelledby="reportTitle" aria-busy="false">
           <header class="reports-card-heading">
             <div>
               <h2 id="reportTitle">Carregando relatório...</h2>
               <p id="reportDescription" aria-live="polite"></p>
+              <p id="reportFeedback" role="status" aria-live="polite" hidden></p>
+              <p id="reportDateWarning" aria-live="polite" hidden></p>
+              <div id="reportRetry" hidden>
+                <button class="reports-export" id="retryOrderReport" type="button">Tentar novamente</button>
+              </div>
             </div>
             <span class="reports-total"><strong id="reportTotal">—</strong><span id="reportTotalLabel">registros</span></span>
           </header>
 
-          <!-- As barras são desenhadas no navegador a partir das contagens agrupadas. -->
-          <div class="reports-chart" id="reportChart" role="img" aria-label="Gráfico de distribuição do relatório"></div>
+          <!-- Oculta gráfico e tabela enquanto a consulta está pendente ou falhou. -->
+          <div id="reportVisualization">
+            <!-- As barras são desenhadas no navegador a partir das contagens agrupadas. -->
+            <div class="reports-chart" id="reportChart" role="img" aria-label="Gráfico de distribuição do relatório"></div>
 
-          <!-- Mantém os mesmos dados em formato tabular para leitura e acessibilidade. -->
-          <div class="reports-table-wrap">
-            <table class="reports-table">
-              <thead><tr><th id="reportGroupColumn" scope="col">Grupo</th><th scope="col">Quantidade</th><th scope="col">Participação</th></tr></thead>
-              <tbody id="reportTableBody"></tbody>
-            </table>
+            <!-- Mantém os mesmos dados em formato tabular para leitura e acessibilidade. -->
+            <div class="reports-table-wrap">
+              <table class="reports-table">
+                <thead><tr><th id="reportGroupColumn" scope="col">Grupo</th><th scope="col">Quantidade</th><th scope="col">Participação</th></tr></thead>
+                <tbody id="reportTableBody"></tbody>
+              </table>
+            </div>
           </div>
         </section>
 
-        <!-- Informa a área dos dados de demonstração enquanto a API ainda não estiver conectada. -->
-        <p class="reports-source-note"><i class="bi bi-info-circle" aria-hidden="true"></i> Os números desta visualização são fictícios.</p>
+        <!-- Identifica dados reais de OS e dados de demonstração dos demais assuntos. -->
+        <p class="reports-source-note"><i class="bi bi-info-circle" aria-hidden="true"></i><span id="reportSourceNote" aria-live="polite">Os números desta visualização são fictícios.</span></p>
       </section>
     </main>
   </div>
