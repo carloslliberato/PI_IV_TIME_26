@@ -40,7 +40,17 @@ Atributos principais:
 
 As ordens de serviço referenciam a ocorrência pelo ObjectId armazenado em `_id`, no campo `ocorrenciaId` da ordem.
 
-### 3. Equipe
+### 3. Árvore
+Descrição: Armazena árvores cadastradas para consulta e gestão de manutenção.
+
+| Nome | Tipo | Obrigatoriedade | Descrição |
+| --- | --- | --- | --- |
+| _id | ObjectId | Sim | Identificador interno usado pelas referências entre coleções, incluindo `arvoreId` nas ordens de serviço. |
+| municipioId | ObjectId | Sim | Identificador do documento do município associado. |
+| nomePopular | String | Sim | Nome popular da árvore. |
+| especie | String | Sim | Espécie da árvore. |
+
+### 4. Equipe
 Descrição: Armazena equipes municipais criadas por funcionários autenticados.
 
 Atributos:

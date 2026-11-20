@@ -80,6 +80,7 @@ public class ConfiguracaoRotas {
         ArvoreService arvoreService =
                 new ArvoreService(
                         arvoreRepository,
+                        municipioRepository,
                         conexaoServidor);
 
         this.arvoreController =

@@ -9,6 +9,7 @@ import com.mongodb.client.model.Filters;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
@@ -17,10 +18,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.regex.Pattern;
 
-import static com.mongodb.client.model.Filters.eq;
 
 public class ArvoreRepository {
 
@@ -41,15 +40,13 @@ public class ArvoreRepository {
     // FILTRAR ARVORES DIRETAMENTE NO MONGODB
 
     public ArrayList<Arvore> buscarFiltradas(
-            Map<String, String> filtros) {
+            Map<String, String> filtros,
+            ObjectId municipioId) {
 
         List<Bson> condicoes = new ArrayList<>();
 
-        String municipioId = filtros.get("municipioId");
-
         if (municipioId != null) {
-            condicoes.add(
-                    Filters.eq("municipioId", municipioId));
+            condicoes.add(Filters.eq("municipioId", municipioId));
         }
 
         adicionarTexto(
@@ -134,7 +131,7 @@ public class ArvoreRepository {
             double latitude,
             double longitude,
             double raioKm,
-            String municipioId) {
+            ObjectId municipioId) {
 
         // GeoJSON: longitude primeiro, latitude depois
         Document ponto = new Document("type", "Point")
@@ -154,12 +151,8 @@ public class ArvoreRepository {
                 "localizacao", perto)
                 .append("ativa", true);
 
-        if (municipioId != null &&
-                !municipioId.isBlank()) {
-
-            consulta.append(
-                    "municipioId",
-                    municipioId.trim());
+        if (municipioId != null) {
+            consulta.append("municipioId", municipioId);
         }
 
         // Limita a quantidade retornada
@@ -240,10 +233,10 @@ public class ArvoreRepository {
 
     // BUSCAR ARVORE PELO ID
 
-    public Optional<Arvore> buscarPorId(String id) {
+    public Optional<Arvore> buscarPorId(ObjectId id) {
 
         Document documento = colecao
-                .find(eq("_id", id))
+                .find(Filters.eq("_id", id))
                 .first();
 
         if (documento == null) {
@@ -258,11 +251,8 @@ public class ArvoreRepository {
 
     public void salvar(Arvore arvore) {
 
-        if (arvore.getId() == null ||
-                arvore.getId().isBlank()) {
-
-            arvore.setId(
-                    UUID.randomUUID().toString());
+        if (arvore.getId() == null) {
+            arvore.setId(new ObjectId());
         }
 
         Document documento =
@@ -286,7 +276,7 @@ public class ArvoreRepository {
     // ATUALIZAR DADOS DE UMA ARVORE
 
     public boolean atualizar(
-            String id,
+            ObjectId id,
             Arvore arvore) {
 
         Document documento =
@@ -300,7 +290,7 @@ public class ArvoreRepository {
                 "$set", documento);
 
         long quantidade = colecao.updateOne(
-                eq("_id", id),
+                Filters.eq("_id", id),
                 atualizacao
         ).getMatchedCount();
 
@@ -310,7 +300,7 @@ public class ArvoreRepository {
     // ATIVAR OU ARQUIVAR UMA ARVORE
 
     public boolean alterarStatus(
-            String id,
+            ObjectId id,
             boolean ativa) {
 
         Document atualizacao = new Document(
@@ -318,7 +308,7 @@ public class ArvoreRepository {
                 new Document("ativa", ativa));
 
         long quantidade = colecao.updateOne(
-                eq("_id", id),
+                Filters.eq("_id", id),
                 atualizacao
         ).getMatchedCount();
 
@@ -433,9 +423,8 @@ public class ArvoreRepository {
         Arvore arvore = new Arvore();
 
         Object id = documento.get("_id");
-
-        if (id != null) {
-            arvore.setId(id.toString());
+        if (id instanceof ObjectId objectId) {
+            arvore.setId(objectId);
         }
 
         arvore.setNomePopular(
@@ -447,8 +436,12 @@ public class ArvoreRepository {
         arvore.setEspecie(
                 documento.getString("especie"));
 
-        arvore.setMunicipioId(
-                documento.getString("municipioId"));
+        Object municipioId = documento.get("municipioId");
+        if (municipioId instanceof ObjectId objectId) {
+            arvore.setMunicipioId(objectId);
+        } else if (municipioId instanceof String texto && ObjectId.isValid(texto)) {
+            arvore.setMunicipioId(new ObjectId(texto));
+        }
 
         arvore.setEndereco(
                 documento.getString("endereco"));

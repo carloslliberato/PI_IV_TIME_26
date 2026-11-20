@@ -1,8 +1,14 @@
 package controller;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import org.bson.types.ObjectId;
 
+import java.io.IOException;
 import io.javalin.http.Context;
 import jakarta.servlet.http.HttpSession;
 
@@ -23,7 +29,28 @@ public class ArvoreController {
             ArvoreService arvoreService) {
 
         this.arvoreService = arvoreService;
-        this.gson = new Gson();
+        this.gson = new GsonBuilder()
+                .registerTypeAdapter(ObjectId.class, new TypeAdapter<ObjectId>() {
+                    @Override
+                    public void write(JsonWriter out, ObjectId id) throws IOException {
+                        if (id == null) out.nullValue();
+                        else out.value(id.toHexString());
+                    }
+
+                    @Override
+                    public ObjectId read(JsonReader in) throws IOException {
+                        if (in.peek() == com.google.gson.stream.JsonToken.NULL) {
+                            in.nextNull();
+                            return null;
+                        }
+                        String valor = in.nextString();
+                        if (!ObjectId.isValid(valor)) {
+                            throw new JsonParseException("ObjectId inválido.");
+                        }
+                        return new ObjectId(valor);
+                    }
+                })
+                .create();
     }
 
     // LISTAR ARVORES COM FILTROS OPCIONAIS
@@ -34,6 +61,7 @@ public class ArvoreController {
 
             Map<String, String> filtros =
                     new HashMap<>();
+            ObjectId municipioId = null;
 
             String[] nomes = {
                 "municipioId",
@@ -60,8 +88,12 @@ public class ArvoreController {
                 }
             }
 
-            ctx.status(200).json(
-                    arvoreService.listar(filtros));
+            String municipioParam = filtros.remove("municipioId");
+            if (municipioParam != null) {
+                municipioId = converterObjectId(municipioParam, "municipioId");
+            }
+
+            responderJson(ctx, 200, arvoreService.listar(filtros, municipioId));
         });
     }
 
@@ -74,6 +106,7 @@ public class ArvoreController {
             String lat = ctx.queryParam("lat");
             String lng = ctx.queryParam("lng");
             String raio = ctx.queryParam("raioKm");
+            String municipioParam = ctx.queryParam("municipioId");
 
             if (lat == null ||
                     lng == null ||
@@ -108,9 +141,11 @@ public class ArvoreController {
                             latitude,
                             longitude,
                             raioKm,
-                            ctx.queryParam("municipioId"));
+                            municipioParam == null || municipioParam.isBlank()
+                                    ? null
+                                    : converterObjectId(municipioParam, "municipioId"));
 
-            ctx.status(200).json(encontradas);
+            responderJson(ctx, 200, encontradas);
         });
     }
 
@@ -120,12 +155,12 @@ public class ArvoreController {
 
         executar(ctx, () -> {
 
-            String id = ctx.pathParam("id");
+            ObjectId id = converterObjectId(ctx.pathParam("id"), "ID da árvore");
 
             Arvore arvore =
                     arvoreService.buscarPorId(id);
 
-            ctx.status(200).json(arvore);
+            responderJson(ctx, 200, arvore);
         });
     }
 
@@ -146,7 +181,7 @@ public class ArvoreController {
             Arvore cadastrada =
                     arvoreService.cadastrar(arvore);
 
-            ctx.status(201).json(cadastrada);
+            responderJson(ctx, 201, cadastrada);
         });
     }
 
@@ -160,7 +195,7 @@ public class ArvoreController {
 
         executar(ctx, () -> {
 
-            String id = ctx.pathParam("id");
+            ObjectId id = converterObjectId(ctx.pathParam("id"), "ID da árvore");
 
             Arvore novosDados = gson.fromJson(
                     ctx.body(),
@@ -171,7 +206,7 @@ public class ArvoreController {
                             id,
                             novosDados);
 
-            ctx.status(200).json(atualizada);
+            responderJson(ctx, 200, atualizada);
         });
     }
 
@@ -185,7 +220,7 @@ public class ArvoreController {
 
         executar(ctx, () -> {
 
-            String id = ctx.pathParam("id");
+            ObjectId id = converterObjectId(ctx.pathParam("id"), "ID da árvore");
 
             Map<?, ?> dados = gson.fromJson(
                     ctx.body(),
@@ -206,7 +241,7 @@ public class ArvoreController {
                             id,
                             ativa);
 
-            ctx.status(200).json(atualizada);
+            responderJson(ctx, 200, atualizada);
         });
     }
 
@@ -220,7 +255,7 @@ public class ArvoreController {
         if (sessao == null ||
                 sessao.getAttribute("usuarioId") == null) {
 
-            ctx.status(401).json(Map.of(
+            responderJson(ctx, 401, Map.of(
                     "erro",
                     "Usuario nao autenticado."));
 
@@ -237,7 +272,7 @@ public class ArvoreController {
                 !(perfis instanceof List<?> lista) ||
                 !lista.contains("FUNCIONARIO")) {
 
-            ctx.status(403).json(Map.of(
+            responderJson(ctx, 403, Map.of(
                     "erro",
                     "Acesso permitido apenas a funcionarios."));
 
@@ -259,19 +294,19 @@ public class ArvoreController {
 
         } catch (JsonParseException e) {
 
-            ctx.status(400).json(Map.of(
+            responderJson(ctx, 400, Map.of(
                     "erro",
                     "Formato JSON invalido."));
 
         } catch (NoSuchElementException e) {
 
-            ctx.status(404).json(Map.of(
+            responderJson(ctx, 404, Map.of(
                     "erro",
                     e.getMessage()));
 
         } catch (IllegalArgumentException e) {
 
-            ctx.status(400).json(Map.of(
+            responderJson(ctx, 400, Map.of(
                     "erro",
                     e.getMessage()));
 
@@ -279,9 +314,22 @@ public class ArvoreController {
 
             e.printStackTrace();
 
-            ctx.status(500).json(Map.of(
+            responderJson(ctx, 500, Map.of(
                     "erro",
                     "Erro interno ao processar a arvore."));
         }
+    }
+
+    private void responderJson(Context ctx, int status, Object resposta) {
+        ctx.status(status)
+                .contentType("application/json; charset=utf-8")
+                .result(gson.toJson(resposta));
+    }
+
+    private ObjectId converterObjectId(String valor, String campo) {
+        if (valor == null || !ObjectId.isValid(valor)) {
+            throw new IllegalArgumentException(campo + " inválido.");
+        }
+        return new ObjectId(valor);
     }
 }

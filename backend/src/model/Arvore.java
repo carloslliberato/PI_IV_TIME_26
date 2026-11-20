@@ -1,15 +1,16 @@
 package model;
 
 import java.util.Date;
+import org.bson.types.ObjectId;
 
 public class Arvore {
 
     // Identificação
-    private String id;
+    private ObjectId id;
     private String nomePopular;
     private String nomeCientifico;
     private String especie;
-    private String municipioId;
+    private ObjectId municipioId;
 
     // Localização
     private String endereco;
@@ -44,11 +45,11 @@ public class Arvore {
 
     // Construtor principal
     public Arvore(
-            String id,
+            ObjectId id,
             String nomePopular,
             String nomeCientifico,
             String especie,
-            String municipioId,
+            ObjectId municipioId,
             String endereco,
             String bairro,
             Double latitude,
@@ -72,7 +73,7 @@ public class Arvore {
 
     // GETTERS
 
-    public String getId() {
+    public ObjectId getId() {
         return id;
     }
 
@@ -88,7 +89,7 @@ public class Arvore {
         return especie;
     }
 
-    public String getMunicipioId() {
+    public ObjectId getMunicipioId() {
         return municipioId;
     }
 
@@ -162,7 +163,7 @@ public class Arvore {
 
     // SETTERS
 
-    public void setId(String id) {
+    public void setId(ObjectId id) {
         this.id = id;
     }
 
@@ -178,7 +179,7 @@ public class Arvore {
         this.especie = especie;
     }
 
-    public void setMunicipioId(String municipioId) {
+    public void setMunicipioId(ObjectId municipioId) {
         this.municipioId = municipioId;
     }
 

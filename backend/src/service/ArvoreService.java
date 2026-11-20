@@ -2,7 +2,9 @@
 package service;
 
 import model.Arvore;
+import org.bson.types.ObjectId;
 import repository.ArvoreRepository;
+import repository.MunicipioRepository;
 import protocolo.PedidoDeValidacaoArvore;
 import protocolo.ResultadoValidacaoArvore;
 
@@ -13,13 +15,16 @@ import java.util.NoSuchElementException;
 public class ArvoreService {
 
     private final ArvoreRepository repository;
+    private final MunicipioRepository municipioRepository;
     private final ConexaoServidor conexaoServidor;
 
     public ArvoreService(
             ArvoreRepository repository,
+            MunicipioRepository municipioRepository,
             ConexaoServidor conexaoServidor) {
 
         this.repository = repository;
+        this.municipioRepository = municipioRepository;
         this.conexaoServidor = conexaoServidor;
     }
 
@@ -60,16 +65,17 @@ public class ArvoreService {
     }
 
     public List<Arvore> listar(
-            Map<String, String> filtros) {
+            Map<String, String> filtros,
+            ObjectId municipioId) {
 
-        return repository.buscarFiltradas(filtros);
+        return repository.buscarFiltradas(filtros, municipioId);
     }
 
     public List<Arvore> buscarProximas(
             double latitude,
             double longitude,
             double raioKm,
-            String municipioId) {
+            ObjectId municipioId) {
 
         if (!Double.isFinite(latitude) ||
                 latitude < -90 ||
@@ -102,11 +108,11 @@ public class ArvoreService {
                 municipioId);
     }
 
-    public Arvore buscarPorId(String id) {
+    public Arvore buscarPorId(ObjectId id) {
 
         validarId(id);
 
-        return repository.buscarPorId(id.trim())
+        return repository.buscarPorId(id)
                 .orElseThrow(() ->
                         new NoSuchElementException(
                                 "Arvore nao encontrada."));
@@ -117,17 +123,8 @@ public class ArvoreService {
         validarNoServidor(arvore);
         validarDados(arvore);
 
-        if (arvore.getId() != null &&
-                !arvore.getId().isBlank()) {
-
-            if (repository.buscarPorId(
-                    arvore.getId()).isPresent()) {
-
-                throw new IllegalArgumentException(
-                        "Ja existe uma arvore com esse ID.");
-            }
-        }
-
+        // O identificador é sempre gerado como ObjectId pelo backend.
+        arvore.setId(null);
         arvore.setAtiva(true);
 
         repository.salvar(arvore);
@@ -136,7 +133,7 @@ public class ArvoreService {
     }
 
     public Arvore atualizar(
-            String id,
+            ObjectId id,
             Arvore novosDados) {
 
         validarId(id);
@@ -145,14 +142,13 @@ public class ArvoreService {
 
         Arvore arvoreAtual = buscarPorId(id);
 
-        novosDados.setId(
-                arvoreAtual.getId());
+        novosDados.setId(arvoreAtual.getId());
 
         novosDados.setAtiva(
                 arvoreAtual.isAtiva());
 
         boolean atualizou = repository.atualizar(
-                id.trim(),
+                id,
                 novosDados);
 
         if (!atualizou) {
@@ -164,14 +160,14 @@ public class ArvoreService {
     }
 
     public Arvore alterarStatus(
-            String id,
+            ObjectId id,
             boolean ativa) {
 
         Arvore arvore = buscarPorId(id);
 
         boolean atualizou =
                 repository.alterarStatus(
-                        id.trim(),
+                        id,
                         ativa);
 
         if (!atualizou) {
@@ -184,9 +180,9 @@ public class ArvoreService {
         return arvore;
     }
 
-    private void validarId(String id) {
+    private void validarId(ObjectId id) {
 
-        if (id == null || id.isBlank()) {
+        if (id == null) {
             throw new IllegalArgumentException(
                     "O ID da arvore e obrigatorio.");
         }
@@ -213,11 +209,14 @@ public class ArvoreService {
                     "A especie e obrigatoria.");
         }
 
-        if (arvore.getMunicipioId() == null ||
-                arvore.getMunicipioId().isBlank()) {
+        if (arvore.getMunicipioId() == null) {
 
             throw new IllegalArgumentException(
                     "O municipio e obrigatorio.");
+        }
+
+        if (municipioRepository.buscarNomePorId(arvore.getMunicipioId()).isEmpty()) {
+            throw new IllegalArgumentException("Municipio nao encontrado.");
         }
 
         if (arvore.getRisco() == null) {
