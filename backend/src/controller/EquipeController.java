@@ -2,6 +2,7 @@ package controller;
 
 import java.util.Map;
 import java.util.List;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
@@ -100,6 +101,7 @@ public class EquipeController {
             ctx.status(201).json(Map.of(
                     "equipe", Map.of(
                             "id", equipe.getId().toHexString(),
+                            "codigo", equipe.getCodigo(),
                             "nome", equipe.getNome(),
                             "regiaoAtuacao", equipe.getRegiaoAtuacao(),
                             "status", equipe.getStatus(),
@@ -249,24 +251,26 @@ public class EquipeController {
 
     // Formata os IDs BSON como strings para a resposta JSON da tela.
     private Map<String, Object> paraResposta(Equipe equipe) {
-        return Map.of(
-                "id", equipe.getId().toHexString(),
-                "nome", equipe.getNome(),
-                "regiaoAtuacao", equipe.getRegiaoAtuacao(),
-                "status", equipe.getStatus(),
-                "gestor", equipe.getGestor(),
-                "municipioId", equipe.getMunicipioId().toHexString(),
-                "municipioNome", equipe.getMunicipioNome() == null
-                        ? ""
-                        : equipe.getMunicipioNome(),
-                "usuarioId", equipe.getUsuarioId().toHexString(),
-                "usuarioNome", equipe.getUsuarioNome() == null
-                        ? ""
-                        : equipe.getUsuarioNome(),
-                "colaboradores", equipe.getColaboradores()
-                        .stream()
-                        .map(this::paraRespostaColaborador)
-                        .toList());
+        Map<String, Object> resposta = new HashMap<>();
+        resposta.put("id", equipe.getId().toHexString());
+        resposta.put("codigo", equipe.getCodigo());
+        resposta.put("nome", equipe.getNome());
+        resposta.put("regiaoAtuacao", equipe.getRegiaoAtuacao());
+        resposta.put("status", equipe.getStatus());
+        resposta.put("gestor", equipe.getGestor());
+        resposta.put("municipioId", equipe.getMunicipioId().toHexString());
+        resposta.put("municipioNome", equipe.getMunicipioNome() == null
+                ? ""
+                : equipe.getMunicipioNome());
+        resposta.put("usuarioId", equipe.getUsuarioId().toHexString());
+        resposta.put("usuarioNome", equipe.getUsuarioNome() == null
+                ? ""
+                : equipe.getUsuarioNome());
+        resposta.put("colaboradores", equipe.getColaboradores()
+                .stream()
+                .map(this::paraRespostaColaborador)
+                .toList());
+        return resposta;
     }
 
     // Converte um colaborador embutido para os tipos simples do JSON da API.

@@ -60,9 +60,8 @@ public class EquipeService {
                 funcionario.getId(),
                 funcionario.getNome());
 
-        // Persiste o novo documento e devolve a equipe criada para a API.
-        equipeRepository.salvar(equipe);
-        return equipe;
+        // Persiste o novo documento com código sequencial e mantém o ObjectId existente.
+        return equipeRepository.salvar(equipe);
     }
 
     // Valida os dados e inclui o colaborador no documento da equipe.

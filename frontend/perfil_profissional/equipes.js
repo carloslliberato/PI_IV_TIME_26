@@ -55,6 +55,7 @@ function renderTeamsTable() {
   const teams = teamsData.teams;
   teamsPage.tableBody.innerHTML = teams.map(team => `
     <tr>
+      <td>${escapeTeamText(team.code)}</td>
       <td><button class="team-name-link" type="button" data-open-team="${escapeTeamText(team.id)}">${escapeTeamText(team.name)}</button></td>
       <td>${escapeTeamText(team.region)}</td>
       <td><span class="team-status-badge ${team.status === "Disponível" ? "available" : "unavailable"}">${escapeTeamText(team.status)}</span></td>
@@ -115,6 +116,7 @@ async function loadTeams() {
     // Adapta o formato da API aos campos consumidos pela tabela e pelos detalhes.
     teamsData.teams = responseData.equipes.map(equipe => ({
       id: String(equipe.id),
+      code: equipe.codigo,
       name: equipe.nome,
       region: equipe.regiaoAtuacao,
       status: equipe.status,

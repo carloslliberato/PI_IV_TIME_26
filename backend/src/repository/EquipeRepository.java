@@ -4,6 +4,8 @@ import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
 import java.time.Instant;
+import java.util.Locale;
+import java.util.regex.Matcher;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -19,7 +21,12 @@ import com.mongodb.client.model.Collation;
 import com.mongodb.client.model.CollationStrength;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Indexes;
+import com.mongodb.client.model.FindOneAndUpdateOptions;
+import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.Sorts;
+import static com.mongodb.client.model.Updates.inc;
+import static com.mongodb.client.model.Updates.max;
+import static com.mongodb.client.model.Updates.set;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 
@@ -39,8 +46,12 @@ import static com.mongodb.client.model.Filters.regex;
 // Centraliza o acesso à coleção equipes do MongoDB.
 public class EquipeRepository {
 
+    private static final String ID_CONTADOR_CODIGO = "codigo_equipe";
+    private static final Pattern PADRAO_CODIGO = Pattern.compile("^EQ-(\\d+)$");
+
     private final MongoCollection<Document> colecao;
     private final MongoCollection<Document> ordensServico;
+    private final MongoCollection<Document> sequencias;
 
     // Obtém a coleção usando a conexão compartilhada pelo backend.
     public EquipeRepository() {
@@ -51,6 +62,7 @@ public class EquipeRepository {
     public EquipeRepository(MongoDatabase banco) {
         this.colecao = banco.getCollection("equipes");
         this.ordensServico = banco.getCollection("ordens_servico");
+        this.sequencias = banco.getCollection("sequencias_equipes");
 
         try {
             // Mantém a garantia no Mongo quando os dados existentes permitem criar o índice.
@@ -94,10 +106,15 @@ public class EquipeRepository {
                     "Não foi possível criar o índice único de e-mails: há colaboradores com "
                             + "e-mails repetidos. Novos cadastros continuam validados pela aplicação.");
         }
+
+        garantirCodigosExistentes();
     }
 
     // Converte a equipe para o formato de documento usado pela coleção.
-    public void salvar(Equipe equipe) {
+    public Equipe salvar(Equipe equipe) {
+        if (equipe == null) {
+            throw new IllegalArgumentException("A equipe não foi informada.");
+        }
         // Impede nomes duplicados sem executar alteração de índices ao iniciar o servidor.
         if (colecao.find(eq("nome", equipe.getNome()))
                 .collation(Collation.builder()
@@ -109,8 +126,10 @@ public class EquipeRepository {
                     "Já existe uma equipe cadastrada com esse nome.");
         }
 
+        String codigo = gerarProximoCodigo();
         Document documento = new Document()
                 .append("_id", equipe.getId())
+                .append("codigo", codigo)
                 .append("nome", equipe.getNome())
                 .append("regiao", equipe.getRegiaoAtuacao())
                 .append("status", equipe.getStatus())
@@ -129,10 +148,11 @@ public class EquipeRepository {
             // Também detecta uma duplicidade criada simultaneamente por outra requisição.
             if (erro.getError().getCode() == 11000) {
                 throw new IllegalArgumentException(
-                        "Já existe uma equipe cadastrada com esse nome.");
+                        "Já existe uma equipe cadastrada com esse nome ou código.");
             }
             throw erro;
         }
+        return equipe.comCodigo(codigo);
     }
 
     // Busca equipes da conta autenticada e deriva a ocupação pelas OS ativas.
@@ -198,6 +218,7 @@ public class EquipeRepository {
         // Pesquisa o nome da equipe nos campos usados por documentos atuais e legados.
         correspondencias.add(regex("nome", regexLiteral, "i"));
         correspondencias.add(regex("nomeEquipe", regexLiteral, "i"));
+        correspondencias.add(regex("codigo", regexLiteral, "i"));
 
         // Pesquisa a região e o gestor em suas representações atuais e anteriores.
         correspondencias.add(regex("regiao", regexLiteral, "i"));
@@ -216,6 +237,88 @@ public class EquipeRepository {
                         .append("options", "i"))));
 
         return or(correspondencias);
+    }
+
+    private synchronized void garantirCodigosExistentes() {
+        List<Document> documentos = colecao.find().into(new ArrayList<>());
+        long maiorCodigo = 0;
+        for (Document documento : documentos) {
+            String codigo = documento.get("codigo") instanceof String texto
+                    ? texto : null;
+            Matcher correspondencia = PADRAO_CODIGO.matcher(
+                    codigo == null ? "" : codigo);
+            if (correspondencia.matches()) {
+                try {
+                    maiorCodigo = Math.max(
+                            maiorCodigo,
+                            Long.parseLong(correspondencia.group(1)));
+                } catch (NumberFormatException erro) {
+                    throw new IllegalStateException(
+                            "Há um código de equipe fora do limite suportado.", erro);
+                }
+            }
+        }
+
+        sequencias.findOneAndUpdate(
+                eq("_id", ID_CONTADOR_CODIGO),
+                max("sequencia", maiorCodigo),
+                new FindOneAndUpdateOptions()
+                        .upsert(true)
+                        .returnDocument(ReturnDocument.AFTER));
+
+        for (Document documento : documentos) {
+            Object codigoAtual = documento.get("codigo");
+            String codigoTexto = codigoAtual instanceof String texto
+                    ? texto : null;
+            if (codigoTexto != null
+                    && PADRAO_CODIGO.matcher(codigoTexto).matches()) {
+                continue;
+            }
+
+            String codigoNovo = formatarCodigo(reservarProximoNumero());
+            Bson filtroCodigoAtual = codigoAtual == null
+                    ? or(exists("codigo", false), eq("codigo", null))
+                    : eq("codigo", codigoAtual);
+            colecao.updateOne(
+                    and(eq("_id", documento.get("_id")), filtroCodigoAtual),
+                    set("codigo", codigoNovo));
+        }
+
+        colecao.createIndex(
+                Indexes.ascending("codigo"),
+                new IndexOptions()
+                        .unique(true)
+                        .name("uk_equipe_codigo")
+                        .partialFilterExpression(new Document(
+                                "codigo",
+                                new Document("$type", "string").append("$gt", ""))));
+    }
+
+    private String gerarProximoCodigo() {
+        return formatarCodigo(reservarProximoNumero());
+    }
+
+    private long reservarProximoNumero() {
+        Document contador = sequencias.findOneAndUpdate(
+                eq("_id", ID_CONTADOR_CODIGO),
+                inc("sequencia", 1L),
+                new FindOneAndUpdateOptions()
+                        .upsert(true)
+                        .returnDocument(ReturnDocument.AFTER));
+        Object sequencia = contador == null ? null : contador.get("sequencia");
+        if (!(sequencia instanceof Number numero)) {
+            throw new IllegalStateException(
+                    "Não foi possível gerar o próximo código da equipe.");
+        }
+        return numero.longValue();
+    }
+
+    private String formatarCodigo(long numero) {
+        if (numero <= 0) {
+            throw new IllegalStateException(
+                    "O número sequencial do código da equipe é inválido.");
+        }
+        return String.format(Locale.ROOT, "EQ-%06d", numero);
     }
 
     // Adiciona um subdocumento de colaborador no array da equipe autorizada.
@@ -437,6 +540,7 @@ public class EquipeRepository {
         Date dataCadastro = documento.getDate("dataCadastro");
         return new Equipe(
                 documento.getObjectId("_id"),
+                documento.getString("codigo"),
                 documento.getString("nome"),
                 documento.getString("regiao") == null
                         ? documento.getString("regiaoAtuacao")
