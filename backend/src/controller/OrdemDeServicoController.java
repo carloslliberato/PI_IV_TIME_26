@@ -11,9 +11,11 @@ import model.Intervencao;
 import model.ConclusaoOrdemDeServico;
 import dto.ConclusaoOrdemDeServicoDTO;
 import dto.CadastroOrdemDeServicoDTO;
+import dto.CancelamentoOrdemDeServicoDTO;
 import dto.AtribuicaoEquipeOrdemDeServicoDTO;
 import model.EquipeParaOrdemDeServico;
 import service.OrdemDeServicoService;
+import service.ValidacaoOrdemDeServicoIndisponivelException;
 import io.javalin.http.Context;
 import jakarta.servlet.http.HttpSession;
 import com.google.gson.Gson;
@@ -77,6 +79,8 @@ public class OrdemDeServicoController {
             ctx.status(404).json(Map.of("erro", erro.getMessage()));
         } catch (IllegalStateException erro){
             ctx.status(409).json(Map.of("erro", erro.getMessage()));
+        } catch (ValidacaoOrdemDeServicoIndisponivelException erro){
+            ctx.status(503).json(Map.of("erro", erro.getMessage()));
         } catch (Exception erro){
             erro.printStackTrace();
             ctx.status(500).json(Map.of("erro", "Não foi possível confirmar o cadastro. Consulte a lista de OS antes de tentar novamente."));
@@ -149,7 +153,7 @@ public class OrdemDeServicoController {
         }
     }
 
-    // Recebe o pedido de cancelamento de uma OS.
+    // Valida a estrutura da requisição; o conteúdo do motivo é validado pelo Socket.
     public void alterarStatus(Context ctx){
         HttpSession sessao = obterSessaoDeFuncionario(ctx);
 
@@ -167,14 +171,8 @@ public class OrdemDeServicoController {
                 return;
             }
 
-            Map<?, ?> dados = gson.fromJson(ctx.body(), Map.class);
-
-            if (dados == null || !"Cancelada".equals(dados.get("status"))) {
-                ctx.status(400).json(Map.of("erro", "Informe o status \"Cancelada\" para esta operação."));
-                return;
-            }
-
-            OrdemDeServico ordem = ordemService.cancelar(new ObjectId(id), municipioId);
+            CancelamentoOrdemDeServicoDTO dados = lerDadosDeCancelamento(ctx.body());
+            OrdemDeServico ordem = ordemService.cancelar(new ObjectId(id), municipioId, dados);
 
             ctx.status(200).json(Map.of("ordem", paraResposta(ordem)));
 
@@ -184,11 +182,17 @@ public class OrdemDeServicoController {
         } catch (SecurityException erro){
             ctx.status(403).json(Map.of("erro", erro.getMessage()));
 
+        } catch (IllegalArgumentException erro){
+            ctx.status(400).json(Map.of("erro", erro.getMessage()));
+
         } catch (NoSuchElementException erro){
             ctx.status(404).json(Map.of("erro", erro.getMessage()));
 
         } catch (IllegalStateException erro){
             ctx.status(409).json(Map.of("erro", erro.getMessage()));
+
+        } catch (ValidacaoOrdemDeServicoIndisponivelException erro){
+            ctx.status(503).json(Map.of("erro", erro.getMessage()));
 
         } catch (Exception erro){
             erro.printStackTrace();
@@ -254,6 +258,8 @@ public class OrdemDeServicoController {
             ctx.status(404).json(Map.of("erro", erro.getMessage()));
         } catch (IllegalStateException erro){
             ctx.status(409).json(Map.of("erro", erro.getMessage()));
+        } catch (ValidacaoOrdemDeServicoIndisponivelException erro){
+            ctx.status(503).json(Map.of("erro", erro.getMessage()));
         } catch (Exception erro){
             erro.printStackTrace();
             ctx.status(500).json(Map.of("erro", "Não foi possível confirmar a atribuição. Consulte a OS antes de tentar novamente."));
@@ -290,10 +296,33 @@ public class OrdemDeServicoController {
             ctx.status(404).json(Map.of("erro", erro.getMessage()));
         } catch (IllegalStateException erro){
             ctx.status(409).json(Map.of("erro", erro.getMessage()));
+        } catch (ValidacaoOrdemDeServicoIndisponivelException erro){
+            ctx.status(503).json(Map.of("erro", erro.getMessage()));
         } catch (Exception erro){
             erro.printStackTrace();
             ctx.status(500).json(Map.of("erro", "Não foi possível confirmar a conclusão. Consulte a OS antes de tentar novamente."));
         }
+    }
+
+    // Não permite que o Gson converta números, objetos ou listas em uma justificativa.
+    // Motivo ausente, nulo ou vazio segue para a regra obrigatória no servidor Socket.
+    static CancelamentoOrdemDeServicoDTO lerDadosDeCancelamento(String corpo){
+        JsonElement raiz = JsonParser.parseString(corpo);
+        if (raiz == null || !raiz.isJsonObject()){
+            throw new IllegalArgumentException("Informe um objeto JSON com os dados do cancelamento.");
+        }
+        JsonObject objeto = raiz.getAsJsonObject();
+        JsonElement status = objeto.get("status");
+        if (status == null || !status.isJsonPrimitive() || !status.getAsJsonPrimitive().isString()
+                || !"Cancelada".equals(status.getAsString())){
+            throw new IllegalArgumentException("Informe o status \"Cancelada\" para esta operação.");
+        }
+        JsonElement motivo = objeto.get("motivoCancelamento");
+        if (motivo != null && !motivo.isJsonNull()
+                && (!motivo.isJsonPrimitive() || !motivo.getAsJsonPrimitive().isString())){
+            throw new IllegalArgumentException("O campo motivoCancelamento deve ser um texto.");
+        }
+        return new Gson().fromJson(objeto, CancelamentoOrdemDeServicoDTO.class);
     }
 
     // Rejeita tipos JSON incorretos antes da conversão do Gson para strings.
@@ -357,6 +386,7 @@ public class OrdemDeServicoController {
         resposta.put("status", ordem.getStatus());
         resposta.put("prioridade", ordem.getPrioridade());
         resposta.put("observacoes", ordem.getObservacoes());
+        resposta.put("motivoCancelamento", ordem.getMotivoCancelamento());
         resposta.put("dataCriacao", converterData(ordem.getDataCriacao()));
         resposta.put("dataAtualizacao", converterData(ordem.getDataAtualizacao()));
         resposta.put("dataConclusao", converterData(ordem.getDataConclusao()));

@@ -18,6 +18,7 @@ public class OrdemDeServico {
     private String status; // **VERIFICAR QUAIS STATUS SERÃO UTILIZADOS E DE QUE FORMA SERÃO ESCOLHIDOS/ATRIBUIDOS
     private String prioridade;
     private String observacoes;
+    private String motivoCancelamento;
     private Instant dataCriacao;
     private Instant dataAtualizacao;
     private Instant dataConclusao;
@@ -94,6 +95,30 @@ public class OrdemDeServico {
             String codigo,
             ObjectId intervencaoConclusaoId){
 
+        this(ordemServicoId, municipioId, arvoreId, ocorrenciaId, equipeId,
+                titulo, descricao, status, prioridade, observacoes,
+                dataCriacao, dataAtualizacao, dataConclusao, codigo, intervencaoConclusaoId, null);
+    }
+
+    // O motivo pode estar ausente em cancelamentos antigos; a leitura não altera o histórico.
+    public OrdemDeServico(
+            ObjectId ordemServicoId,
+            ObjectId municipioId,
+            ObjectId arvoreId,
+            ObjectId ocorrenciaId,
+            ObjectId equipeId,
+            String titulo,
+            String descricao,
+            String status,
+            String prioridade,
+            String observacoes,
+            Instant dataCriacao,
+            Instant dataAtualizacao,
+            Instant dataConclusao,
+            String codigo,
+            ObjectId intervencaoConclusaoId,
+            String motivoCancelamento){
+
         this.ordemServicoId = ordemServicoId;
         this.codigo = codigo;
         this.intervencaoConclusaoId = intervencaoConclusaoId;
@@ -106,6 +131,7 @@ public class OrdemDeServico {
         this.status = status;
         this.prioridade = prioridade;
         this.observacoes = observacoes;
+        this.motivoCancelamento = motivoCancelamento;
         this.dataCriacao = dataCriacao;
         this.dataAtualizacao = dataAtualizacao;
         this.dataConclusao = dataConclusao;
@@ -176,14 +202,20 @@ public class OrdemDeServico {
         this.dataAtualizacao = Instant.now();
     }
 
-    // Cancela uma OS aberta ou em andamento.
-    public void cancelar(){
+    // Novos cancelamentos exigem motivo próprio, sem substituir as observações da OS.
+    public void cancelar(String motivoCancelamento){
         verificarSeEditavel();
 
         if (!"Aberta".equals(this.status) && !"Em andamento".equals(this.status)){
             throw new IllegalStateException("Somente ordens de serviço abertas ou em andamento podem ser canceladas.");
         }
+        String motivo = motivoCancelamento == null ? "" : motivoCancelamento.replaceAll(
+                "(?U)^[\\s\\p{Z}\\uFEFF]+|[\\s\\p{Z}\\uFEFF]+$", "");
+        if (motivo.isEmpty()){
+            throw new IllegalArgumentException("O motivo do cancelamento deve ser informado.");
+        }
 
+        this.motivoCancelamento = motivo;
         this.status = "Cancelada";
         this.dataAtualizacao = Instant.now();
     }
@@ -224,6 +256,10 @@ public class OrdemDeServico {
 
     public String getObservacoes(){
         return observacoes;
+    }
+
+    public String getMotivoCancelamento(){
+        return motivoCancelamento;
     }
 
     public void setObservacoes(String observacoes){

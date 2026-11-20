@@ -168,3 +168,18 @@
   .service-order-prefill { align-items: stretch; flex-direction: column; }
   .service-order-create-recovery { flex-direction: column; }
 }
+
+/* Motivo obrigatório do cancelamento. Autoria: Marialvo Corrêa de Freitas Junior. */
+.service-order-cancellation-editor { margin-top: 22px; padding-top: 20px; border-top: 1px solid #dfe8e2; }
+.service-order-cancellation-editor h3 { margin: 0; color: #2d4035; font-size: 15px; }
+.service-order-cancellation-editor > p { margin: 8px 0 16px; color: #65766b; font-size: 12px; line-height: 1.6; }
+.service-order-cancellation-editor fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.service-order-cancellation-editor label { display: flex; flex-direction: column; gap: 7px; color: #42594b; font-size: 12px; font-weight: 700; }
+.service-order-cancellation-editor textarea { width: 100%; min-width: 0; box-sizing: border-box; padding: 11px; border: 1px solid #d4e2d9; border-radius: 8px; background: #fff; color: #34443a; font: inherit; font-size: 13px; resize: vertical; }
+.service-order-cancellation-editor small { color: #708276; font-size: 11px; font-weight: 400; line-height: 1.5; }
+.service-order-cancellation-editor .service-order-create-actions { margin-top: 16px; }
+.service-order-cancellation-editor textarea:focus, .service-order-confirm-cancellation:focus-visible { outline: 2px solid #8db69d; outline-offset: 2px; }
+.service-order-confirm-cancellation { min-height: 44px; padding: 0 16px; border: 1px solid #a53f31; border-radius: 10px; background: #a53f31; color: #fff; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.service-order-confirm-cancellation:hover { background: #8c3328; }
+.service-order-cancellation-editor :disabled { opacity: .65; cursor: not-allowed; }
+.service-order-cancellation-record { border-left-color: #96a49b; background: #f4f6f4; }

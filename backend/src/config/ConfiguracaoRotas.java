@@ -119,7 +119,8 @@ public class ConfiguracaoRotas {
         OrdemDeServicoService ordemService =
                 new OrdemDeServicoService(
                         ordemRepository,
-                        contaRepository);
+                        contaRepository,
+                        conexaoServidor);
 
         this.ordemDeServicoController =
                 new OrdemDeServicoController(ordemService);

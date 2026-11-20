@@ -98,7 +98,8 @@ Roteiro:
 Executar na raiz do projeto, no PowerShell:
 
 ```powershell
-.\gradlew.bat :backend:compileJava :backend:test --tests service.OrdemDeServicoEquipeServiceTest --tests service.OrdemDeServicoConclusaoServiceTest
+.\gradlew.bat :servidor:compileJava :backend:compileJava :servidor:test
+.\gradlew.bat :backend:test --tests service.ValidadorOrdemDeServicoRemotoTest
 ```
 
 ## Evidências de validação
