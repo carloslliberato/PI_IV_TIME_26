@@ -8,9 +8,12 @@
 
 (() => {
 
-  // Temporário: município de Campinas para os testes.
-  // Futuramente deverá vir da sessão do funcionário.
-  const MUNICIPIO_ID_TESTE = "6ae666a7680e8a4330a1ab66";
+  const MUNICIPIOS = {
+    "6ae666a7680e8a4330a1ab66": "Campinas - SP",
+    "6ae7854cb9962492d01e6af6": "Hortolândia - SP",
+    "6ae7856ab9962492d01e6af7": "Sumaré - SP"
+  };
+  let municipioIdFuncionario = null;
 
   const el = id => document.getElementById(id);
 
@@ -274,6 +277,14 @@
     el("treeResultCount").textContent =
       "Carregando árvores...";
 
+    const sessao = await requisicao("/api/contas/sessao");
+    municipioIdFuncionario = String(sessao.municipioId || "").toLowerCase();
+    const nomeMunicipio = MUNICIPIOS[municipioIdFuncionario];
+    if (!nomeMunicipio) {
+      throw new Error("O município do funcionário não está disponível na sessão.");
+    }
+    el("treeMunicipality").textContent = nomeMunicipio;
+
     const registros = await requisicao("/api/arvores");
 
     if (!Array.isArray(registros)) {
@@ -282,11 +293,8 @@
       );
     }
 
-    // Temporário: filtro por Campinas.
-    // A restrição de município também precisa existir
-    // no backend para garantir a autorização.
     arvores = registros.filter(
-      arvore => arvore.municipioId === MUNICIPIO_ID_TESTE
+      arvore => String(arvore.municipioId || "").toLowerCase() === municipioIdFuncionario
     );
 
     renderizarTabela();
@@ -392,7 +400,7 @@
       ...original,
 
       municipioId:
-        original.municipioId || MUNICIPIO_ID_TESTE,
+        original.municipioId || municipioIdFuncionario,
 
       nomePopular: v.nomePopular.value.trim(),
       nomeCientifico: v.nomeCientifico.value.trim(),
@@ -784,9 +792,6 @@
   // ========================================
   // INICIALIZAÇÃO
   // ========================================
-
-  el("treeMunicipality").textContent =
-    "Campinas - SP (teste)";
 
   carregarArvores().catch(erro => {
 

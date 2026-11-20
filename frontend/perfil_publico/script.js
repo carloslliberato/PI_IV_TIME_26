@@ -3,8 +3,6 @@
 // Arboriza - Mapa público com árvores e ocorrências reais da API
 // ===============================
 
-// ID de referência de Campinas na coleção de árvores
-const MUNICIPIO_ID_PUBLICO_CAMPINAS = "6ae666a7680e8a4330a1ab66";
 const MUNICIPIO_IDS_PARA_CHAVE = {
   "6ae666a7680e8a4330a1ab66": "campinas",
   "6ae7854cb9962492d01e6af6": "hortolandia",
@@ -25,7 +23,8 @@ function municipioPublicoAtual() {
 
 // Retorna as árvores do município selecionado
 function arvoresDoMunicipio() {
-  return municipioPublicoAtual() === "campinas" ? trees : [];
+  const municipioId = municipioPublicoAtual();
+  return trees.filter(arvore => arvore.municipioId === municipioId);
 }
 
 // Busca as árvores reais cadastradas no MongoDB via GET /api/arvores
@@ -35,7 +34,7 @@ async function carregarArvoresPublicas() {
   const dados = await resposta.json();
   if (!Array.isArray(dados)) throw new Error("Resposta inesperada da API de árvores");
   trees = dados
-    .filter(a => a.ativa !== false && a.municipioId === MUNICIPIO_ID_PUBLICO_CAMPINAS)
+    .filter(a => a.ativa !== false && MUNICIPIO_IDS_PARA_CHAVE[a.municipioId])
     .filter(a => Number.isFinite(a.latitude) && Number.isFinite(a.longitude)
       && Math.abs(a.latitude) <= 90 && Math.abs(a.longitude) <= 180)
     .map(a => ({
@@ -43,6 +42,7 @@ async function carregarArvoresPublicas() {
       especie: a.nomeCientifico || a.especie || "Não informado",
       bairro: a.bairro || "Não informado", endereco: a.endereco || "Não informado",
       lat: a.latitude, lng: a.longitude, risco: riscoPublico(a.risco),
+      municipioId: MUNICIPIO_IDS_PARA_CHAVE[a.municipioId],
       frutifera: Boolean(a.frutifera), manutencao: Boolean(a.manutencao),
       floracao: Boolean(a.floracao), clima: Boolean(a.alertaClimatico)
     }));
@@ -52,10 +52,12 @@ async function carregarArvoresPublicas() {
 // Caso uma ocorrência antiga não tenha latitude/longitude, posiciona pelo bairro em Campinas
 function coordenadasFallbackPublico(bairro, municipioId) {
   const b = String(bairro || "").toLowerCase();
-  if (b.includes("taquaral")) return { lat: -22.8754, lng: -47.0475 };
-  if (b.includes("cambu")) return { lat: -22.8942, lng: -47.0531 };
-  if (b.includes("chapad")) return { lat: -22.8895, lng: -47.0742 };
-  if (b.includes("barao") || b.includes("barão")) return { lat: -22.8228, lng: -47.0805 };
+  if (municipioId === "campinas") {
+    if (b.includes("taquaral")) return { lat: -22.8754, lng: -47.0475 };
+    if (b.includes("cambu")) return { lat: -22.8942, lng: -47.0531 };
+    if (b.includes("chapad")) return { lat: -22.8895, lng: -47.0742 };
+    if (b.includes("barao") || b.includes("barão")) return { lat: -22.8228, lng: -47.0805 };
+  }
   if (municipioId === "sumare") return { lat: -22.8214, lng: -47.2660 };
   if (municipioId === "hortolandia") return { lat: -22.8583, lng: -47.2200 };
   return { lat: -22.9056, lng: -47.0608 };
@@ -101,6 +103,29 @@ const municipalityCenters = {
   sumare: { name: "Sumaré - SP", lat: -22.8214, lng: -47.2660, zoom: 13 }
 };
 
+async function carregarMunicipioDaSessao() {
+  try {
+    const resposta = await fetch("/api/contas/sessao", { credentials: "same-origin" });
+    if (!resposta.ok) return;
+    const sessao = await resposta.json();
+    const municipio = MUNICIPIO_IDS_PARA_CHAVE[sessao.municipioId];
+    if (!municipio || !municipalityCenters[municipio]) return;
+
+    const seletor = document.getElementById("municipioSelect");
+    if (seletor.dataset.userSelected === "true") return;
+    seletor.value = municipio;
+    const dadosMunicipio = municipalityCenters[municipio];
+    if (map) map.flyTo([dadosMunicipio.lat, dadosMunicipio.lng], dadosMunicipio.zoom, { duration: 0.8 });
+    updateHeaderForMunicipality(dadosMunicipio.name);
+    applyPublicFilters();
+    if (document.getElementById("occurrencesLayer").checked) {
+      renderPublicOccurrencesOnMap();
+    }
+  } catch (erro) {
+    console.warn("Não foi possível carregar o município da sessão:", erro);
+  }
+}
+
 // Variáveis globais do mapa Leaflet e das camadas de marcadores
 let map;
 let markerLayer;
@@ -112,6 +137,7 @@ function initializePublicMap() {
   initMap();
   renderTreeList([]);
   setupEvents();
+  carregarMunicipioDaSessao();
   carregarOcorrenciasPublicas();
   carregarArvoresPublicas().catch(erro => {
     console.error("Não foi possível carregar o mapa público:", erro);
@@ -150,8 +176,8 @@ function initMap() {
   markerLayer = L.layerGroup();
   occurrenceLayer = L.layerGroup();
   map = L.map("map", { zoomControl: false }).setView(
-    [municipalityCenters.campinas.lat, municipalityCenters.campinas.lng],
-    municipalityCenters.campinas.zoom
+    [municipalityCenters[municipioPublicoAtual()].lat, municipalityCenters[municipioPublicoAtual()].lng],
+    municipalityCenters[municipioPublicoAtual()].zoom
   );
   L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
@@ -209,7 +235,7 @@ function buildTreeMarkers(source = trees) {
         <div class="popup-species">${escapeTreeDetail(tree.especie)}</div>
         <div class="popup-address">
           ${escapeTreeDetail(tree.endereco)}<br>
-          ${escapeTreeDetail(tree.bairro)} - Campinas/SP
+          ${escapeTreeDetail(tree.bairro)} - ${escapeTreeDetail(municipalityCenters[municipioPublicoAtual()].name)}
         </div>
         <div class="popup-link" data-tree-id="${escapeTreeDetail(tree.id)}">
           Ver detalhes <span aria-hidden="true">→</span>
@@ -273,6 +299,7 @@ function renderTreeList(list) {
 // Configura os eventos de busca, troca de município, camadas e filtros do mapa público
 function setupEvents() {
   document.getElementById("municipioSelect").addEventListener("change", event => {
+    event.target.dataset.userSelected = "true";
     const selected = municipalityCenters[event.target.value];
     if (!selected) return;
     if (map) map.flyTo([selected.lat, selected.lng], selected.zoom, { duration: 0.8 });

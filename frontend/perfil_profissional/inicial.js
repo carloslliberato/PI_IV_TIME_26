@@ -8,6 +8,13 @@ const metricasDashboard = [
   { chave: "totalOrdens", elemento: "totalOrdens", vazio: "Não existem ordens de serviço neste município." }
 ];
 
+const municipiosDashboard = {
+  "6ae666a7680e8a4330a1ab66": "Campinas - SP",
+  "6ae7854cb9962492d01e6af6": "Hortolândia - SP",
+  "6ae7856ab9962492d01e6af7": "Sumaré - SP"
+};
+let municipioDashboardId = "6ae666a7680e8a4330a1ab66";
+
 // Atualiza os 3 cards principais da tela com os números vindos do banco de dados
 function atualizarCardsDashboard(indicadores) {
   metricasDashboard.forEach(metrica => {
@@ -110,9 +117,9 @@ async function carregarDadosSessaoProfissional() {
       const sessao = await resposta.json();
       if (sessao) {
         if (sessao.nome) nome = sessao.nome;
-        if (sessao.municipio) municipio = sessao.municipio;
-        else if (sessao.municipioId) {
-          municipio = sessao.municipioId.charAt(0).toUpperCase() + sessao.municipioId.slice(1) + " - SP";
+        if (sessao.municipioId) {
+          municipioDashboardId = String(sessao.municipioId).toLowerCase();
+          municipio = municipiosDashboard[municipioDashboardId] || municipio;
         }
       }
     }
@@ -137,16 +144,23 @@ async function carregarDashboardProfissional() {
     buscarTotalDeOrdens()
   ]);
 
+  const arvoresDoMunicipio = arvores.filter(
+    arvore => String(arvore.municipioId || "").toLowerCase() === municipioDashboardId
+  );
+  const ocorrenciasDoMunicipio = ocorrencias.filter(
+    ocorrencia => String(ocorrencia.municipioId || "").toLowerCase() === municipioDashboardId
+  );
+
   // Conta quantas árvores estão classificadas com risco Alto ou Crítico
-  const totalRiscoAlto = arvores.filter(arvore => {
+  const totalRiscoAlto = arvoresDoMunicipio.filter(arvore => {
     const risco = String(arvore.nivelRisco || arvore.risco || "").toLowerCase();
     return risco.includes("alto") || risco.includes("crít") || risco.includes("crit");
   }).length;
 
   // Monta os indicadores apenas com os totais reais vindos do banco
   const indicadoresReais = {
-    totalArvores: arvores.length,
-    totalOcorrencias: ocorrencias.length,
+    totalArvores: arvoresDoMunicipio.length,
+    totalOcorrencias: ocorrenciasDoMunicipio.length,
     totalOrdens
   };
 

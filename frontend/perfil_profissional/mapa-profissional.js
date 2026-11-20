@@ -14,13 +14,15 @@ const professionalMapDemo = {
   trees: [],
   occurrences: [],
   // Camada de ordens de serviço mantida para o módulo responsável
-  serviceOrders: [
-    { id: "OS-2026-041", latitude: -22.9104, longitude: -47.0525, titulo: "Poda preventiva", descricao: "Poda de galhos próximos à rede elétrica.", bairro: "Cambuí", status: "Em andamento" }
-  ]
+  serviceOrders: []
 };
 
-// ID do município de Campinas usado na coleção de árvores
-const MUNICIPIO_ID_MAPA = "6ae666a7680e8a4330a1ab66";
+const MUNICIPIOS_MAPA = {
+  "6ae666a7680e8a4330a1ab66": { id: "6ae666a7680e8a4330a1ab66", nome: "Campinas - SP", latitude: -22.9056, longitude: -47.0608, zoom: 13 },
+  "6ae7854cb9962492d01e6af6": { id: "6ae7854cb9962492d01e6af6", nome: "Hortolândia - SP", latitude: -22.8583, longitude: -47.2200, zoom: 13 },
+  "6ae7856ab9962492d01e6af7": { id: "6ae7856ab9962492d01e6af7", nome: "Sumaré - SP", latitude: -22.8214, longitude: -47.2660, zoom: 13 }
+};
+let municipioIdMapa = null;
 
 // Variáveis globais que controlam o mapa Leaflet, suas camadas e os marcadores
 let professionalMap;
@@ -52,7 +54,7 @@ async function carregarArvores() {
   if (!Array.isArray(dados)) throw new Error("Resposta inesperada da API de árvores.");
 
   professionalMapDemo.trees = dados
-    .filter(arvore => arvore.municipioId === MUNICIPIO_ID_MAPA)
+    .filter(arvore => String(arvore.municipioId || "").toLowerCase() === municipioIdMapa)
     .filter(arvore => arvore.ativa !== false)
     .filter(arvore => Number.isFinite(arvore.latitude) &&
       Number.isFinite(arvore.longitude) &&
@@ -69,14 +71,16 @@ async function carregarArvores() {
     }));
 }
 
-// Caso uma ocorrência antiga no banco não tenha latitude/longitude, calcula um ponto pelo bairro em Campinas
-function obterCoordenadasFallbackPorBairro(bairro) {
+// Caso uma ocorrência não tenha latitude/longitude, usa um ponto aproximado do município.
+function obterCoordenadasFallbackPorBairro(bairro, municipio) {
   const b = String(bairro || "").toLowerCase();
-  if (b.includes("taquaral")) return { lat: -22.8754, lng: -47.0475 };
-  if (b.includes("cambu")) return { lat: -22.8942, lng: -47.0531 };
-  if (b.includes("chapad")) return { lat: -22.8895, lng: -47.0742 };
-  if (b.includes("barao") || b.includes("barão")) return { lat: -22.8228, lng: -47.0805 };
-  return { lat: -22.9056, lng: -47.0608 };
+  if (municipio.id === "6ae666a7680e8a4330a1ab66") {
+    if (b.includes("taquaral")) return { lat: -22.8754, lng: -47.0475 };
+    if (b.includes("cambu")) return { lat: -22.8942, lng: -47.0531 };
+    if (b.includes("chapad")) return { lat: -22.8895, lng: -47.0742 };
+    if (b.includes("barao") || b.includes("barão")) return { lat: -22.8228, lng: -47.0805 };
+  }
+  return { lat: municipio.latitude, lng: municipio.longitude };
 }
 
 // Busca as ocorrências reais cadastradas no MongoDB via GET /api/ocorrencias
@@ -88,9 +92,11 @@ async function carregarOcorrencias() {
     const dados = await resposta.json();
     if (!Array.isArray(dados)) return;
 
-    professionalMapDemo.occurrences = dados.map(oco => {
+    professionalMapDemo.occurrences = dados
+      .filter(oco => String(oco.municipioId || "").toLowerCase() === municipioIdMapa)
+      .map(oco => {
       const bairro = oco.bairro || "Centro";
-      const fallback = obterCoordenadasFallbackPorBairro(bairro);
+      const fallback = obterCoordenadasFallbackPorBairro(bairro, professionalMapDemo.municipality);
       const temCoordenadas = Number.isFinite(oco.latitude) && Number.isFinite(oco.longitude);
 
       return {
@@ -113,6 +119,18 @@ async function carregarOcorrencias() {
 
 // Inicializa o mapa Leaflet e carrega tanto as árvores quanto as ocorrências reais do banco
 async function initializeProfessionalMap() {
+  try {
+    const respostaSessao = await fetch("/api/contas/sessao", { credentials: "same-origin" });
+    if (respostaSessao.ok) {
+      const sessao = await respostaSessao.json();
+      municipioIdMapa = String(sessao.municipioId || "").toLowerCase();
+    }
+  } catch (erro) {
+    console.warn("Não foi possível obter o município da sessão:", erro);
+  }
+  const municipio = MUNICIPIOS_MAPA[municipioIdMapa] || MUNICIPIOS_MAPA["6ae666a7680e8a4330a1ab66"];
+  municipioIdMapa = municipio.id;
+  professionalMapDemo.municipality = { ...municipio };
   document.getElementById("mapScopeName").textContent = professionalMapDemo.municipality.nome;
   updateProfessionalMapListHeading();
   if (!initializeLeafletMap()) return;

@@ -124,6 +124,7 @@ public class ContaController {
 
             // Guarda os dados de autenticação no servidor.
             sessao.setAttribute("usuarioId", conta.getId().toString());
+            sessao.setAttribute("municipioId", conta.getMunicipioId().toHexString());
             sessao.setAttribute("nome", conta.getNome());
             sessao.setAttribute("email", conta.getEmail());
             sessao.setAttribute("perfis", conta.getPerfis());
@@ -134,6 +135,7 @@ public class ContaController {
             ctx.status(200).json(Map.of(
                     "mensagem", "Login realizado com sucesso!",
                     "id", conta.getId().toString(),
+                    "municipioId", conta.getMunicipioId().toHexString(),
                     "nome", conta.getNome(),
                     "email", conta.getEmail(),
                     "perfis", conta.getPerfis(),
@@ -165,6 +167,9 @@ public class ContaController {
         // Retorna os dados armazenados na sessão.
         ctx.status(200).json(Map.of(
                 "id", sessao.getAttribute("usuarioId"),
+                "municipioId", sessao.getAttribute("municipioId") == null
+                        ? ""
+                        : sessao.getAttribute("municipioId"),
                 "nome", sessao.getAttribute("nome"),
                 "email", sessao.getAttribute("email"),
                 "perfis", sessao.getAttribute("perfis"),
