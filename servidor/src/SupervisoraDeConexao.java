@@ -10,9 +10,12 @@ import protocolo.PedidoDeValidacaoCadastro;
 import protocolo.ResultadoValidacaoCadastro;
 import protocolo.PedidoDeValidacaoArvore;
 import protocolo.ResultadoValidacaoArvore;
+import protocolo.PedidoDeValidacaoOrdemDeServico;
+import protocolo.ResultadoValidacaoOrdemDeServico;
 
 import service.ValidadorCadastro;
 import service.ValidadorArvore;
+import service.ValidadorOrdemDeServico;
 
 public class SupervisoraDeConexao extends Thread {
 
@@ -90,6 +93,15 @@ public class SupervisoraDeConexao extends Thread {
                                 ? ""
                                 : " - " + resultado.getErros()));
 
+                    this.usuario.receba(resultado);
+                }
+
+                // Contribuição: Marialvo Corrêa de Freitas Junior. Validação de OS via Socket.
+                else if (comunicado instanceof PedidoDeValidacaoOrdemDeServico) {
+                    PedidoDeValidacaoOrdemDeServico pedido =
+                            (PedidoDeValidacaoOrdemDeServico) comunicado;
+                    ResultadoValidacaoOrdemDeServico resultado =
+                            ValidadorOrdemDeServico.validar(pedido);
                     this.usuario.receba(resultado);
                 }
 

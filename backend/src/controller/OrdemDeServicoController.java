@@ -14,6 +14,7 @@ import dto.CadastroOrdemDeServicoDTO;
 import dto.AtribuicaoEquipeOrdemDeServicoDTO;
 import model.EquipeParaOrdemDeServico;
 import service.OrdemDeServicoService;
+import service.ValidacaoOrdemDeServicoIndisponivelException;
 import io.javalin.http.Context;
 import jakarta.servlet.http.HttpSession;
 import com.google.gson.Gson;
@@ -77,6 +78,8 @@ public class OrdemDeServicoController {
             ctx.status(404).json(Map.of("erro", erro.getMessage()));
         } catch (IllegalStateException erro){
             ctx.status(409).json(Map.of("erro", erro.getMessage()));
+        } catch (ValidacaoOrdemDeServicoIndisponivelException erro){
+            ctx.status(503).json(Map.of("erro", erro.getMessage()));
         } catch (Exception erro){
             erro.printStackTrace();
             ctx.status(500).json(Map.of("erro", "Não foi possível confirmar o cadastro. Consulte a lista de OS antes de tentar novamente."));
@@ -254,6 +257,8 @@ public class OrdemDeServicoController {
             ctx.status(404).json(Map.of("erro", erro.getMessage()));
         } catch (IllegalStateException erro){
             ctx.status(409).json(Map.of("erro", erro.getMessage()));
+        } catch (ValidacaoOrdemDeServicoIndisponivelException erro){
+            ctx.status(503).json(Map.of("erro", erro.getMessage()));
         } catch (Exception erro){
             erro.printStackTrace();
             ctx.status(500).json(Map.of("erro", "Não foi possível confirmar a atribuição. Consulte a OS antes de tentar novamente."));
@@ -290,6 +295,8 @@ public class OrdemDeServicoController {
             ctx.status(404).json(Map.of("erro", erro.getMessage()));
         } catch (IllegalStateException erro){
             ctx.status(409).json(Map.of("erro", erro.getMessage()));
+        } catch (ValidacaoOrdemDeServicoIndisponivelException erro){
+            ctx.status(503).json(Map.of("erro", erro.getMessage()));
         } catch (Exception erro){
             erro.printStackTrace();
             ctx.status(500).json(Map.of("erro", "Não foi possível confirmar a conclusão. Consulte a OS antes de tentar novamente."));

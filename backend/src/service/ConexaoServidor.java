@@ -10,9 +10,13 @@ import protocolo.PedidoDeValidacaoCadastro;
 import protocolo.ResultadoValidacaoCadastro;
 import protocolo.PedidoDeValidacaoArvore;
 import protocolo.ResultadoValidacaoArvore;
+import protocolo.PedidoDeValidacaoOrdemDeServico;
+import protocolo.ResultadoValidacaoOrdemDeServico;
 import protocolo.Comunicado;
 
 public class ConexaoServidor {
+
+    private static final int TEMPO_RESPOSTA_OS_MS = 5000;
 
     private String host;
     private int porta;
@@ -144,5 +148,52 @@ public class ConexaoServidor {
         }
 
         return (ResultadoValidacaoArvore) resposta;
+    }
+
+    // A troca inteira usa o mesmo bloqueio das demais validações da conexão compartilhada.
+    public synchronized ResultadoValidacaoOrdemDeServico validarOrdemDeServico(
+            PedidoDeValidacaoOrdemDeServico pedido) {
+        if (pedido == null) throw new IllegalArgumentException("O pedido de validação da OS é obrigatório.");
+        if (parceiro == null || conexao == null) {
+            throw new ValidacaoOrdemDeServicoIndisponivelException(
+                    new IllegalStateException("Não existe conexão com o servidor Socket."));
+        }
+
+        try {
+            int tempoAnterior = conexao.getSoTimeout();
+            // Um servidor antigo pode desconhecer o pedido; a espera não fica ilimitada.
+            conexao.setSoTimeout(TEMPO_RESPOSTA_OS_MS);
+            parceiro.receba(pedido);
+            Comunicado resposta = parceiro.envie();
+            if (!(resposta instanceof ResultadoValidacaoOrdemDeServico resultado)
+                    || !pedido.getRequisicaoId().equals(resultado.getRequisicaoId())
+                    || pedido.getOperacao() != resultado.getOperacao()
+                    || !respostaOsCompleta(resultado)) {
+                throw new IllegalStateException("Resposta inesperada na validação da OS.");
+            }
+            conexao.setSoTimeout(tempoAnterior);
+            return resultado;
+        } catch (Exception erro) {
+            // Após falha/timeout, uma resposta atrasada não pode atender a outro pedido.
+            fechar();
+            throw new ValidacaoOrdemDeServicoIndisponivelException(erro);
+        }
+    }
+
+    private static boolean respostaOsCompleta(ResultadoValidacaoOrdemDeServico resultado) {
+        if (!resultado.isValido()) {
+            return resultado.getErro() != null && !resultado.getErro().isBlank()
+                    && resultado.getCadastro() == null && resultado.getConclusao() == null
+                    && resultado.getEquipeId() == null;
+        }
+        if (resultado.getErro() != null) return false;
+        return switch (resultado.getOperacao()) {
+            case CADASTRO -> resultado.getCadastro() != null && resultado.getConclusao() == null
+                    && resultado.getEquipeId() == null;
+            case CONCLUSAO -> resultado.getConclusao() != null && resultado.getCadastro() == null
+                    && resultado.getEquipeId() == null;
+            case ATRIBUICAO_EQUIPE -> resultado.getEquipeId() != null && resultado.getCadastro() == null
+                    && resultado.getConclusao() == null;
+        };
     }
 }

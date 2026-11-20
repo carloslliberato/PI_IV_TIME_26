@@ -1,5 +1,14 @@
 # Cadastro de ordens de serviço
 
+## Validação no servidor Socket
+
+Os campos de cadastro, conclusão e atribuição de equipe são validados em `servidor/src/service/ValidadorOrdemDeServico.java`. O backend envia um pedido pelo Socket e utiliza os dados normalizados da resposta antes de reservar o código ou gravar. Sessão, município, existência de referências e regras transacionais permanecem no backend.
+
+Após atualizar este bloco, reinicie os dois processos: primeiro `:servidor:run`, depois `:backend:run`. Reprovação dos dados retorna HTTP 400; indisponibilidade, timeout ou resposta incompatível retorna HTTP 503 antes de qualquer gravação da operação. A espera pela resposta da validação de OS é de até 5 segundos. Depois de uma falha de comunicação, a conexão é encerrada; com o servidor disponível, reinicie o backend para restabelecê-la.
+
+Os testes puros antigos de cadastro, conclusão e equipe foram reunidos em `servidor/test/service/ValidadorOrdemDeServicoTest.java`. `OrdemDeServicoSocketTest` exercita a comunicação real em porta temporária e `ValidadorOrdemDeServicoRemotoTest` confere o adaptador no backend. Esses testes não gravam no MongoDB.
+
+
 ## Aplicação
 
 Base: main `39c23c0` (PR31). Copiar as pastas do pacote para a raiz `PI_IV_TIME_26`, preservando subpastas e substituindo apenas arquivos correspondentes. Rotas e imports necessários já estão incluídos. Reiniciar o backend e atualizar o navegador com Ctrl+F5.
@@ -67,7 +76,8 @@ Erros usam `{"erro":"mensagem"}`: entrada inválida 400, ausência de sessão 40
 ## Teste inicial
 
 ```powershell
-.\gradlew.bat :backend:compileJava :backend:test --tests service.OrdemDeServicoCadastroServiceTest --tests service.OrdemDeServicoEquipeServiceTest --tests service.OrdemDeServicoConclusaoServiceTest
+.\gradlew.bat :servidor:compileJava :backend:compileJava :servidor:test
+.\gradlew.bat :backend:test --tests service.ValidadorOrdemDeServicoRemotoTest
 ```
 
 Com referências canônicas disponíveis, verificar pela tela: criar OS sem ocorrência, consultar o código persistido; selecionar ocorrência e preencher dados, editar a descrição antes de salvar e confirmar o texto final; recusar campos obrigatórios vazios; atribuir equipe à nova OS e confirmar as operações existentes.

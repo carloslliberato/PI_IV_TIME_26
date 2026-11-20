@@ -11,7 +11,8 @@ O pacote inclui backend, tela e testes da conclusão. `ConfiguracaoPaginas.java`
 Execute na raiz do projeto:
 
 ```powershell
-.\gradlew.bat :backend:compileJava :backend:test --tests service.OrdemDeServicoConclusaoServiceTest
+.\gradlew.bat :servidor:compileJava :backend:compileJava :servidor:test
+.\gradlew.bat :backend:test --tests service.ValidadorOrdemDeServicoRemotoTest
 git diff --check
 git status --short --branch
 ```
@@ -97,7 +98,7 @@ O arquivo de demonstração usa uma referência fictícia de árvore, como os te
 
 ## Testes automatizados
 
-`service.OrdemDeServicoConclusaoServiceTest`: 8 testes de validação de campos, datas, links e cópia imutável. Não conecta ao MongoDB.
+`service.ValidadorOrdemDeServicoTest`, em `servidor/test`: preserva os 8 cenários de conclusão (campos, datas, links e cópia imutável), além das validações de cadastro e equipe. Não conecta ao MongoDB.
 
 `repository.ConclusaoOrdemDeServicoIntegracaoTest`: 4 testes reais de persistência, rollback após rejeição da segunda gravação, isolamento municipal e estados finais. Exige `MONGODB_TEST_URI` de um MongoDB exclusivo de testes com transações. Cada teste cria e remove somente um banco temporário `arboriza_test_conclusao_<UUID>`. Não usa a conexão ou o banco da aplicação. Sem a variável, a execução é abortada por condição de teste; isso não é prova de atomicidade.
 
