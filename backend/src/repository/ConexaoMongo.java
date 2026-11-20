@@ -1,6 +1,7 @@
 package repository;
 
 import org.bson.Document;
+import com.mongodb.client.ClientSession;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -36,6 +37,14 @@ public class ConexaoMongo {
                 erro
             );
         }
+    }
+
+    // Usa o mesmo cliente das coleções para a transação de conclusão da OS.
+    public static synchronized ClientSession abrirSessao() {
+        if (mongoClient == null) {
+            getDatabase();
+        }
+        return mongoClient.startSession();
     }
 
     public static void fechar() {

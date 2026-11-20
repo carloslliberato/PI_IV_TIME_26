@@ -122,7 +122,7 @@ public class ConfiguracaoRotas {
 
         this.ordemDeServicoController =
                 new OrdemDeServicoController(ordemService);
-                
+
         IntervencaoRepository intervencaoRepository =
         new IntervencaoRepository();
 
@@ -269,10 +269,14 @@ public class ConfiguracaoRotas {
         servidorHttp.get(
                 "/api/ordens-servico/{id}",
                 ctx -> ordemDeServicoController.consultar(ctx));
-        
+
         servidorHttp.patch(
                 "/api/ordens-servico/{id}/status",
                 ctx -> ordemDeServicoController.alterarStatus(ctx));
+
+        servidorHttp.post(
+                "/api/ordens-servico/{id}/conclusao",
+                ctx -> ordemDeServicoController.concluir(ctx));
 
         servidorHttp.get(
                 "/api/intervencoes",
@@ -281,6 +285,6 @@ public class ConfiguracaoRotas {
         servidorHttp.get(
                 "/api/relatorios/ordens-servico",
                 ctx -> relatorioController.consultarOrdensDeServico(ctx));
-        
+
     }
 }

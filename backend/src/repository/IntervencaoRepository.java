@@ -7,24 +7,44 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+import java.util.Objects;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.ClientSession;
 import model.Intervencao;
 
 public class IntervencaoRepository{
     private final MongoCollection<Document> colecao;
 
     public IntervencaoRepository(){
-        MongoDatabase banco = ConexaoMongo.getDatabase();
+        this(ConexaoMongo.getDatabase());
+    }
+
+    // Permite usar um banco isolado nos testes, sem abrir a conexão da aplicação.
+    public IntervencaoRepository(MongoDatabase banco){
+        Objects.requireNonNull(banco, "O banco de intervenções não pode ser nulo.");
         this.colecao = banco.getCollection("intervencoes");
     }
 
     // Insere uma intervenção no histórico.
     public void salvar(Intervencao intervencao){
+        validarIdentificador(intervencao);
+        colecao.insertOne(converterParaDocumento(intervencao));
+    }
+
+    // Participa da mesma transação que conclui a OS.
+    public void salvar(ClientSession sessao, Intervencao intervencao){
+        Objects.requireNonNull(sessao, "A sessão da transação não pode ser nula.");
+        validarIdentificador(intervencao);
+        colecao.insertOne(sessao, converterParaDocumento(intervencao));
+    }
+
+    private void validarIdentificador(Intervencao intervencao){
         if (intervencao == null){
             throw new IllegalArgumentException("A intervenção não pode ser nula.");
         }
@@ -33,8 +53,33 @@ public class IntervencaoRepository{
             throw new IllegalArgumentException("A intervenção precisa possuir um identificador.");
         }
 
-        Document documento = converterParaDocumento(intervencao);
-        colecao.insertOne(documento);
+    }
+
+    // Não permite resolver um relatório por ID sem conferir sua OS e seu município.
+    public Optional<Intervencao> buscarConclusao(
+            ObjectId intervencaoId, ObjectId ordemServicoId, ObjectId municipioId){
+        Document documento = colecao.find(filtroDaConclusao(
+                intervencaoId, ordemServicoId, municipioId)).first();
+        return documento == null ? Optional.empty() : Optional.of(converterParaIntervencao(documento));
+    }
+
+    // Consulta as datas e os vínculos já persistidos dentro da transação.
+    public Optional<Intervencao> buscarConclusao(
+            ClientSession sessao, ObjectId intervencaoId,
+            ObjectId ordemServicoId, ObjectId municipioId){
+        Objects.requireNonNull(sessao, "A sessão da transação não pode ser nula.");
+        Document documento = colecao.find(sessao, filtroDaConclusao(
+                intervencaoId, ordemServicoId, municipioId)).first();
+        return documento == null ? Optional.empty() : Optional.of(converterParaIntervencao(documento));
+    }
+
+    private Bson filtroDaConclusao(
+            ObjectId intervencaoId, ObjectId ordemServicoId, ObjectId municipioId){
+        if (intervencaoId == null || ordemServicoId == null || municipioId == null){
+            throw new IllegalArgumentException("Os vínculos do relatório de conclusão são obrigatórios.");
+        }
+        return and(eq("_id", intervencaoId), eq("ordemServicoId", ordemServicoId),
+                eq("municipioId", municipioId));
     }
 
     // Lista as intervenções do município informado.
