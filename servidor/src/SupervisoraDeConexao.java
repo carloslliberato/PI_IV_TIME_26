@@ -8,12 +8,15 @@ import protocolo.Parceiro;
 import protocolo.PedidoParaSair;
 import protocolo.PedidoDeValidacaoCadastro;
 import protocolo.ResultadoValidacaoCadastro;
+import protocolo.PedidoDeValidacaoEquipe;
+import protocolo.ResultadoValidacaoEquipe;
 import protocolo.PedidoDeValidacaoArvore;
 import protocolo.ResultadoValidacaoArvore;
 import protocolo.PedidoDeValidacaoOrdemDeServico;
 import protocolo.ResultadoValidacaoOrdemDeServico;
 
 import service.ValidadorCadastro;
+import service.ValidadorEquipe;
 import service.ValidadorArvore;
 import service.ValidadorOrdemDeServico;
 
@@ -72,6 +75,17 @@ public class SupervisoraDeConexao extends Thread {
 
                     ResultadoValidacaoCadastro resultado =
                             ValidadorCadastro.validar(pedido);
+
+                    this.usuario.receba(resultado);
+                }
+
+                else if (comunicado instanceof PedidoDeValidacaoEquipe) {
+
+                    PedidoDeValidacaoEquipe pedido =
+                            (PedidoDeValidacaoEquipe) comunicado;
+
+                    ResultadoValidacaoEquipe resultado =
+                            ValidadorEquipe.validar(pedido);
 
                     this.usuario.receba(resultado);
                 }
