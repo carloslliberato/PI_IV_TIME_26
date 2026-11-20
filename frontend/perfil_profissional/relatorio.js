@@ -99,37 +99,22 @@ const reportCatalog = {
       year: {
         label: "Ano",
         title: "Ordens de serviço por ano",
-        description: "Ordens de serviço registradas por ano.",
-        // DADOS FICTÍCIOS. API/BD: retornar ano de abertura e total de ordens naquele ano.
-        values: [{ group: "2023", count: 48 }, { group: "2024", count: 76 }, { group: "2025", count: 91 }, { group: "2026", count: 32 }]
+        description: "Histórico de ordens de serviço por ano de criação."
       },
       month: {
         label: "Mês",
         title: "Ordens de serviço por mês",
-        description: "Ordens de serviço abertas em cada mês do ano atual.",
-        // DADOS FICTÍCIOS. API/BD: retornar mês e contagem; usar parâmetro ano para selecionar o período.
-        values: [{ group: "Janeiro", count: 4 }, { group: "Fevereiro", count: 3 }, { group: "Março", count: 4 }, { group: "Abril", count: 2 }, { group: "Maio", count: 3 }, { group: "Junho", count: 2 }, { group: "Julho", count: 4 }, { group: "Agosto", count: 3 }, { group: "Setembro", count: 2 }, { group: "Outubro", count: 2 }, { group: "Novembro", count: 1 }, { group: "Dezembro", count: 2 }]
+        description: "Ordens de serviço por mês no ano informado pelo relatório."
       },
       semester: {
         label: "Semestre",
         title: "Ordens de serviço por semestre",
-        description: "Comparação entre os dois semestres do ano atual.",
-        // DADOS FICTÍCIOS. API/BD: agrupar data de abertura em 1º ou 2º semestre e contar ordens.
-        values: [{ group: "1º semestre", count: 18 }, { group: "2º semestre", count: 14 }]
+        description: "Ordens de serviço por semestre no ano informado pelo relatório."
       },
-      region: {
-        label: "Região",
-        title: "Ordens de serviço por região",
-        description: "Distribuição das ordens de serviço entre as regiões municipais.",
-        // DADOS FICTÍCIOS. API/BD: retornar região da ordem (ou região da equipe designada) e contagem.
-        values: [{ group: "Região Central", count: 61 }, { group: "Região Norte", count: 54 }, { group: "Região Sul", count: 49 }, { group: "Região Leste", count: 45 }, { group: "Região Oeste", count: 38 }]
-      },
-      team: {
-        label: "Equipe",
-        title: "Ordens de serviço por equipe",
-        description: "Quantidade de ordens de serviço direcionadas a cada equipe.",
-        // DADOS FICTÍCIOS. API/BD: retornar equipe responsável (id e nome) e total de ordens vinculadas.
-        values: [{ group: "Equipe Norte", count: 64 }, { group: "Equipe Central", count: 75 }, { group: "Equipe Sul", count: 54 }, { group: "Equipe de poda", count: 54 }]
+      status: {
+        label: "Status",
+        title: "Ordens de serviço por status",
+        description: "Situação atual das ordens de serviço de todo o histórico municipal."
       }
     }
   },
@@ -202,10 +187,111 @@ const reportElements = {
   chart: document.getElementById("reportChart"),
   table: document.getElementById("reportTableBody"),
   exportButton: document.getElementById("exportReport"),
-  municipality: document.getElementById("reportsMunicipality")
+  municipality: document.getElementById("reportsMunicipality"),
+  card: document.getElementById("reportCard"),
+  visualization: document.getElementById("reportVisualization"),
+  feedback: document.getElementById("reportFeedback"),
+  dateWarning: document.getElementById("reportDateWarning"),
+  retry: document.getElementById("reportRetry"),
+  retryButton: document.getElementById("retryOrderReport"),
+  sourceNote: document.getElementById("reportSourceNote")
 };
 let activeReportSubject = "trees";
 let activeReportGrouping = "neighborhood";
+let demoReportMunicipality = "Campinas - SP";
+const orderReportState = { status: "idle", report: null, error: "" };
+
+// Valida o contrato antes de apresentar ou exportar qualquer contagem de OS.
+function validateOrderReportResponse(payload) {
+  const requireValid = condition => {
+    if (!condition) throw new Error("O servidor retornou um relatório de ordens de serviço inválido. Tente novamente.");
+  };
+  const isObject = value => value !== null && typeof value === "object" && !Array.isArray(value);
+  const isCount = value => Number.isSafeInteger(value) && value >= 0;
+  requireValid(isObject(payload) && isObject(payload.relatorio));
+  const report = payload.relatorio;
+  requireValid(typeof report.municipioId === "string" && /^[a-f0-9]{24}$/i.test(report.municipioId));
+  requireValid(Number.isInteger(report.anoSelecionado) && report.anoSelecionado >= 1 && report.anoSelecionado <= 9999);
+  requireValid(report.fusoHorario === "America/Sao_Paulo");
+  ["totalOrdens", "totalNoAno", "ordensSemDataValida"].forEach(key => requireValid(isCount(report[key])));
+
+  const readGroups = key => {
+    requireValid(Array.isArray(report[key]));
+    const names = new Set();
+    return report[key].map(row => {
+      requireValid(isObject(row) && typeof row.grupo === "string" && row.grupo.length > 0 && isCount(row.quantidade));
+      requireValid(!names.has(row.grupo));
+      names.add(row.grupo);
+      return { group: row.grupo, count: row.quantidade };
+    });
+  };
+  const groups = {
+    year: readGroups("porAno"),
+    month: readGroups("porMes"),
+    semester: readGroups("porSemestre"),
+    status: readGroups("porStatus")
+  };
+  const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+  const semesters = ["1º semestre", "2º semestre"];
+  requireValid(groups.month.length === 12 && groups.month.every((row, index) => row.group === months[index]));
+  requireValid(groups.semester.length === 2 && groups.semester.every((row, index) => row.group === semesters[index]));
+  const standardStatuses = ["Aberta", "Em andamento", "Concluída", "Cancelada"];
+  requireValid(standardStatuses.every((status, index) => groups.status[index]?.group === status));
+  // Os anos históricos podem ficar fora da faixa aceita para o filtro de ano.
+  requireValid(groups.year.every((row, index) => /^-?\d+$/.test(row.group) &&
+    Number.isSafeInteger(Number(row.group)) &&
+    (index === 0 || Number(groups.year[index - 1].group) < Number(row.group))));
+  const sum = rows => rows.reduce((total, row) => total + row.count, 0);
+  requireValid(sum(groups.status) === report.totalOrdens);
+  requireValid(sum(groups.year) + report.ordensSemDataValida === report.totalOrdens);
+  requireValid(sum(groups.month) === report.totalNoAno && sum(groups.semester) === report.totalNoAno);
+  requireValid(report.totalNoAno <= report.totalOrdens - report.ordensSemDataValida);
+  requireValid(groups.semester[0].count === sum(groups.month.slice(0, 6)) &&
+    groups.semester[1].count === sum(groups.month.slice(6)));
+  const selectedYear = groups.year.find(row => Number(row.group) === report.anoSelecionado);
+  requireValid((selectedYear?.count || 0) === report.totalNoAno);
+  return { ...report, groups };
+}
+
+// Consulta o ano padrão definido pela API; o município vem da conta autenticada.
+async function loadOrderReport() {
+  if (orderReportState.status === "loading") {
+    if (activeReportSubject === "orders") renderSelectedReport();
+    return;
+  }
+  orderReportState.status = "loading";
+  orderReportState.report = null;
+  orderReportState.error = "";
+  if (activeReportSubject === "orders") renderSelectedReport();
+  try {
+    const response = await fetch("/api/relatorios/ordens-servico", {
+      credentials: "same-origin",
+      cache: "no-store",
+      headers: { Accept: "application/json" }
+    });
+    let payload;
+    try {
+      payload = await response.json();
+    } catch {
+      throw new Error("Não foi possível ler a resposta do relatório. Tente novamente.");
+    }
+    if (!response.ok) {
+      const message = typeof payload?.erro === "string" && payload.erro.trim()
+        ? payload.erro : "Não foi possível consultar o relatório de ordens de serviço. Tente novamente.";
+      throw new Error(message);
+    }
+    orderReportState.report = validateOrderReportResponse(payload);
+    orderReportState.status = "ready";
+  } catch (error) {
+    orderReportState.status = "error";
+    orderReportState.error = error instanceof TypeError
+      ? "Não foi possível conectar ao relatório de ordens de serviço. Tente novamente."
+      : error?.message || "Não foi possível consultar o relatório de ordens de serviço. Tente novamente.";
+  }
+  // Uma resposta pendente nunca troca o conteúdo de outro assunto selecionado.
+  if (activeReportSubject === "orders") renderSelectedReport();
+}
 
 // Converte textos inseridos na tabela e no gráfico em conteúdo HTML seguro.
 function escapeReportText(value) {
@@ -223,7 +309,7 @@ function updateGroupingOptions() {
     .join("");
 }
 
-// Marca visualmente e para tecnologias assistivas o assunto do relatÃ³rio selecionado.
+// Marca visualmente e para tecnologias assistivas o assunto do relatório selecionado.
 function updateActiveSubjectTab() {
   reportElements.subjectTabs.forEach(tab => {
     const isActive = tab.dataset.reportSubject === activeReportSubject;
@@ -238,8 +324,28 @@ function isTeamPeriodReport() {
     && ["ordersMonth", "ordersSemester", "ordersYear"].includes(activeReportGrouping);
 }
 
-// Devolve todas as ordens ou somente as ordens da equipe selecionada.
+// Adapta os textos dos períodos ao ano efetivamente devolvido pelo servidor.
+function getSelectedReportDefinition() {
+  const definition = { ...reportCatalog[activeReportSubject].groups[activeReportGrouping] };
+  if (activeReportSubject === "orders" && orderReportState.status === "ready") {
+    const year = orderReportState.report.anoSelecionado;
+    if (activeReportGrouping === "month") {
+      definition.title = `Ordens de serviço por mês (${year})`;
+      definition.description = `Ordens criadas em cada mês de ${year}, no horário de São Paulo.`;
+    } else if (activeReportGrouping === "semester") {
+      definition.title = `Ordens de serviço por semestre (${year})`;
+      definition.description = `Ordens criadas em cada semestre de ${year}, no horário de São Paulo.`;
+    }
+  }
+  return definition;
+}
+
+// As OS usam exclusivamente a resposta validada; os demais assuntos mantêm a demonstração.
 function getSelectedReportValues() {
+  if (activeReportSubject === "orders") {
+    return orderReportState.status === "ready"
+      ? orderReportState.report.groups[activeReportGrouping] : [];
+  }
   const selectedGroup = reportCatalog[activeReportSubject].groups[activeReportGrouping];
   if (isTeamPeriodReport() && reportElements.teamSelect.value) {
     return selectedGroup.teamValues[reportElements.teamSelect.value] || [];
@@ -250,18 +356,70 @@ function getSelectedReportValues() {
 // Renderiza os totais, as barras proporcionais e a tabela do agrupamento ativo.
 function renderSelectedReport() {
   const subject = reportCatalog[activeReportSubject];
-  const selectedGroup = subject.groups[activeReportGrouping];
-  const showTeamFilter = isTeamPeriodReport();
-  reportElements.teamFilter.hidden = !showTeamFilter;
-  const values = getSelectedReportValues();
-  const total = values.reduce((sum, row) => sum + row.count, 0);
-  const maximum = Math.max(...values.map(row => row.count), 1);
-
+  const selectedGroup = getSelectedReportDefinition();
+  const isOrders = activeReportSubject === "orders";
+  const ready = !isOrders || orderReportState.status === "ready";
+  const loading = isOrders && orderReportState.status === "loading";
+  reportElements.teamFilter.hidden = !isTeamPeriodReport();
+  reportElements.card.setAttribute("aria-busy", String(loading));
+  reportElements.exportButton.disabled = !ready;
+  reportElements.exportButton.setAttribute("aria-disabled", String(!ready));
+  reportElements.exportButton.title = ready ? "Exportar o agrupamento exibido" : "Aguarde uma consulta concluída para exportar";
+  reportElements.visualization.hidden = !ready;
+  reportElements.feedback.hidden = true;
+  reportElements.feedback.textContent = "";
+  reportElements.feedback.setAttribute("role", "status");
+  reportElements.feedback.setAttribute("aria-live", "polite");
+  reportElements.dateWarning.hidden = true;
+  reportElements.dateWarning.textContent = "";
+  reportElements.retry.hidden = true;
   reportElements.title.textContent = selectedGroup.title;
   reportElements.description.textContent = selectedGroup.description;
-  reportElements.total.textContent = total.toLocaleString("pt-BR");
   reportElements.totalLabel.textContent = selectedGroup.totalLabel || subject.label.toLocaleLowerCase();
   reportElements.groupColumn.textContent = selectedGroup.label;
+  reportElements.municipality.textContent = isOrders ? "Município da sua conta" : demoReportMunicipality;
+  reportElements.sourceNote.textContent = isOrders
+    ? (ready ? "Dados reais das ordens de serviço do município da sua conta. Datas no horário de São Paulo."
+      : loading ? "Consultando dados reais das ordens de serviço do município da sua conta."
+        : "Os dados reais das ordens de serviço não estão disponíveis nesta consulta.")
+    : "Dados de demonstração: os números desta visualização são fictícios.";
+
+  if (!ready) {
+    const failed = orderReportState.status === "error";
+    reportElements.total.textContent = "—";
+    reportElements.chart.innerHTML = "";
+    reportElements.table.innerHTML = "";
+    reportElements.feedback.textContent = failed ? orderReportState.error : "Carregando relatório de ordens de serviço...";
+    reportElements.feedback.hidden = false;
+    reportElements.feedback.setAttribute("role", failed ? "alert" : "status");
+    reportElements.feedback.setAttribute("aria-live", failed ? "assertive" : "polite");
+    reportElements.retry.hidden = !failed;
+    return;
+  }
+
+  const values = getSelectedReportValues();
+  const total = values.reduce((sum, row) => sum + row.count, 0);
+  const maximum = values.reduce((max, row) => Math.max(max, row.count), 1);
+  reportElements.total.textContent = total.toLocaleString("pt-BR");
+  reportElements.visualization.hidden = values.length === 0;
+  if (isOrders && activeReportGrouping !== "status" && orderReportState.report.ordensSemDataValida > 0) {
+    const missingDates = orderReportState.report.ordensSemDataValida.toLocaleString("pt-BR");
+    reportElements.dateWarning.textContent = `OS sem data de criação válida no histórico: ${missingDates}. Esses registros entram no total histórico e nos status, mas ficam fora das séries temporais.`;
+    reportElements.dateWarning.hidden = false;
+  }
+  if (total === 0) {
+    let message = "Nenhum registro para o filtro selecionado.";
+    if (isOrders) {
+      const report = orderReportState.report;
+      message = report.totalOrdens === 0
+        ? "Não há ordens de serviço cadastradas no município da sua conta."
+        : activeReportGrouping === "year"
+          ? "Não há ordens de serviço com data de criação válida para o agrupamento por ano."
+          : `Não há ordens de serviço com data de criação válida em ${report.anoSelecionado}.`;
+    }
+    reportElements.feedback.textContent = message;
+    reportElements.feedback.hidden = false;
+  }
 
   // Cria as barras usando percentual relativo ao maior grupo, com rótulo acessível.
   reportElements.chart.setAttribute("aria-label", selectedGroup.title);
@@ -269,7 +427,7 @@ function renderSelectedReport() {
     const barWidth = (row.count / maximum) * 100;
     return `<div class="report-bar-row">
       <span class="report-bar-label" title="${escapeReportText(row.group)}">${escapeReportText(row.group)}</span>
-      <span class="report-bar-track" aria-hidden="true"><span class="report-bar-fill" style="width:${barWidth.toFixed(2)}%"></span></span>
+      <span class="report-bar-track" aria-hidden="true"><span class="report-bar-fill" style="display:block;width:${barWidth.toFixed(2)}%;min-width:0"></span></span>
       <strong class="report-bar-value">${row.count.toLocaleString("pt-BR")}</strong>
     </div>`;
   }).join("");
@@ -281,10 +439,19 @@ function renderSelectedReport() {
   }).join("");
 }
 
-// Exporta os dados do agrupamento visível como um arquivo CSV compatível com planilhas.
+// Aspas protegem a estrutura do CSV; o apóstrofo mantém rótulos de fórmula como texto.
+function formatReportCsvCell(value) {
+  let text = String(value ?? "");
+  if (typeof value === "string" && (/^[\s\u0000-\u001f]*[=+\-@]/.test(text) || /^[\t\r\n]/.test(text))) {
+    text = "'" + text;
+  }
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+// Exporta os mesmos grupos exibidos; nenhuma falha de consulta vira CSV de zeros.
 function exportSelectedReport() {
-  const subject = reportCatalog[activeReportSubject];
-  const selectedGroup = subject.groups[activeReportGrouping];
+  if (activeReportSubject === "orders" && orderReportState.status !== "ready") return;
+  const selectedGroup = getSelectedReportDefinition();
   const values = getSelectedReportValues();
   const total = values.reduce((sum, row) => sum + row.count, 0);
   const csvRows = [[selectedGroup.label, "Quantidade", "Participação"]];
@@ -295,21 +462,28 @@ function exportSelectedReport() {
     csvRows.push([row.group, row.count, `${share}%`]);
   });
 
-  const csv = "\uFEFF" + csvRows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+  const csv = "\uFEFF" + csvRows.map(row => row.map(formatReportCsvCell).join(";")).join("\r\n");
   const file = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const downloadUrl = URL.createObjectURL(file);
   const downloadLink = document.createElement("a");
   downloadLink.href = downloadUrl;
-  const teamSuffix = reportElements.teamSelect.value ? `-${reportElements.teamSelect.value}` : "";
-  downloadLink.download = `${activeReportSubject}-${activeReportGrouping}${teamSuffix}.csv`;
+  const teamSuffix = isTeamPeriodReport() && reportElements.teamSelect.value
+    ? `-${reportElements.teamSelect.value}` : "";
+  const yearSuffix = activeReportSubject === "orders" && ["month", "semester"].includes(activeReportGrouping)
+    ? `-${orderReportState.report.anoSelecionado}` : "";
+  downloadLink.download = `${activeReportSubject}-${activeReportGrouping}${yearSuffix}${teamSuffix}.csv`;
   downloadLink.click();
-  URL.revokeObjectURL(downloadUrl);
+  setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
 }
 
-// Inicializa o município e eventos da tela; este texto virá do perfil autenticado via API.
+// Mantém os dados de demonstração e consulta a API ao selecionar o assunto OS.
 function initializeReportsPage() {
-  // DADOS FICTÍCIOS. API/BD: obter município e setor do usuário autenticado (ex.: GET /api/me).
-  reportElements.municipality.textContent = localStorage.getItem("municipio") || "Campinas - SP";
+  // Esse nome é usado somente nos assuntos de demonstração.
+  try {
+    demoReportMunicipality = localStorage.getItem("municipio") || "Campinas - SP";
+  } catch {
+    // O bloqueio do armazenamento local não impede a consulta autenticada de OS.
+  }
   // Preenche o filtro de equipe com IDs e nomes; futuramente estes virão do cadastro municipal.
   reportElements.teamSelect.insertAdjacentHTML("beforeend", reportTeamOptions
     .map(team => `<option value="${escapeReportText(team.id)}">${escapeReportText(team.name)}</option>`)
@@ -320,16 +494,21 @@ function initializeReportsPage() {
 
   // Muda agrupamentos disponíveis ao trocar de assunto e atualiza ao mudar o agrupamento.
   reportElements.subjectTabs.forEach(tab => tab.addEventListener("click", () => {
+    if (!Object.prototype.hasOwnProperty.call(reportCatalog, tab.dataset.reportSubject)) return;
     activeReportSubject = tab.dataset.reportSubject;
     updateActiveSubjectTab();
     updateGroupingOptions();
-    renderSelectedReport();
+    if (activeReportSubject === "orders") {
+      loadOrderReport();
+    } else {
+      renderSelectedReport();
+    }
   }));
 
   // Atualiza o sublinhado do agrupamento e renderiza os valores correspondentes.
   reportElements.groupingTabs.addEventListener("click", event => {
     const tab = event.target.closest("[data-report-grouping]");
-    if (!tab) return;
+    if (!tab || !Object.prototype.hasOwnProperty.call(reportCatalog[activeReportSubject].groups, tab.dataset.reportGrouping)) return;
     activeReportGrouping = tab.dataset.reportGrouping;
     reportElements.groupingTabs.querySelectorAll("[data-report-grouping]").forEach(groupTab => {
       const isActive = groupTab === tab;
@@ -340,10 +519,9 @@ function initializeReportsPage() {
   });
   reportElements.teamSelect.addEventListener("change", renderSelectedReport);
   reportElements.exportButton.addEventListener("click", exportSelectedReport);
-
-  // INTEGRAÇÃO FUTURA: substituir reportCatalog pelos resultados agrupados da API municipal.
-  // Campos esperados por linha: grupo (bairro/espécie/risco/status/período/região) e quantidade.
-  // Sugestão: GET /api/relatorios?assunto=trees&agrupamento=neighborhood&municipioId={idSetor}.
+  reportElements.retryButton.addEventListener("click", () => {
+    if (activeReportSubject === "orders") loadOrderReport();
+  });
 }
 
 // O sidebar só carrega este arquivo depois de validar login e setor.

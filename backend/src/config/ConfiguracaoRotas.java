@@ -7,6 +7,7 @@ import controller.EspecieController;
 import controller.IntervencaoController;
 import controller.OcorrenciaController;
 import controller.OrdemDeServicoController;
+import controller.RelatorioController;
 import io.javalin.Javalin;
 import repository.ArvoreRepository;
 import repository.ContaRepository;
@@ -17,6 +18,7 @@ import repository.MunicipioRepository;
 import repository.OcorrenciaRepository;
 import repository.OrdemDeServicoRepository;
 import repository.RecuperacaoSenhaRepository;
+import repository.RelatorioRepository;
 import service.ArvoreService;
 import service.ConexaoServidor;
 import service.ContaService;
@@ -27,6 +29,7 @@ import service.OcorrenciaService;
 import service.OrdemDeServicoService;
 import service.RecuperacaoSenhaService;
 import service.ServicoEmail;
+import service.RelatorioService;
 
 public class ConfiguracaoRotas {
 
@@ -36,7 +39,8 @@ public class ConfiguracaoRotas {
     private final EquipeController equipeController;
     private final OcorrenciaController ocorrenciaController;
     private final OrdemDeServicoController ordemDeServicoController;
-    private final IntervencaoController intervencaoController; 
+    private final IntervencaoController intervencaoController;
+    private final RelatorioController relatorioController;
 
     public ConfiguracaoRotas(
             ConexaoServidor conexaoServidor) {
@@ -129,6 +133,15 @@ public class ConfiguracaoRotas {
 
         this.intervencaoController =
                 new IntervencaoController(intervencaoService);
+
+        RelatorioRepository relatorioRepository =
+                new RelatorioRepository();
+
+        RelatorioService relatorioService =
+                new RelatorioService(relatorioRepository, contaRepository);
+
+        this.relatorioController =
+                new RelatorioController(relatorioService);
     }
 
     public void registrarRotas(Javalin servidorHttp) {
@@ -264,6 +277,10 @@ public class ConfiguracaoRotas {
         servidorHttp.get(
                 "/api/intervencoes",
                 ctx -> intervencaoController.listar(ctx));
+
+        servidorHttp.get(
+                "/api/relatorios/ordens-servico",
+                ctx -> relatorioController.consultarOrdensDeServico(ctx));
         
     }
 }
