@@ -78,12 +78,18 @@ class OcorrenciaCodigoPersonalizadoIntegracaoTest {
                 repositorio.buscarPorId("OC-000001").getObjectId("_id"));
 
         Ocorrencia nova = new Ocorrencia();
+        nova.setLocalizacao("Rua das Árvores");
+        nova.setNumero("42");
+        nova.setBairro("Centro");
         ObjectId novoObjectId = nova.getOcorrenciaId();
         String protocolo = nova.getProtocolo();
         Document criada = repositorio.criar(nova);
         assertEquals("OC-000003", criada.getString("id"));
         assertEquals(novoObjectId, criada.getObjectId("_id"));
         assertEquals(protocolo, criada.getString("protocolo"));
+        assertEquals("Rua das Árvores", criada.getString("localizacao"));
+        assertEquals("42", criada.getString("numero"));
+        assertEquals("Centro", criada.getString("bairro"));
         assertEquals(novoObjectId,
                 repositorio.buscarPorId("OC-000003").getObjectId("_id"));
         assertNotNull(criada.getString("id"));

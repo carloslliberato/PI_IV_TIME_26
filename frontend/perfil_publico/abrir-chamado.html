@@ -70,8 +70,19 @@
               <div class="col-md-6">
                 <label class="form-label" for="reportAddress">Endereço do local <span>*</span></label>
                 <input class="form-control" id="reportAddress" name="endereco" type="text"
-                  placeholder="Rua, número, bairro ou ponto de referência" required minlength="5">
-                <div class="invalid-feedback">Informe o endereço ou um ponto de referência.</div>
+                  placeholder="Nome da rua" required minlength="5">
+                <div class="invalid-feedback">Informe o nome da rua.</div>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="reportNumber">Número <span>*</span></label>
+                <input class="form-control" id="reportNumber" name="numero" type="text" placeholder="Número" required>
+                <div class="invalid-feedback">Informe o número do local.</div>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="reportNeighborhood">Bairro <span>*</span></label>
+                <input class="form-control" id="reportNeighborhood" name="bairro" type="text" placeholder="Bairro"
+                  required>
+                <div class="invalid-feedback">Informe o bairro do local.</div>
               </div>
               <div class="col-12">
                 <label class="form-label" for="reportDescription">Descrição do problema <span>*</span></label>

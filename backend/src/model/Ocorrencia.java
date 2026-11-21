@@ -16,6 +16,7 @@ public class Ocorrencia {
     private String tipoProblema;
     private String descricao;
     private String localizacao;
+    private String numero;
     private String bairro;
     private Double latitude;
     private Double longitude;
@@ -71,6 +72,9 @@ public class Ocorrencia {
 
     public String getLocalizacao() { return localizacao; }
     public void setLocalizacao(String localizacao) { this.localizacao = localizacao; }
+
+    public String getNumero() { return numero; }
+    public void setNumero(String numero) { this.numero = numero; }
 
     public String getBairro() { return bairro; }
     public void setBairro(String bairro) { this.bairro = bairro; }

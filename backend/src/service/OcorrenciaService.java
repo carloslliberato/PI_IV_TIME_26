@@ -50,6 +50,12 @@ public class OcorrenciaService {
         if (local == null || local.isBlank()) {
             throw new IllegalArgumentException("Informe o endereço do local.");
         }
+        if (dto.numero == null || dto.numero.isBlank()) {
+            throw new IllegalArgumentException("Informe o número do local.");
+        }
+        if (dto.bairro == null || dto.bairro.isBlank()) {
+            throw new IllegalArgumentException("Informe o bairro do local.");
+        }
         if (dto.descricao == null || dto.descricao.isBlank()) {
             throw new IllegalArgumentException("Informe a descrição do problema.");
         }
@@ -74,7 +80,8 @@ public class OcorrenciaService {
         Ocorrencia nova = new Ocorrencia();
         nova.setTipoProblema(tipo.trim());
         nova.setLocalizacao(local.trim());
-        nova.setBairro((dto.bairro != null && !dto.bairro.isBlank()) ? dto.bairro.trim() : extrairBairro(local));
+        nova.setNumero(dto.numero.trim());
+        nova.setBairro(dto.bairro.trim());
         nova.setDescricao(dto.descricao.trim());
         nova.setImagem(dto.imagem);
         nova.setReceberNotificacoes(querNotificacao);
@@ -141,15 +148,6 @@ public class OcorrenciaService {
             throw new IllegalArgumentException("Prioridade inválida. Use: " + URGENCIAS_VALIDAS);
         }
         return repository.atualizarPrioridade(id, novaPrioridade);
-    }
-
-    // Tenta extrair o bairro caso o endereço tenha sido digitado como "Rua X, 123 - Bairro"
-    private String extrairBairro(String endereco) {
-        if (endereco != null && endereco.contains("-")) {
-            String[] partes = endereco.split("-");
-            return partes[partes.length - 1].trim();
-        }
-        return "Centro";
     }
 
     // Chama o repositório para salvar a preferência de notificação

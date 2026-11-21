@@ -67,6 +67,7 @@ public class OcorrenciaRepository {
                 .append("tipoProblema", o.getTipoProblema())
                 .append("descricao", o.getDescricao())
                 .append("localizacao", o.getLocalizacao())
+                .append("numero", o.getNumero())
                 .append("bairro", o.getBairro())
                 .append("latitude", o.getLatitude())
                 .append("longitude", o.getLongitude())

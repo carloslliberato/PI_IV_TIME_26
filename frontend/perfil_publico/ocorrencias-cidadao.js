@@ -15,6 +15,7 @@ function initializeCitizenOccurrences() {
   const tableBody = document.getElementById("occurrencesTableBody");
   const resultsCount = document.getElementById("resultsCount");
   const emptyState = document.getElementById("emptyState");
+  let requisicaoOcorrenciasAtual = 0;
 
   // Se algum elemento essencial não existir na tela, interrompe a função
   if (!municipalityFilter || !typeFilter || !statusFilter || !priorityFilter || !tableBody) return;
@@ -57,7 +58,8 @@ function initializeCitizenOccurrences() {
     const pr = normalizarTexto(priority);
     if (pr === "alta" || pr === "critica") return "priority-alta";
     if (pr === "media") return "priority-media";
-    return "priority-baixa";
+    if (pr === "baixa") return "priority-baixa";
+    return "priority-indefinida";
   }
 
   // Formata o nome do município (ex: transforma "campinas" em "Campinas")
@@ -127,25 +129,33 @@ function initializeCitizenOccurrences() {
 
   // Busca as ocorrências reais no back-end (Javalin + MongoDB) via GET /api/ocorrencias
   async function carregarOcorrenciasDaApi() {
+    const requisicao = ++requisicaoOcorrenciasAtual;
+    const status = statusFilter.value;
+    const url = status
+      ? `/api/ocorrencias?status=${encodeURIComponent(status)}`
+      : "/api/ocorrencias";
+
     try {
-      const resposta = await fetch("/api/ocorrencias");
+      const resposta = await fetch(url);
       if (!resposta.ok) throw new Error("Erro ao buscar ocorrências do servidor");
 
       const dadosBanco = await resposta.json();
+      if (requisicao !== requisicaoOcorrenciasAtual) return;
 
       // Converte os nomes dos campos do MongoDB para o formato usado pela tabela
       listaOcorrencias = dadosBanco.map(doc => ({
-        id: doc.protocolo || doc.id || doc._id || "-",
+        id: doc.id || "-",
         municipio: doc.municipio || formatarMunicipio(doc.municipioId),
         bairro: doc.bairro || extrairBairro(doc.localizacao),
         tipo: formatarTipoOcorrencia(doc.tipo || doc.tipoProblema),
         status: doc.status || "Recebida",
-        prioridade: doc.prioridade || doc.urgencia || "Média"
+        prioridade: doc.urgencia || doc.prioridade || "-"
       }));
 
       // Atualiza a tabela na tela com os dados recebidos
       updateOccurrencesTable();
     } catch (erro) {
+      if (requisicao !== requisicaoOcorrenciasAtual) return;
       console.error("Erro ao carregar ocorrências:", erro);
       listaOcorrencias = [];
       updateOccurrencesTable();
@@ -162,9 +172,10 @@ function initializeCitizenOccurrences() {
   }
 
   // Faz a tabela atualizar sempre que o usuário mudar qualquer um dos 4 filtros
-  [municipalityFilter, typeFilter, statusFilter, priorityFilter].forEach(filter => {
+  [municipalityFilter, typeFilter, priorityFilter].forEach(filter => {
     filter.addEventListener("change", updateOccurrencesTable);
   });
+  statusFilter.addEventListener("change", carregarOcorrenciasDaApi);
 
   // Chama a API assim que a tela abre
   carregarOcorrenciasDaApi();

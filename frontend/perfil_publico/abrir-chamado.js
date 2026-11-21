@@ -162,6 +162,7 @@ function initializeReportForm() {
       "#reportAddress, #reportLocation, #localizacao, #endereco",
       'input[type="text"]:not(#reportContactName)'
     );
+    const numeroDigitado = obterValorDoCampo("#reportNumber, #numero", 'input[name="numero"]');
     const bairroDigitado = obterValorDoCampo("#reportNeighborhood, #bairro", 'input[name*="bairro" i]');
     const descricaoDigitada = obterValorDoCampo("#reportDescription, #descricao", "textarea");
     const municipioSelecionado = obterValorDoCampo("#reportMunicipality, #municipioId", 'select[name*="municipio" i]');
@@ -174,6 +175,7 @@ function initializeReportForm() {
     const dadosChamado = {
       tipoProblema: tipoSelecionado,
       localizacao: enderecoDigitado,
+      numero: numeroDigitado,
       bairro: bairroDigitado,
       descricao: descricaoDigitada,
       // O nome enviado é resolvido para ObjectId pelo MunicipioRepository, como no cadastro de conta.

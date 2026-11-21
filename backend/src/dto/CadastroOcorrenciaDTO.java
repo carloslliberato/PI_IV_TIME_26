@@ -8,6 +8,7 @@ public class CadastroOcorrenciaDTO {
     public String tipoOcorrencia;
     public String localizacao;
     public String endereco;
+    public String numero;
     public String bairro;
     public String descricao;
     public String imagem;
