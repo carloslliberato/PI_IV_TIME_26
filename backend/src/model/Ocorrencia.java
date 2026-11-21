@@ -1,4 +1,5 @@
-// feito por Sophia
+// Autor: Sophia Fernandes
+
 package model;
 
 import java.time.Instant;

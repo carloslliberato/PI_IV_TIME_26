@@ -1,3 +1,5 @@
+// Autor: Marialvo Junior
+
 package dto;
 
 /**

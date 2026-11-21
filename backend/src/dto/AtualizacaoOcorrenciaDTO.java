@@ -1,4 +1,5 @@
-// feito por Sophia
+// Autor: Sophia Fernandes
+
 package dto;
 
 // Recebe os novos dados quando o funcionário atualiza o status ou prioridade da ocorrência

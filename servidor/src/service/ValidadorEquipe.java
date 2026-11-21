@@ -1,3 +1,5 @@
+// Autor: Gabrielle Mota
+
 package service;
 
 import java.util.ArrayList;

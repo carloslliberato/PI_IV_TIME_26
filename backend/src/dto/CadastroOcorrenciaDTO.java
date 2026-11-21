@@ -1,4 +1,5 @@
-// feito por Sophia
+// Autor: Sophia Fernandes
+
 package dto;
 
 // Recebe os dados enviados pelo formulário de Abrir Chamado no front-end

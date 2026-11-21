@@ -1,3 +1,5 @@
+// Autor: Carlos Luciano
+
 import java.io.*;
 
 public class Teclado

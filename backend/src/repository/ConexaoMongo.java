@@ -1,3 +1,5 @@
+// Autor: Carlos Luciano, Sophia Fernandes
+
 package repository;
 
 import org.bson.Document;

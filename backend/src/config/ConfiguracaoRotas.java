@@ -1,3 +1,5 @@
+// Autor: Carlos Luciano
+
 package config;
 
 import controller.ArvoreController;

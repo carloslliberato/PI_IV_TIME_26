@@ -1,4 +1,5 @@
-// feito por Sophia
+// Autor: Sophia Fernandes
+
 package repository;
 
 import java.time.Instant;

@@ -1,3 +1,5 @@
+// Autor: Sophia Fernandes
+
 db.ocorrencias.updateOne(
   { _id: "OC-2026-0241" },
   {

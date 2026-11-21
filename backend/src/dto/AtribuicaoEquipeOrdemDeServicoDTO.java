@@ -1,3 +1,5 @@
+// Autor: Carlos Luciano, Marialvo Junior
+
 package dto;
 
 public class AtribuicaoEquipeOrdemDeServicoDTO {

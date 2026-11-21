@@ -1,3 +1,5 @@
+// Autor: Guilherme Mascarenhas
+
 package repository;
 
 import model.Arvore;

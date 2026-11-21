@@ -1,3 +1,5 @@
+// Autor: Guilherme Mascarenhas
+
 db.arvores.updateOne(
   { _id: "10234" },
   {

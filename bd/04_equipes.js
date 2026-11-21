@@ -1,3 +1,5 @@
+// Autor: Gabrielle Mota
+
 db.equipes.updateOne(
   { _id: "EQ-001" },
   {

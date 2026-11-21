@@ -1,3 +1,5 @@
+// Autor: Gabrielle Mota
+
 package model;
 
 import java.time.Instant;

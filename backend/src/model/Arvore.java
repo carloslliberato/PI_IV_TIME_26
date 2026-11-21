@@ -1,3 +1,5 @@
+// Autor: Guilherme Mascarenhas
+
 package model;
 
 import java.util.Date;

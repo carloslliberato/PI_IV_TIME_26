@@ -1,3 +1,5 @@
+// Autor: Carlos Luciano, Marialvo Junior
+
 package service;
 
 /** Falha de comunicação ou de contrato com o servidor de validação de OS.

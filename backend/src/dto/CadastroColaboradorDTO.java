@@ -1,3 +1,5 @@
+// Autor: Carlos Luciano
+
 package dto;
 
 // Contém somente os dados que o usuário preenche ao adicionar um colaborador.

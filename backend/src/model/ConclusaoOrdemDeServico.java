@@ -1,3 +1,5 @@
+// Autor: Marialvo Junior
+
 package model;
 
 // Resultado das duas gravações confirmadas na mesma transação.

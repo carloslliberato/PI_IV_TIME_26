@@ -1,3 +1,5 @@
+// Autor: Gabrielle Mota
+
 package service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

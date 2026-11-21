@@ -1,3 +1,5 @@
+// Autor: Gabrielle Mota
+
 package dto;
 
 // Recebe somente os campos preenchidos no formulário de criação da equipe.

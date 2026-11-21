@@ -1,3 +1,5 @@
+// Autor: Marialvo Junior
+
 package model;
 
 import java.time.Instant;

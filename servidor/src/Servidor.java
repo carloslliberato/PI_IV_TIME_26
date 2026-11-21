@@ -1,3 +1,5 @@
+// Autor: Carlos Luciano
+
 import java.util.*;
 
 import protocolo.Parceiro;

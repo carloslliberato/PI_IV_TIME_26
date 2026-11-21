@@ -1,3 +1,5 @@
+// Autor: Carlos Luciano
+
 db.profissionais.updateOne(
   { _id: "FUN-001" },
   {

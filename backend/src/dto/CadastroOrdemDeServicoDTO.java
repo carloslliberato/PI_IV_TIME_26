@@ -1,3 +1,5 @@
+// Autor: Marialvo Junior
+
 package dto;
 
 // Recebe os dados enviados para solicitar a criação de uma OS.

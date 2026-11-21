@@ -1,3 +1,5 @@
+// Autor: Guilherme Mascarenhas
+
 package service;
 
 import model.Especie;

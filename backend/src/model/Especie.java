@@ -1,3 +1,5 @@
+// Autor: Guilherme Mascarenhas
+
 package model;
 
 public class Especie {
