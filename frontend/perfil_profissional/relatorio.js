@@ -1,47 +1,5 @@
 // Autor: Gabrielle Mota
 
-// Mantém descrições e agrupamentos disponíveis para cada assunto do painel.
-// Lista de equipes de demonstração; na integração, será carregada pelo município da sessão.
-// API/BD: cada equipe precisa fornecer id e nome para preencher o filtro.
-const reportTeamOptions = [
-  { id: "EQ-001", name: "Equipe Norte" },
-  { id: "EQ-002", name: "Equipe Central" },
-  { id: "EQ-003", name: "Equipe Sul" },
-  { id: "EQ-004", name: "Equipe de poda" }
-];
-
-// Contagens fictícias de ordens atribuídas às equipes, agrupadas por período.
-// API/BD: para cada período, retornar total geral e contagem por equipe_id.
-const teamOrderPeriodData = {
-  month: {
-    all: [{ group: "Janeiro", count: 4 }, { group: "Fevereiro", count: 3 }, { group: "Março", count: 4 }, { group: "Abril", count: 2 }, { group: "Maio", count: 3 }, { group: "Junho", count: 2 }, { group: "Julho", count: 4 }, { group: "Agosto", count: 3 }, { group: "Setembro", count: 2 }, { group: "Outubro", count: 2 }, { group: "Novembro", count: 1 }, { group: "Dezembro", count: 2 }],
-    byTeam: {
-      "EQ-001": [{ group: "Janeiro", count: 1 }, { group: "Fevereiro", count: 1 }, { group: "Março", count: 1 }, { group: "Abril", count: 1 }, { group: "Maio", count: 1 }, { group: "Junho", count: 1 }, { group: "Julho", count: 1 }, { group: "Agosto", count: 1 }, { group: "Setembro", count: 1 }, { group: "Outubro", count: 0 }, { group: "Novembro", count: 0 }, { group: "Dezembro", count: 0 }],
-      "EQ-002": [{ group: "Janeiro", count: 1 }, { group: "Fevereiro", count: 1 }, { group: "Março", count: 1 }, { group: "Abril", count: 0 }, { group: "Maio", count: 1 }, { group: "Junho", count: 0 }, { group: "Julho", count: 1 }, { group: "Agosto", count: 1 }, { group: "Setembro", count: 0 }, { group: "Outubro", count: 1 }, { group: "Novembro", count: 0 }, { group: "Dezembro", count: 1 }],
-      "EQ-003": [{ group: "Janeiro", count: 1 }, { group: "Fevereiro", count: 1 }, { group: "Março", count: 1 }, { group: "Abril", count: 0 }, { group: "Maio", count: 1 }, { group: "Junho", count: 1 }, { group: "Julho", count: 1 }, { group: "Agosto", count: 0 }, { group: "Setembro", count: 1 }, { group: "Outubro", count: 0 }, { group: "Novembro", count: 0 }, { group: "Dezembro", count: 0 }],
-      "EQ-004": [{ group: "Janeiro", count: 1 }, { group: "Fevereiro", count: 0 }, { group: "Março", count: 1 }, { group: "Abril", count: 1 }, { group: "Maio", count: 0 }, { group: "Junho", count: 0 }, { group: "Julho", count: 1 }, { group: "Agosto", count: 1 }, { group: "Setembro", count: 0 }, { group: "Outubro", count: 1 }, { group: "Novembro", count: 1 }, { group: "Dezembro", count: 1 }]
-    }
-  },
-  semester: {
-    all: [{ group: "1º semestre", count: 18 }, { group: "2º semestre", count: 14 }],
-    byTeam: {
-      "EQ-001": [{ group: "1º semestre", count: 6 }, { group: "2º semestre", count: 3 }],
-      "EQ-002": [{ group: "1º semestre", count: 4 }, { group: "2º semestre", count: 4 }],
-      "EQ-003": [{ group: "1º semestre", count: 5 }, { group: "2º semestre", count: 2 }],
-      "EQ-004": [{ group: "1º semestre", count: 3 }, { group: "2º semestre", count: 5 }]
-    }
-  },
-  year: {
-    all: [{ group: "2023", count: 48 }, { group: "2024", count: 76 }, { group: "2025", count: 91 }, { group: "2026", count: 32 }],
-    byTeam: {
-      "EQ-001": [{ group: "2023", count: 12 }, { group: "2024", count: 18 }, { group: "2025", count: 25 }, { group: "2026", count: 9 }],
-      "EQ-002": [{ group: "2023", count: 15 }, { group: "2024", count: 24 }, { group: "2025", count: 28 }, { group: "2026", count: 8 }],
-      "EQ-003": [{ group: "2023", count: 10 }, { group: "2024", count: 16 }, { group: "2025", count: 21 }, { group: "2026", count: 7 }],
-      "EQ-004": [{ group: "2023", count: 11 }, { group: "2024", count: 18 }, { group: "2025", count: 17 }, { group: "2026", count: 8 }]
-    }
-  }
-};
-
 const reportCatalog = {
   trees: {
     label: "Árvores",
@@ -49,23 +7,17 @@ const reportCatalog = {
       neighborhood: {
         label: "Bairro",
         title: "Árvores por bairro",
-        description: "Distribuição das árvores cadastradas por bairro.",
-        // DADOS FICTÍCIOS. API/BD: agrupar árvores por bairro e retornar [{grupo, quantidade}].
-        values: [{ group: "Centro", count: 286 }, { group: "Taquaral", count: 243 }, { group: "Cambuí", count: 218 }, { group: "Jardim Chapadão", count: 192 }, { group: "Barão Geraldo", count: 177 }, { group: "Outros bairros", count: 168 }]
+        description: "Distribuição das árvores cadastradas por bairro."
       },
       species: {
         label: "Espécie",
         title: "Árvores por espécie",
-        description: "Espécies mais presentes no cadastro municipal.",
-        // DADOS FICTÍCIOS. API/BD: retornar nome popular da espécie e total de árvores por espécie.
-        values: [{ group: "Ipê-amarelo", count: 248 }, { group: "Pau-brasil", count: 193 }, { group: "Sibipiruna", count: 176 }, { group: "Quaresmeira", count: 154 }, { group: "Jatobá", count: 132 }, { group: "Outras espécies", count: 381 }]
+        description: "Espécies mais presentes no cadastro municipal."
       },
       risk: {
         label: "Risco",
         title: "Árvores por nível de risco",
-        description: "Quantidade de árvores em cada nível de risco cadastrado.",
-        // DADOS FICTÍCIOS. API/BD: retornar nível de risco (baixo, médio, alto ou crítico) e contagem.
-        values: [{ group: "Baixo", count: 1141 }, { group: "Médio", count: 116 }, { group: "Alto", count: 22 }, { group: "Crítico", count: 5 }]
+        description: "Quantidade de árvores em cada nível de risco cadastrado."
       }
     }
   },
@@ -75,23 +27,17 @@ const reportCatalog = {
       status: {
         label: "Status",
         title: "Ocorrências por status",
-        description: "Situação atual das ocorrências registradas no município.",
-        // DADOS FICTÍCIOS. API/BD: retornar status atual e quantidade de ocorrências por status.
-        values: [{ group: "Aguardando análise", count: 38 }, { group: "Em atendimento", count: 24 }, { group: "Concluída", count: 91 }, { group: "Parada", count: 7 }]
+        description: "Situação atual das ocorrências registradas no município."
       },
-      region: {
-        label: "Região",
-        title: "Ocorrências por região",
-        description: "Distribuição das ocorrências pelas regiões de atendimento.",
-        // DADOS FICTÍCIOS. API/BD: retornar região/bairro associado a cada ocorrência e sua contagem.
-        values: [{ group: "Região Central", count: 46 }, { group: "Região Norte", count: 39 }, { group: "Região Sul", count: 31 }, { group: "Região Leste", count: 27 }, { group: "Região Oeste", count: 17 }]
+      neighborhood: {
+        label: "Bairro",
+        title: "Ocorrências por bairro",
+        description: "Distribuição das ocorrências pelos bairros cadastrados."
       },
-      risk: {
-        label: "Risco",
-        title: "Ocorrências por nível de risco",
-        description: "Nível de risco informado nas ocorrências registradas.",
-        // DADOS FICTÍCIOS. API/BD: retornar classificação de risco da ocorrência e quantidade por classificação.
-        values: [{ group: "Baixo", count: 42 }, { group: "Médio", count: 59 }, { group: "Alto", count: 45 }, { group: "Crítico", count: 14 }]
+      urgency: {
+        label: "Urgência",
+        title: "Ocorrências por nível de urgência",
+        description: "Quantidade de ocorrências por classificação de urgência."
       }
     }
   },
@@ -126,56 +72,41 @@ const reportCatalog = {
       status: {
         label: "Status",
         title: "Equipes por status",
-        description: "Quantidade de equipes disponíveis e indisponíveis no município.",
-        // DADOS FICTÍCIOS. API/BD: retornar status da equipe e quantidade por status.
-        values: [{ group: "Disponível", count: 6 }, { group: "Indisponível", count: 4 }]
+        description: "Quantidade de equipes disponíveis e indisponíveis no município."
       },
       region: {
         label: "Região de atuação",
         title: "Equipes por região de atuação",
-        description: "Distribuição das equipes cadastradas pelas regiões de atendimento.",
-        // DADOS FICTÍCIOS. API/BD: retornar região de atuação e quantidade de equipes por região.
-        values: [{ group: "Região Central", count: 3 }, { group: "Região Norte", count: 2 }, { group: "Região Sul", count: 2 }, { group: "Região Leste", count: 2 }, { group: "Região Oeste", count: 1 }]
+        description: "Distribuição das equipes cadastradas pelas regiões de atendimento."
       },
       workload: {
         label: "Ordens por equipe",
         title: "Ordens de serviço por equipe",
         description: "Quantidade de ordens atribuídas a cada equipe cadastrada.",
-        // DADOS FICTÍCIOS. API/BD: agrupar ordens por equipe designada e retornar id, nome e total de ordens.
-        values: [{ group: "Equipe Norte", count: 68 }, { group: "Equipe Central", count: 75 }, { group: "Equipe Sul", count: 54 }, { group: "Equipe de poda", count: 50 }]
+        totalLabel: "ordens de serviço"
       },
       ordersMonth: {
         label: "Ordens por mês",
         title: "Ordens das equipes por mês",
         description: "Ordens direcionadas às equipes em cada mês do ano atual.",
-        totalLabel: "ordens de serviço",
-        // DADOS FICTÍCIOS. API/BD: contar ordens com equipe designada por mês de abertura e ano selecionado.
-        values: teamOrderPeriodData.month.all,
-        teamValues: teamOrderPeriodData.month.byTeam
+        totalLabel: "ordens de serviço"
       },
       ordersSemester: {
         label: "Ordens por semestre",
         title: "Ordens das equipes por semestre",
         description: "Ordens direcionadas às equipes em cada semestre do ano atual.",
-        totalLabel: "ordens de serviço",
-        // DADOS FICTÍCIOS. API/BD: contar ordens com equipe designada por semestre do ano selecionado.
-        values: teamOrderPeriodData.semester.all,
-        teamValues: teamOrderPeriodData.semester.byTeam
+        totalLabel: "ordens de serviço"
       },
       ordersYear: {
         label: "Ordens por ano",
         title: "Ordens das equipes por ano",
-        description: "Ordens direcionadas às equipes em cada ano.",
-        totalLabel: "ordens de serviço",
-        // DADOS FICTÍCIOS. API/BD: contar ordens com equipe designada por ano de abertura.
-        values: teamOrderPeriodData.year.all,
-        teamValues: teamOrderPeriodData.year.byTeam
+        description: "Histórico de ordens direcionadas às equipes em cada ano.",
+        totalLabel: "ordens de serviço"
       }
     }
   }
 };
 
-// Guarda referências aos controles e áreas que serão atualizados pelo relatório ativo.
 const reportElements = {
   subjectTabs: document.querySelectorAll("[data-report-subject]"),
   groupingTabs: document.getElementById("reportGroupingTabs"),
@@ -198,333 +129,1027 @@ const reportElements = {
   retryButton: document.getElementById("retryOrderReport"),
   sourceNote: document.getElementById("reportSourceNote")
 };
+
+const reportStates = {
+  orders: { status: "idle", report: null, error: "" },
+  trees: { status: "idle", report: null, error: "" },
+  occurrences: { status: "idle", report: null, error: "" },
+  teams: { status: "idle", report: null, error: "" }
+};
+
 let activeReportSubject = "trees";
 let activeReportGrouping = "neighborhood";
-let demoReportMunicipality = "Campinas - SP";
-const orderReportState = { status: "idle", report: null, error: "" };
 
-// Valida o contrato antes de apresentar ou exportar qualquer contagem de OS.
+const reportMonths = [
+  "Janeiro", "Fevereiro", "Março", "Abril",
+  "Maio", "Junho", "Julho", "Agosto",
+  "Setembro", "Outubro", "Novembro", "Dezembro"
+];
+
+const reportSemesters = ["1º semestre", "2º semestre"];
+
+function isReportObject(value) {
+  return value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value);
+}
+
+function isReportCount(value) {
+  return Number.isSafeInteger(value) && value >= 0;
+}
+
+function sumReportValues(values) {
+  return values.reduce((sum, row) => sum + row.count, 0);
+}
+
+function validateReportGroups(report, key, invalid, unique = true) {
+  if (!Array.isArray(report[key])) invalid();
+
+  const names = new Set();
+
+  return report[key].map(row => {
+    if (!isReportObject(row) ||
+        typeof row.grupo !== "string" ||
+        !row.grupo.trim() ||
+        !isReportCount(row.quantidade)) {
+      invalid();
+    }
+
+    if (unique && names.has(row.grupo)) {
+      invalid();
+    }
+
+    names.add(row.grupo);
+
+    return {
+      group: row.grupo,
+      count: row.quantidade
+    };
+  });
+}
+
+function validateTemporalGroups(groups, invalid) {
+  if (groups.month.length !== 12 ||
+      !groups.month.every((row, index) => row.group === reportMonths[index])) {
+    invalid();
+  }
+
+  if (groups.semester.length !== 2 ||
+      !groups.semester.every((row, index) => row.group === reportSemesters[index])) {
+    invalid();
+  }
+
+  if (!groups.year.every((row, index) =>
+      /^[0-9]{1,4}$/.test(row.group) &&
+      Number(row.group) >= 1 &&
+      (index === 0 ||
+        Number(groups.year[index - 1].group) < Number(row.group)))) {
+    invalid();
+  }
+}
+
 function validateOrderReportResponse(payload) {
-  const requireValid = condition => {
-    if (!condition) throw new Error("O servidor retornou um relatório de ordens de serviço inválido. Tente novamente.");
+  const invalid = () => {
+    throw new Error("O servidor retornou um relatório de ordens de serviço inválido. Tente novamente.");
   };
-  const isObject = value => value !== null && typeof value === "object" && !Array.isArray(value);
-  const isCount = value => Number.isSafeInteger(value) && value >= 0;
-  requireValid(isObject(payload) && isObject(payload.relatorio));
-  const report = payload.relatorio;
-  requireValid(typeof report.municipioId === "string" && /^[a-f0-9]{24}$/i.test(report.municipioId));
-  requireValid(Number.isInteger(report.anoSelecionado) && report.anoSelecionado >= 1 && report.anoSelecionado <= 9999);
-  requireValid(report.fusoHorario === "America/Sao_Paulo");
-  ["totalOrdens", "totalNoAno", "ordensSemDataValida"].forEach(key => requireValid(isCount(report[key])));
 
-  const readGroups = key => {
-    requireValid(Array.isArray(report[key]));
-    const names = new Set();
-    return report[key].map(row => {
-      requireValid(isObject(row) && typeof row.grupo === "string" && row.grupo.length > 0 && isCount(row.quantidade));
-      requireValid(!names.has(row.grupo));
-      names.add(row.grupo);
-      return { group: row.grupo, count: row.quantidade };
-    });
-  };
+  if (!isReportObject(payload) || !isReportObject(payload.relatorio)) {
+    invalid();
+  }
+
+  const report = payload.relatorio;
+
+  if (typeof report.municipioId !== "string" ||
+      !/^[a-f0-9]{24}$/i.test(report.municipioId) ||
+      typeof report.municipioNome !== "string" ||
+      !report.municipioNome.trim() ||
+      !Number.isInteger(report.anoSelecionado) ||
+      report.anoSelecionado < 1 ||
+      report.anoSelecionado > 9999 ||
+      report.fusoHorario !== "America/Sao_Paulo" ||
+      !isReportCount(report.totalOrdens) ||
+      !isReportCount(report.totalNoAno) ||
+      !isReportCount(report.ordensSemDataValida)) {
+    invalid();
+  }
+
   const groups = {
-    year: readGroups("porAno"),
-    month: readGroups("porMes"),
-    semester: readGroups("porSemestre"),
-    status: readGroups("porStatus")
+    year: validateReportGroups(report, "porAno", invalid),
+    month: validateReportGroups(report, "porMes", invalid),
+    semester: validateReportGroups(report, "porSemestre", invalid),
+    status: validateReportGroups(report, "porStatus", invalid)
   };
-  const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-  const semesters = ["1º semestre", "2º semestre"];
-  requireValid(groups.month.length === 12 && groups.month.every((row, index) => row.group === months[index]));
-  requireValid(groups.semester.length === 2 && groups.semester.every((row, index) => row.group === semesters[index]));
-  const standardStatuses = ["Aberta", "Em andamento", "Concluída", "Cancelada"];
-  requireValid(standardStatuses.every((status, index) => groups.status[index]?.group === status));
-  // Os anos históricos podem ficar fora da faixa aceita para o filtro de ano.
-  requireValid(groups.year.every((row, index) => /^-?\d+$/.test(row.group) &&
-    Number.isSafeInteger(Number(row.group)) &&
-    (index === 0 || Number(groups.year[index - 1].group) < Number(row.group))));
-  const sum = rows => rows.reduce((total, row) => total + row.count, 0);
-  requireValid(sum(groups.status) === report.totalOrdens);
-  requireValid(sum(groups.year) + report.ordensSemDataValida === report.totalOrdens);
-  requireValid(sum(groups.month) === report.totalNoAno && sum(groups.semester) === report.totalNoAno);
-  requireValid(report.totalNoAno <= report.totalOrdens - report.ordensSemDataValida);
-  requireValid(groups.semester[0].count === sum(groups.month.slice(0, 6)) &&
-    groups.semester[1].count === sum(groups.month.slice(6)));
-  const selectedYear = groups.year.find(row => Number(row.group) === report.anoSelecionado);
-  requireValid((selectedYear?.count || 0) === report.totalNoAno);
+
+  validateTemporalGroups(groups, invalid);
+
+  const standardStatuses = [
+    "Aberta", "Em andamento", "Concluída", "Cancelada"
+  ];
+
+  if (!standardStatuses.every((status, index) =>
+      groups.status[index]?.group === status)) {
+    invalid();
+  }
+
+  if (sumReportValues(groups.status) !== report.totalOrdens ||
+      sumReportValues(groups.year) + report.ordensSemDataValida !== report.totalOrdens ||
+      sumReportValues(groups.month) !== report.totalNoAno ||
+      sumReportValues(groups.semester) !== report.totalNoAno) {
+    invalid();
+  }
+
+  const selectedYear = groups.year.find(
+    row => Number(row.group) === report.anoSelecionado
+  );
+
+  if ((selectedYear?.count || 0) !== report.totalNoAno) {
+    invalid();
+  }
+
+  if (groups.semester[0].count !== sumReportValues(groups.month.slice(0, 6)) ||
+      groups.semester[1].count !== sumReportValues(groups.month.slice(6))) {
+    invalid();
+  }
+
   return { ...report, groups };
 }
 
-// Consulta o ano padrão definido pela API; o município vem da conta autenticada.
-async function loadOrderReport() {
-  if (orderReportState.status === "loading") {
-    if (activeReportSubject === "orders") renderSelectedReport();
+function validateTreeReportResponse(payload) {
+  const invalid = () => {
+    throw new Error("O servidor retornou um relatório de árvores inválido. Tente novamente.");
+  };
+
+  if (!isReportObject(payload) || !isReportObject(payload.relatorio)) {
+    invalid();
+  }
+
+  const report = payload.relatorio;
+
+  if (typeof report.municipioId !== "string" ||
+      !/^[a-f0-9]{24}$/i.test(report.municipioId) ||
+      typeof report.municipioNome !== "string" ||
+      !report.municipioNome.trim() ||
+      !isReportCount(report.totalArvores)) {
+    invalid();
+  }
+
+  const groups = {
+    neighborhood: validateReportGroups(report, "porBairro", invalid),
+    species: validateReportGroups(report, "porEspecie", invalid),
+    risk: validateReportGroups(report, "porRisco", invalid)
+  };
+
+  for (const values of Object.values(groups)) {
+    if (sumReportValues(values) !== report.totalArvores) {
+      invalid();
+    }
+  }
+
+  return { ...report, groups };
+}
+
+function validateOccurrenceReportResponse(payload) {
+  const invalid = () => {
+    throw new Error("O servidor retornou um relatório de ocorrências inválido. Tente novamente.");
+  };
+
+  if (!isReportObject(payload) || !isReportObject(payload.relatorio)) {
+    invalid();
+  }
+
+  const report = payload.relatorio;
+
+  if (typeof report.municipioId !== "string" ||
+      !/^[a-f0-9]{24}$/i.test(report.municipioId) ||
+      typeof report.municipioNome !== "string" ||
+      !report.municipioNome.trim() ||
+      !isReportCount(report.totalOcorrencias)) {
+    invalid();
+  }
+
+  const groups = {
+    status: validateReportGroups(report, "porStatus", invalid),
+    neighborhood: validateReportGroups(report, "porBairro", invalid),
+    urgency: validateReportGroups(report, "porUrgencia", invalid)
+  };
+
+  for (const values of Object.values(groups)) {
+    if (sumReportValues(values) !== report.totalOcorrencias) {
+      invalid();
+    }
+  }
+
+  return { ...report, groups };
+}
+
+function validateTeamReportResponse(payload) {
+  const invalid = () => {
+    throw new Error("O servidor retornou um relatório de equipes inválido. Tente novamente.");
+  };
+
+  if (!isReportObject(payload) || !isReportObject(payload.relatorio)) {
+    invalid();
+  }
+
+  const report = payload.relatorio;
+
+  if (typeof report.municipioId !== "string" ||
+      !/^[a-f0-9]{24}$/i.test(report.municipioId) ||
+      typeof report.municipioNome !== "string" ||
+      !report.municipioNome.trim() ||
+      !Number.isInteger(report.anoSelecionado) ||
+      report.anoSelecionado < 1 ||
+      report.anoSelecionado > 9999 ||
+      report.fusoHorario !== "America/Sao_Paulo" ||
+      !isReportCount(report.totalEquipes) ||
+      !isReportCount(report.totalOrdensAtribuidas) ||
+      !isReportCount(report.totalNoAno) ||
+      !isReportCount(report.ordensSemDataValida) ||
+      !Array.isArray(report.equipes)) {
+    invalid();
+  }
+
+  const teamIds = new Set();
+
+  const teams = report.equipes.map(team => {
+    if (!isReportObject(team) ||
+        typeof team.id !== "string" ||
+        !/^[a-f0-9]{24}$/i.test(team.id) ||
+        typeof team.nome !== "string" ||
+        !team.nome.trim() ||
+        typeof team.codigo !== "string" ||
+        typeof team.regiao !== "string" ||
+        !["Disponível", "Indisponível"].includes(team.status) ||
+        teamIds.has(team.id)) {
+      invalid();
+    }
+
+    teamIds.add(team.id);
+
+    return team;
+  });
+
+  const groups = {
+    status: validateReportGroups(report, "porStatus", invalid),
+    region: validateReportGroups(report, "porRegiao", invalid),
+    workload: validateReportGroups(report, "porEquipe", invalid, false),
+    ordersMonth: validateReportGroups(report, "porMes", invalid),
+    ordersSemester: validateReportGroups(report, "porSemestre", invalid),
+    ordersYear: validateReportGroups(report, "porAno", invalid)
+  };
+
+  validateTemporalGroups({
+    year: groups.ordersYear,
+    month: groups.ordersMonth,
+    semester: groups.ordersSemester
+  }, invalid);
+
+  if (teams.length !== report.totalEquipes ||
+      sumReportValues(groups.status) !== report.totalEquipes ||
+      sumReportValues(groups.region) !== report.totalEquipes ||
+      sumReportValues(groups.workload) !== report.totalOrdensAtribuidas ||
+      sumReportValues(groups.ordersMonth) !== report.totalNoAno ||
+      sumReportValues(groups.ordersSemester) !== report.totalNoAno ||
+      sumReportValues(groups.ordersYear) + report.ordensSemDataValida !== report.totalOrdensAtribuidas) {
+    invalid();
+  }
+
+  const available = teams.filter(team => team.status === "Disponível").length;
+  const unavailable = teams.filter(team => team.status === "Indisponível").length;
+
+  if ((groups.status.find(row => row.group === "Disponível")?.count || 0) !== available ||
+      (groups.status.find(row => row.group === "Indisponível")?.count || 0) !== unavailable) {
+    invalid();
+  }
+
+  if (groups.ordersSemester[0].count !==
+      sumReportValues(groups.ordersMonth.slice(0, 6)) ||
+      groups.ordersSemester[1].count !==
+      sumReportValues(groups.ordersMonth.slice(6))) {
+    invalid();
+  }
+
+  const selectedYear = groups.ordersYear.find(
+    row => Number(row.group) === report.anoSelecionado
+  );
+
+  if ((selectedYear?.count || 0) !== report.totalNoAno) {
+    invalid();
+  }
+
+  const teamValues = {
+    ordersMonth: {},
+    ordersSemester: {},
+    ordersYear: {}
+  };
+
+  const mappings = [
+    ["porMesPorEquipe", "ordersMonth"],
+    ["porSemestrePorEquipe", "ordersSemester"],
+    ["porAnoPorEquipe", "ordersYear"]
+  ];
+
+  for (const [sourceKey, targetKey] of mappings) {
+    if (!isReportObject(report[sourceKey])) {
+      invalid();
+    }
+
+    for (const team of teams) {
+      if (!Object.prototype.hasOwnProperty.call(report[sourceKey], team.id)) {
+        invalid();
+      }
+
+      const entries = report[sourceKey][team.id];
+
+      if (!Array.isArray(entries)) {
+        invalid();
+      }
+
+      const converted = entries.map(row => {
+        if (!isReportObject(row) ||
+            typeof row.grupo !== "string" ||
+            !row.grupo.trim() ||
+            !isReportCount(row.quantidade)) {
+          invalid();
+        }
+
+        return {
+          group: row.grupo,
+          count: row.quantidade
+        };
+      });
+
+      if (targetKey === "ordersMonth") {
+        if (converted.length !== 12 ||
+            !converted.every((row, index) =>
+              row.group === reportMonths[index])) {
+          invalid();
+        }
+      }
+
+      if (targetKey === "ordersSemester") {
+        if (converted.length !== 2 ||
+            !converted.every((row, index) =>
+              row.group === reportSemesters[index])) {
+          invalid();
+        }
+      }
+
+      if (targetKey === "ordersYear") {
+        if (!converted.every((row, index) =>
+            /^[0-9]{1,4}$/.test(row.group) &&
+            (index === 0 ||
+              Number(converted[index - 1].group) < Number(row.group)))) {
+          invalid();
+        }
+      }
+
+      teamValues[targetKey][team.id] = converted;
+    }
+  }
+
+  const totalTeamMonths = teams.reduce(
+    (sum, team) => sum + sumReportValues(teamValues.ordersMonth[team.id]),
+    0
+  );
+
+  const totalTeamYears = teams.reduce(
+    (sum, team) => sum + sumReportValues(teamValues.ordersYear[team.id]),
+    0
+  );
+
+  if (totalTeamMonths !== report.totalNoAno ||
+      totalTeamYears + report.ordensSemDataValida !== report.totalOrdensAtribuidas) {
+    invalid();
+  }
+
+  return {
+    ...report,
+    teams,
+    groups,
+    teamValues
+  };
+}
+
+async function requestReport(subject, endpoint, validator) {
+  const state = reportStates[subject];
+
+  if (state.status === "loading") {
+    if (activeReportSubject === subject) {
+      renderSelectedReport();
+    }
     return;
   }
-  orderReportState.status = "loading";
-  orderReportState.report = null;
-  orderReportState.error = "";
-  if (activeReportSubject === "orders") renderSelectedReport();
+
+  state.status = "loading";
+  state.report = null;
+  state.error = "";
+
+  if (activeReportSubject === subject) {
+    renderSelectedReport();
+  }
+
   try {
-    const response = await fetch("/api/relatorios/ordens-servico", {
+    const response = await fetch(endpoint, {
       credentials: "same-origin",
       cache: "no-store",
-      headers: { Accept: "application/json" }
+      headers: {
+        Accept: "application/json"
+      }
     });
+
     let payload;
+
     try {
       payload = await response.json();
     } catch {
       throw new Error("Não foi possível ler a resposta do relatório. Tente novamente.");
     }
+
     if (!response.ok) {
       const message = typeof payload?.erro === "string" && payload.erro.trim()
-        ? payload.erro : "Não foi possível consultar o relatório de ordens de serviço. Tente novamente.";
+        ? payload.erro
+        : "Não foi possível consultar o relatório. Tente novamente.";
+
       throw new Error(message);
     }
-    orderReportState.report = validateOrderReportResponse(payload);
-    orderReportState.status = "ready";
+
+    state.report = validator(payload);
+    state.status = "ready";
+
+    if (subject === "teams") {
+      updateTeamOptions();
+    }
   } catch (error) {
-    orderReportState.status = "error";
-    orderReportState.error = error instanceof TypeError
-      ? "Não foi possível conectar ao relatório de ordens de serviço. Tente novamente."
-      : error?.message || "Não foi possível consultar o relatório de ordens de serviço. Tente novamente.";
+    state.status = "error";
+    state.error = error instanceof TypeError
+      ? "Não foi possível conectar ao servidor de relatórios. Tente novamente."
+      : error?.message || "Não foi possível consultar o relatório. Tente novamente.";
   }
-  // Uma resposta pendente nunca troca o conteúdo de outro assunto selecionado.
-  if (activeReportSubject === "orders") renderSelectedReport();
+
+  if (activeReportSubject === subject) {
+    renderSelectedReport();
+  }
 }
 
-// Converte textos inseridos na tabela e no gráfico em conteúdo HTML seguro.
+function loadOrderReport() {
+  return requestReport(
+    "orders",
+    "/api/relatorios/ordens-servico",
+    validateOrderReportResponse
+  );
+}
+
+function loadTreeReport() {
+  return requestReport(
+    "trees",
+    "/api/relatorios/arvores",
+    validateTreeReportResponse
+  );
+}
+
+function loadOccurrenceReport() {
+  return requestReport(
+    "occurrences",
+    "/api/relatorios/ocorrencias",
+    validateOccurrenceReportResponse
+  );
+}
+
+function loadTeamReport() {
+  return requestReport(
+    "teams",
+    "/api/relatorios/equipes",
+    validateTeamReportResponse
+  );
+}
+
 function escapeReportText(value) {
   return String(value ?? "").replace(/[&<>"']/g, character => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
   })[character]);
 }
 
-// Atualiza as opções de agrupamento conforme árvores, ocorrências ou ordens são escolhidas.
-function updateGroupingOptions() {
-  const subject = reportCatalog[activeReportSubject];
-  activeReportGrouping = Object.keys(subject.groups)[0];
-  reportElements.groupingTabs.innerHTML = Object.entries(subject.groups)
-    .map(([key, group], index) => `<button class="report-tab${index === 0 ? " is-active" : ""}" type="button" role="tab" aria-selected="${index === 0}" data-report-grouping="${key}">${escapeReportText(group.label)}</button>`)
-    .join("");
+function updateTeamOptions() {
+  const previousSelection = reportElements.teamSelect.value;
+
+  reportElements.teamSelect.innerHTML =
+    '<option value="">Todas as equipes</option>';
+
+  const state = reportStates.teams;
+
+  if (state.status !== "ready") {
+    return;
+  }
+
+  const options = state.report.teams.map(team => {
+    const name = team.codigo.trim()
+      ? `${team.codigo} - ${team.nome}`
+      : team.nome;
+
+    return `<option value="${escapeReportText(team.id)}">${escapeReportText(name)}</option>`;
+  });
+
+  reportElements.teamSelect.insertAdjacentHTML(
+    "beforeend",
+    options.join("")
+  );
+
+  if (state.report.teams.some(team => team.id === previousSelection)) {
+    reportElements.teamSelect.value = previousSelection;
+  }
 }
 
-// Marca visualmente e para tecnologias assistivas o assunto do relatório selecionado.
+function updateGroupingOptions() {
+  const subject = reportCatalog[activeReportSubject];
+
+  activeReportGrouping = Object.keys(subject.groups)[0];
+
+  reportElements.groupingTabs.innerHTML =
+    Object.entries(subject.groups)
+      .map(([key, group], index) => {
+        const active = index === 0;
+
+        return `<button
+          class="report-tab${active ? " is-active" : ""}"
+          type="button"
+          role="tab"
+          aria-selected="${active}"
+          data-report-grouping="${key}"
+        >${escapeReportText(group.label)}</button>`;
+      })
+      .join("");
+}
+
 function updateActiveSubjectTab() {
   reportElements.subjectTabs.forEach(tab => {
-    const isActive = tab.dataset.reportSubject === activeReportSubject;
-    tab.classList.toggle("is-active", isActive);
-    tab.setAttribute("aria-selected", String(isActive));
+    const active = tab.dataset.reportSubject === activeReportSubject;
+
+    tab.classList.toggle("is-active", active);
+    tab.setAttribute("aria-selected", String(active));
   });
 }
 
-// Exibe o filtro de equipe somente nos relatórios temporais dentro da aba Equipes.
 function isTeamPeriodReport() {
-  return activeReportSubject === "teams"
-    && ["ordersMonth", "ordersSemester", "ordersYear"].includes(activeReportGrouping);
+  return activeReportSubject === "teams" &&
+    ["ordersMonth", "ordersSemester", "ordersYear"]
+      .includes(activeReportGrouping);
 }
 
-// Adapta os textos dos períodos ao ano efetivamente devolvido pelo servidor.
 function getSelectedReportDefinition() {
-  const definition = { ...reportCatalog[activeReportSubject].groups[activeReportGrouping] };
-  if (activeReportSubject === "orders" && orderReportState.status === "ready") {
-    const year = orderReportState.report.anoSelecionado;
+  const definition = {
+    ...reportCatalog[activeReportSubject].groups[activeReportGrouping]
+  };
+
+  if (activeReportSubject === "orders" &&
+      reportStates.orders.status === "ready") {
+    const year = reportStates.orders.report.anoSelecionado;
+
     if (activeReportGrouping === "month") {
       definition.title = `Ordens de serviço por mês (${year})`;
-      definition.description = `Ordens criadas em cada mês de ${year}, no horário de São Paulo.`;
-    } else if (activeReportGrouping === "semester") {
+      definition.description =
+        `Ordens criadas em cada mês de ${year}, no horário de São Paulo.`;
+    }
+
+    if (activeReportGrouping === "semester") {
       definition.title = `Ordens de serviço por semestre (${year})`;
-      definition.description = `Ordens criadas em cada semestre de ${year}, no horário de São Paulo.`;
+      definition.description =
+        `Ordens criadas em cada semestre de ${year}, no horário de São Paulo.`;
     }
   }
+
+  if (activeReportSubject === "teams" &&
+      reportStates.teams.status === "ready") {
+    const report = reportStates.teams.report;
+    const year = report.anoSelecionado;
+
+    if (activeReportGrouping === "ordersMonth") {
+      definition.title = `Ordens das equipes por mês (${year})`;
+      definition.description =
+        `Ordens atribuídas às equipes em cada mês de ${year}.`;
+    }
+
+    if (activeReportGrouping === "ordersSemester") {
+      definition.title = `Ordens das equipes por semestre (${year})`;
+      definition.description =
+        `Ordens atribuídas às equipes em cada semestre de ${year}.`;
+    }
+
+    if (isTeamPeriodReport() && reportElements.teamSelect.value) {
+      const selectedTeam = report.teams.find(
+        team => team.id === reportElements.teamSelect.value
+      );
+
+      if (selectedTeam) {
+        definition.description +=
+          ` Equipe selecionada: ${selectedTeam.nome}.`;
+      }
+    }
+  }
+
   return definition;
 }
 
-// As OS usam exclusivamente a resposta validada; os demais assuntos mantêm a demonstração.
 function getSelectedReportValues() {
-  if (activeReportSubject === "orders") {
-    return orderReportState.status === "ready"
-      ? orderReportState.report.groups[activeReportGrouping] : [];
+  const state = reportStates[activeReportSubject];
+
+  if (state.status !== "ready") {
+    return [];
   }
-  const selectedGroup = reportCatalog[activeReportSubject].groups[activeReportGrouping];
-  if (isTeamPeriodReport() && reportElements.teamSelect.value) {
-    return selectedGroup.teamValues[reportElements.teamSelect.value] || [];
+
+  if (activeReportSubject === "teams" &&
+      isTeamPeriodReport() &&
+      reportElements.teamSelect.value) {
+    return state.report.teamValues[activeReportGrouping]
+      [reportElements.teamSelect.value] || [];
   }
-  return selectedGroup.values;
+
+  return state.report.groups[activeReportGrouping] || [];
 }
 
-// Renderiza os totais, as barras proporcionais e a tabela do agrupamento ativo.
+function getReportSourceNote() {
+  const state = reportStates[activeReportSubject];
+
+  if (state.status === "loading" || state.status === "idle") {
+    return "Consultando dados reais do município vinculado à sua conta.";
+  }
+
+  if (state.status === "error") {
+    return "Os dados reais deste relatório não estão disponíveis nesta consulta.";
+  }
+
+  if (activeReportSubject === "trees") {
+    return "Dados reais das árvores não arquivadas do município da sua conta.";
+  }
+
+  if (activeReportSubject === "occurrences") {
+    return "Dados reais das ocorrências do município da sua conta.";
+  }
+
+  if (activeReportSubject === "orders") {
+    return "Dados reais das ordens de serviço do município da sua conta. Datas no horário de São Paulo.";
+  }
+
+  return "Dados reais das equipes do município da sua conta. Disponibilidade calculada pelas ordens de serviço abertas ou em andamento.";
+}
+
+function getReportEmptyMessage() {
+  const state = reportStates[activeReportSubject];
+  const report = state.report;
+
+  if (activeReportSubject === "trees") {
+    return "Não há árvores não arquivadas cadastradas no município da sua conta.";
+  }
+
+  if (activeReportSubject === "occurrences") {
+    return "Não há ocorrências cadastradas no município da sua conta.";
+  }
+
+  if (activeReportSubject === "orders") {
+    if (report.totalOrdens === 0) {
+      return "Não há ordens de serviço cadastradas no município da sua conta.";
+    }
+
+    if (activeReportGrouping === "year") {
+      return "Não há ordens de serviço com data de criação válida para o agrupamento por ano.";
+    }
+
+    if (["month", "semester"].includes(activeReportGrouping)) {
+      return `Não há ordens de serviço com data de criação válida em ${report.anoSelecionado}.`;
+    }
+  }
+
+  if (activeReportSubject === "teams") {
+    if (report.totalEquipes === 0) {
+      return "Não há equipes cadastradas no município da sua conta.";
+    }
+
+    if (activeReportGrouping === "workload") {
+      return "Nenhuma ordem de serviço está atribuída às equipes deste município.";
+    }
+
+    if (isTeamPeriodReport()) {
+      return "Não há ordens de serviço atribuídas para o período ou equipe selecionada.";
+    }
+  }
+
+  return "Nenhum registro para o filtro selecionado.";
+}
+
 function renderSelectedReport() {
   const subject = reportCatalog[activeReportSubject];
+  const state = reportStates[activeReportSubject];
   const selectedGroup = getSelectedReportDefinition();
-  const isOrders = activeReportSubject === "orders";
-  const ready = !isOrders || orderReportState.status === "ready";
-  const loading = isOrders && orderReportState.status === "loading";
+
+  const ready = state.status === "ready";
+  const loading = state.status === "loading";
+  const failed = state.status === "error";
+
   reportElements.teamFilter.hidden = !isTeamPeriodReport();
+
   reportElements.card.setAttribute("aria-busy", String(loading));
+
   reportElements.exportButton.disabled = !ready;
-  reportElements.exportButton.setAttribute("aria-disabled", String(!ready));
-  reportElements.exportButton.title = ready ? "Exportar o agrupamento exibido" : "Aguarde uma consulta concluída para exportar";
+  reportElements.exportButton.setAttribute(
+    "aria-disabled",
+    String(!ready)
+  );
+
+  reportElements.exportButton.title = ready
+    ? "Exportar o agrupamento exibido"
+    : "Aguarde uma consulta concluída para exportar";
+
   reportElements.visualization.hidden = !ready;
   reportElements.feedback.hidden = true;
   reportElements.feedback.textContent = "";
   reportElements.feedback.setAttribute("role", "status");
   reportElements.feedback.setAttribute("aria-live", "polite");
+
   reportElements.dateWarning.hidden = true;
   reportElements.dateWarning.textContent = "";
   reportElements.retry.hidden = true;
+
   reportElements.title.textContent = selectedGroup.title;
   reportElements.description.textContent = selectedGroup.description;
-  reportElements.totalLabel.textContent = selectedGroup.totalLabel || subject.label.toLocaleLowerCase();
+  reportElements.totalLabel.textContent =
+    selectedGroup.totalLabel || subject.label.toLocaleLowerCase();
+
   reportElements.groupColumn.textContent = selectedGroup.label;
-  reportElements.municipality.textContent = isOrders ? "Município da sua conta" : demoReportMunicipality;
-  reportElements.sourceNote.textContent = isOrders
-    ? (ready ? "Dados reais das ordens de serviço do município da sua conta. Datas no horário de São Paulo."
-      : loading ? "Consultando dados reais das ordens de serviço do município da sua conta."
-        : "Os dados reais das ordens de serviço não estão disponíveis nesta consulta.")
-    : "Dados de demonstração: os números desta visualização são fictícios.";
+
+  reportElements.municipality.textContent = ready
+    ? `${state.report.municipioNome} - SP`
+    : "Município da sua conta";
+
+  reportElements.sourceNote.textContent = getReportSourceNote();
 
   if (!ready) {
-    const failed = orderReportState.status === "error";
     reportElements.total.textContent = "—";
     reportElements.chart.innerHTML = "";
     reportElements.table.innerHTML = "";
-    reportElements.feedback.textContent = failed ? orderReportState.error : "Carregando relatório de ordens de serviço...";
+
+    const loadingMessages = {
+      trees: "Carregando relatório de árvores...",
+      occurrences: "Carregando relatório de ocorrências...",
+      orders: "Carregando relatório de ordens de serviço...",
+      teams: "Carregando relatório de equipes..."
+    };
+
+    reportElements.feedback.textContent = failed
+      ? state.error
+      : loadingMessages[activeReportSubject];
+
     reportElements.feedback.hidden = false;
-    reportElements.feedback.setAttribute("role", failed ? "alert" : "status");
-    reportElements.feedback.setAttribute("aria-live", failed ? "assertive" : "polite");
+
+    reportElements.feedback.setAttribute(
+      "role",
+      failed ? "alert" : "status"
+    );
+
+    reportElements.feedback.setAttribute(
+      "aria-live",
+      failed ? "assertive" : "polite"
+    );
+
     reportElements.retry.hidden = !failed;
+
     return;
   }
 
   const values = getSelectedReportValues();
-  const total = values.reduce((sum, row) => sum + row.count, 0);
-  const maximum = values.reduce((max, row) => Math.max(max, row.count), 1);
+  const total = sumReportValues(values);
+
+  const maximum = values.reduce(
+    (max, row) => Math.max(max, row.count),
+    1
+  );
+
   reportElements.total.textContent = total.toLocaleString("pt-BR");
+
   reportElements.visualization.hidden = values.length === 0;
-  if (isOrders && activeReportGrouping !== "status" && orderReportState.report.ordensSemDataValida > 0) {
-    const missingDates = orderReportState.report.ordensSemDataValida.toLocaleString("pt-BR");
-    reportElements.dateWarning.textContent = `OS sem data de criação válida no histórico: ${missingDates}. Esses registros entram no total histórico e nos status, mas ficam fora das séries temporais.`;
+
+  if (activeReportSubject === "orders" &&
+      activeReportGrouping !== "status" &&
+      state.report.ordensSemDataValida > 0) {
+    const missingDates =
+      state.report.ordensSemDataValida.toLocaleString("pt-BR");
+
+    reportElements.dateWarning.textContent =
+      `OS sem data de criação válida no histórico: ${missingDates}. Esses registros entram no total histórico e nos status, mas ficam fora das séries temporais.`;
+
     reportElements.dateWarning.hidden = false;
   }
+
+  if (activeReportSubject === "teams" &&
+      isTeamPeriodReport() &&
+      state.report.ordensSemDataValida > 0) {
+    const missingDates =
+      state.report.ordensSemDataValida.toLocaleString("pt-BR");
+
+    reportElements.dateWarning.textContent =
+      `OS atribuídas sem data de criação válida: ${missingDates}. Esses registros entram no total histórico, mas ficam fora dos agrupamentos por período.`;
+
+    reportElements.dateWarning.hidden = false;
+  }
+
   if (total === 0) {
-    let message = "Nenhum registro para o filtro selecionado.";
-    if (isOrders) {
-      const report = orderReportState.report;
-      message = report.totalOrdens === 0
-        ? "Não há ordens de serviço cadastradas no município da sua conta."
-        : activeReportGrouping === "year"
-          ? "Não há ordens de serviço com data de criação válida para o agrupamento por ano."
-          : `Não há ordens de serviço com data de criação válida em ${report.anoSelecionado}.`;
-    }
-    reportElements.feedback.textContent = message;
+    reportElements.feedback.textContent = getReportEmptyMessage();
     reportElements.feedback.hidden = false;
   }
 
-  // Cria as barras usando percentual relativo ao maior grupo, com rótulo acessível.
-  reportElements.chart.setAttribute("aria-label", selectedGroup.title);
+  reportElements.chart.setAttribute(
+    "aria-label",
+    selectedGroup.title
+  );
+
   reportElements.chart.innerHTML = values.map(row => {
     const barWidth = (row.count / maximum) * 100;
+
     return `<div class="report-bar-row">
       <span class="report-bar-label" title="${escapeReportText(row.group)}">${escapeReportText(row.group)}</span>
-      <span class="report-bar-track" aria-hidden="true"><span class="report-bar-fill" style="display:block;width:${barWidth.toFixed(2)}%;min-width:0"></span></span>
+      <span class="report-bar-track" aria-hidden="true">
+        <span class="report-bar-fill" style="display:block;width:${barWidth.toFixed(2)}%;min-width:0"></span>
+      </span>
       <strong class="report-bar-value">${row.count.toLocaleString("pt-BR")}</strong>
     </div>`;
   }).join("");
 
-  // Repete valores em tabela e percentual do total para consulta detalhada.
   reportElements.table.innerHTML = values.map(row => {
-    const percentage = total ? ((row.count / total) * 100).toFixed(1) : "0,0";
-    return `<tr><td>${escapeReportText(row.group)}</td><td>${row.count.toLocaleString("pt-BR")}</td><td>${percentage.replace(".", ",")}%</td></tr>`;
+    const percentage = total
+      ? ((row.count / total) * 100).toFixed(1)
+      : "0,0";
+
+    return `<tr>
+      <td>${escapeReportText(row.group)}</td>
+      <td>${row.count.toLocaleString("pt-BR")}</td>
+      <td>${percentage.replace(".", ",")}%</td>
+    </tr>`;
   }).join("");
 }
 
-// Aspas protegem a estrutura do CSV; o apóstrofo mantém rótulos de fórmula como texto.
 function formatReportCsvCell(value) {
   let text = String(value ?? "");
-  if (typeof value === "string" && (/^[\s\u0000-\u001f]*[=+\-@]/.test(text) || /^[\t\r\n]/.test(text))) {
+
+  if (typeof value === "string" &&
+      (/^[\s\u0000-\u001f]*[=+\-@]/.test(text) ||
+        /^[\t\r\n]/.test(text))) {
     text = "'" + text;
   }
+
   return `"${text.replace(/"/g, '""')}"`;
 }
 
-// Exporta os mesmos grupos exibidos; nenhuma falha de consulta vira CSV de zeros.
 function exportSelectedReport() {
-  if (activeReportSubject === "orders" && orderReportState.status !== "ready") return;
+  const state = reportStates[activeReportSubject];
+
+  if (state.status !== "ready") {
+    return;
+  }
+
   const selectedGroup = getSelectedReportDefinition();
   const values = getSelectedReportValues();
-  const total = values.reduce((sum, row) => sum + row.count, 0);
-  const csvRows = [[selectedGroup.label, "Quantidade", "Participação"]];
+  const total = sumReportValues(values);
 
-  // Usa os mesmos itens da visualização para que arquivo e tela permaneçam consistentes.
+  const csvRows = [
+    [selectedGroup.label, "Quantidade", "Participação"]
+  ];
+
   values.forEach(row => {
-    const share = total ? ((row.count / total) * 100).toFixed(1).replace(".", ",") : "0,0";
-    csvRows.push([row.group, row.count, `${share}%`]);
+    const share = total
+      ? ((row.count / total) * 100).toFixed(1).replace(".", ",")
+      : "0,0";
+
+    csvRows.push([
+      row.group,
+      row.count,
+      `${share}%`
+    ]);
   });
 
-  const csv = "\uFEFF" + csvRows.map(row => row.map(formatReportCsvCell).join(";")).join("\r\n");
-  const file = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const csv = "\uFEFF" +
+    csvRows.map(row =>
+      row.map(formatReportCsvCell).join(";")
+    ).join("\r\n");
+
+  const file = new Blob(
+    [csv],
+    { type: "text/csv;charset=utf-8" }
+  );
+
   const downloadUrl = URL.createObjectURL(file);
   const downloadLink = document.createElement("a");
+
   downloadLink.href = downloadUrl;
-  const teamSuffix = isTeamPeriodReport() && reportElements.teamSelect.value
-    ? `-${reportElements.teamSelect.value}` : "";
-  const yearSuffix = activeReportSubject === "orders" && ["month", "semester"].includes(activeReportGrouping)
-    ? `-${orderReportState.report.anoSelecionado}` : "";
-  downloadLink.download = `${activeReportSubject}-${activeReportGrouping}${yearSuffix}${teamSuffix}.csv`;
+
+  const teamSuffix =
+    isTeamPeriodReport() && reportElements.teamSelect.value
+      ? `-${reportElements.teamSelect.value}`
+      : "";
+
+  const yearSuffix =
+    activeReportSubject === "orders" &&
+    ["month", "semester"].includes(activeReportGrouping)
+      ? `-${reportStates.orders.report.anoSelecionado}`
+      : activeReportSubject === "teams" &&
+        ["ordersMonth", "ordersSemester"].includes(activeReportGrouping)
+        ? `-${reportStates.teams.report.anoSelecionado}`
+        : "";
+
+  downloadLink.download =
+    `${activeReportSubject}-${activeReportGrouping}${yearSuffix}${teamSuffix}.csv`;
+
   downloadLink.click();
+
   setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
 }
 
-// Mantém os dados de demonstração e consulta a API ao selecionar o assunto OS.
-function initializeReportsPage() {
-  // Esse nome é usado somente nos assuntos de demonstração.
-  try {
-    demoReportMunicipality = localStorage.getItem("municipio") || "Campinas - SP";
-  } catch {
-    // O bloqueio do armazenamento local não impede a consulta autenticada de OS.
+function loadSelectedReport() {
+  if (activeReportSubject === "trees") {
+    return loadTreeReport();
   }
-  // Preenche o filtro de equipe com IDs e nomes; futuramente estes virão do cadastro municipal.
-  reportElements.teamSelect.insertAdjacentHTML("beforeend", reportTeamOptions
-    .map(team => `<option value="${escapeReportText(team.id)}">${escapeReportText(team.name)}</option>`)
-    .join(""));
+
+  if (activeReportSubject === "occurrences") {
+    return loadOccurrenceReport();
+  }
+
+  if (activeReportSubject === "orders") {
+    return loadOrderReport();
+  }
+
+  if (activeReportSubject === "teams") {
+    return loadTeamReport();
+  }
+}
+
+function initializeReportsPage() {
+  updateTeamOptions();
   updateActiveSubjectTab();
   updateGroupingOptions();
   renderSelectedReport();
 
-  // Muda agrupamentos disponíveis ao trocar de assunto e atualiza ao mudar o agrupamento.
-  reportElements.subjectTabs.forEach(tab => tab.addEventListener("click", () => {
-    if (!Object.prototype.hasOwnProperty.call(reportCatalog, tab.dataset.reportSubject)) return;
-    activeReportSubject = tab.dataset.reportSubject;
-    updateActiveSubjectTab();
-    updateGroupingOptions();
-    if (activeReportSubject === "orders") {
-      loadOrderReport();
-    } else {
-      renderSelectedReport();
-    }
-  }));
+  loadTreeReport();
 
-  // Atualiza o sublinhado do agrupamento e renderiza os valores correspondentes.
+  reportElements.subjectTabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      const subject = tab.dataset.reportSubject;
+
+      if (!Object.prototype.hasOwnProperty.call(reportCatalog, subject)) {
+        return;
+      }
+
+      activeReportSubject = subject;
+
+      updateActiveSubjectTab();
+      updateGroupingOptions();
+      loadSelectedReport();
+    });
+  });
+
   reportElements.groupingTabs.addEventListener("click", event => {
     const tab = event.target.closest("[data-report-grouping]");
-    if (!tab || !Object.prototype.hasOwnProperty.call(reportCatalog[activeReportSubject].groups, tab.dataset.reportGrouping)) return;
-    activeReportGrouping = tab.dataset.reportGrouping;
-    reportElements.groupingTabs.querySelectorAll("[data-report-grouping]").forEach(groupTab => {
-      const isActive = groupTab === tab;
-      groupTab.classList.toggle("is-active", isActive);
-      groupTab.setAttribute("aria-selected", String(isActive));
-    });
+
+    if (!tab) {
+      return;
+    }
+
+    const grouping = tab.dataset.reportGrouping;
+    const availableGroups = reportCatalog[activeReportSubject].groups;
+
+    if (!Object.prototype.hasOwnProperty.call(availableGroups, grouping)) {
+      return;
+    }
+
+    activeReportGrouping = grouping;
+
+    reportElements.groupingTabs
+      .querySelectorAll("[data-report-grouping]")
+      .forEach(groupTab => {
+        const active = groupTab === tab;
+
+        groupTab.classList.toggle("is-active", active);
+        groupTab.setAttribute("aria-selected", String(active));
+      });
+
     renderSelectedReport();
   });
-  reportElements.teamSelect.addEventListener("change", renderSelectedReport);
-  reportElements.exportButton.addEventListener("click", exportSelectedReport);
-  reportElements.retryButton.addEventListener("click", () => {
-    if (activeReportSubject === "orders") loadOrderReport();
-  });
+
+  reportElements.teamSelect.addEventListener(
+    "change",
+    renderSelectedReport
+  );
+
+  reportElements.exportButton.addEventListener(
+    "click",
+    exportSelectedReport
+  );
+
+  reportElements.retryButton.addEventListener(
+    "click",
+    loadSelectedReport
+  );
 }
 
-// O sidebar só carrega este arquivo depois de validar login e setor.
 initializeReportsPage();
