@@ -1,7 +1,3 @@
-# Variáveis de ambiente e credenciais
-.env
-.env.*
-!.env.example
 
 # Arquivos compilados do Java
 **/bin/
