@@ -1,4 +1,4 @@
-// Autor: Carlos Luciano, Marialvo Junior
+// Autor: Marialvo Junior
 
 package dto;
 

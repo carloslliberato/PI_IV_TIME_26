@@ -4,12 +4,16 @@ import java.util.*;
 
 import protocolo.Parceiro;
 
+import java.util.Scanner;
+
 public class Servidor
 {
 	public static String PORTA_PADRAO = "3000";
 	
     public static void main (String[] args)
     {
+
+        Scanner teclado = new Scanner(System.in);
         if (args.length>1)
         {
             System.err.println ("Uso esperado: java Servidor [PORTA]\n");
@@ -46,7 +50,7 @@ public class Servidor
             String comando=null;
             try
             {
-                comando = Teclado.getUmString();
+                comando = teclado.nextLine();
             }
             catch (Exception erro)
             {}

@@ -1,4 +1,4 @@
-// Autor: Carlos Luciano
+// Autor: Guilherme Mascarenhas, Marialvo Junior
 
 package controller;
 

@@ -1,4 +1,4 @@
-// Autor: Carlos Luciano
+// Autor: Marialvo
 
 package model;
 import java.time.Instant;

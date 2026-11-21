@@ -1,4 +1,4 @@
-// Autor: Sophia Fernandes
+// Autor: Carlos Luciano, Sophia Fernandes
 
 package controller;
 
