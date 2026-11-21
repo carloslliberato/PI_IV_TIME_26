@@ -20,16 +20,13 @@ public class Conta {
     private String setor;
     private String outroSetor;
     private String cargo;
-    private Boolean receberNotificacoes;
-    private List<String> preferenciasNotificacoes;
     private final Instant dataCadastro;
     private Instant dataAtualizacao;
 
     // Construtor para criar uma nova conta
     public Conta(String nome, String email, String senhaHash, String telefone,
             List<String> perfis, ObjectId municipioId, String setor,
-            String outroSetor, String cargo, Boolean receberNotificacoes,
-            List<String> preferenciasNotificacoes) {
+            String outroSetor, String cargo) {
 
         this._id = new ObjectId();
         this.nome = nome;
@@ -41,10 +38,6 @@ public class Conta {
         this.setor = setor;
         this.outroSetor = outroSetor;
         this.cargo = cargo;
-        this.receberNotificacoes = receberNotificacoes;
-        this.preferenciasNotificacoes = preferenciasNotificacoes == null
-                ? null
-                : new ArrayList<>(preferenciasNotificacoes);
         this.dataCadastro = Instant.now();
         this.dataAtualizacao = null;
 
@@ -55,8 +48,6 @@ public class Conta {
     public Conta(ObjectId _id, String nome, String email, String senhaHash,
             String telefone, List<String> perfis, ObjectId municipioId,
             String setor, String outroSetor, String cargo,
-            Boolean receberNotificacoes,
-            List<String> preferenciasNotificacoes,
             Instant dataCadastro, Instant dataAtualizacao) {
 
         this._id = _id;
@@ -69,10 +60,6 @@ public class Conta {
         this.setor = setor;
         this.outroSetor = outroSetor;
         this.cargo = cargo;
-        this.receberNotificacoes = receberNotificacoes;
-        this.preferenciasNotificacoes = preferenciasNotificacoes == null
-                ? null
-                : new ArrayList<>(preferenciasNotificacoes);
         this.dataCadastro = dataCadastro;
         this.dataAtualizacao = dataAtualizacao;
 
@@ -194,16 +181,6 @@ public class Conta {
         return cargo;
     }
 
-    public Boolean getReceberNotificacoes() {
-        return receberNotificacoes;
-    }
-
-    public List<String> getPreferenciasNotificacoes() {
-        return preferenciasNotificacoes == null
-                ? null
-                : new ArrayList<>(preferenciasNotificacoes);
-    }
-
     public Instant getDataCadastro() {
         return dataCadastro;
     }
@@ -294,21 +271,6 @@ public class Conta {
             this.cargo = cargoAnterior;
             throw e;
         }
-
-        this.atualizarData();
-    }
-
-    public void setReceberNotificacoes(Boolean receberNotificacoes) {
-        this.receberNotificacoes = receberNotificacoes;
-        this.atualizarData();
-    }
-
-    public void setPreferenciasNotificacoes(
-            List<String> preferenciasNotificacoes) {
-
-        this.preferenciasNotificacoes = preferenciasNotificacoes == null
-                ? null
-                : new ArrayList<>(preferenciasNotificacoes);
 
         this.atualizarData();
     }

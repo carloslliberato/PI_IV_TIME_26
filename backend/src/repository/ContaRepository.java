@@ -122,19 +122,6 @@ public class ContaRepository implements Repository<Conta> {
             documento.append("cargo", conta.getCargo());
         }
 
-        // Campos específicos do cidadão
-        if (conta.getReceberNotificacoes() != null) {
-            documento.append(
-                    "receberNotificacoes",
-                    conta.getReceberNotificacoes());
-        }
-
-        if (conta.getPreferenciasNotificacoes() != null) {
-            documento.append(
-                    "preferenciasNotificacoes",
-                    conta.getPreferenciasNotificacoes());
-        }
-
         documento.append("dataCadastro", Date.from(conta.getDataCadastro()));
 
         if (conta.getDataAtualizacao() != null) {
@@ -152,9 +139,6 @@ public class ContaRepository implements Repository<Conta> {
         List<String> perfis = documento.getList(
                 "perfis", String.class);
 
-        List<String> preferencias = documento.getList(
-                "preferenciasNotificacoes", String.class);
-
         Date dataCadastro = documento.getDate("dataCadastro");
         Date dataAtualizacao = documento.getDate("dataAtualizacao");
 
@@ -165,8 +149,6 @@ public class ContaRepository implements Repository<Conta> {
         Instant instanteAtualizacao = dataAtualizacao == null
                 ? null
                 : dataAtualizacao.toInstant();
-
-        Boolean receberNotificacoes = documento.getBoolean("receberNotificacoes");
 
         return new Conta(
                 documento.getObjectId("_id"),
@@ -179,8 +161,6 @@ public class ContaRepository implements Repository<Conta> {
                 documento.getString("setor"),
                 documento.getString("outroSetor"),
                 documento.getString("cargo"),
-                receberNotificacoes,
-                preferencias,
                 instanteCadastro,
                 instanteAtualizacao);
     }

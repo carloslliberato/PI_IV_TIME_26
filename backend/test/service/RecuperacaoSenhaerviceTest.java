@@ -85,9 +85,7 @@ class RecuperacaoSenhaServiceTest {
                 obterMunicipioCampinas(),
                 null,
                 null,
-                null,
-                false,
-                List.of());
+                null);
 
         contaRepository.salvar(conta);
 

@@ -68,7 +68,7 @@
                 <div class="invalid-feedback">Selecione o tipo de ocorrência.</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="reportAddress">Endereço do local <span>*</span></label>
+                <label class="form-label" for="reportAddress">Endereço <span>*</span></label>
                 <input class="form-control" id="reportAddress" name="endereco" type="text"
                   placeholder="Nome da rua" required minlength="5">
                 <div class="invalid-feedback">Informe o nome da rua.</div>
@@ -110,41 +110,6 @@
                 </div>
                 <div class="invalid-feedback d-block d-none" id="imageError">Escolha uma imagem PNG, JPG ou WEBP de até
                   8 MB.</div>
-              </div>
-            </div>
-
-            <!-- A opcao de notificacao revela os campos para contato quando ativada. -->
-            <div class="report-notification-box">
-              <label class="report-notification-toggle" for="wantsReportNotifications">
-                <span class="report-notification-icon"><i class="bi bi-bell-fill"></i></span>
-                <span class="report-notification-copy"><strong>Quero receber notificações sobre este
-                    chamado</strong><small>Podemos usar seus dados para informar atualizações sobre esta
-                    ocorrência.</small></span>
-                <input class="form-check-input" type="checkbox" role="switch" id="wantsReportNotifications"
-                  name="receberNotificacoes">
-              </label>
-              <div id="reportNotificationFields" class="report-notification-fields d-none">
-                <div class="notification-fields-heading"><strong>Dados para contato</strong><span>Todos os campos são
-                    obrigatórios</span></div>
-                <div class="row g-3">
-                  <div class="col-md-4"><label class="form-label" for="reportContactName">Nome completo
-                      <span>*</span></label><input class="form-control" id="reportContactName" name="nomeContato"
-                      autocomplete="name" placeholder="Seu nome completo" disabled>
-                    <div class="invalid-feedback">Informe seu nome.</div>
-                  </div>
-                  <div class="col-md-4"><label class="form-label" for="reportContactEmail">E-mail
-                      <span>*</span></label><input class="form-control" id="reportContactEmail" name="emailContato"
-                      type="email" autocomplete="email" placeholder="voce@exemplo.com" disabled>
-                    <div class="invalid-feedback">Informe um e-mail válido.</div>
-                  </div>
-                  <div class="col-md-4"><label class="form-label" for="reportContactPhone">Telefone
-                      <span>*</span></label><input class="form-control" id="reportContactPhone" name="telefoneContato"
-                      type="tel" autocomplete="tel" placeholder="(00) 00000-0000" disabled>
-                    <div class="invalid-feedback">Informe um telefone válido.</div>
-                  </div>
-                </div>
-                <p class="logged-in-note"><i class="bi bi-info-circle me-1"></i>Quando o login estiver integrado ao
-                  back-end, os dados do cidadão autenticado serão preenchidos automaticamente.</p>
               </div>
             </div>
 

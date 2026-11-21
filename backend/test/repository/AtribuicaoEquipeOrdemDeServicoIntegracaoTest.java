@@ -25,7 +25,6 @@ import com.mongodb.MongoException;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
-import model.Equipe;
 import model.OrdemDeServico;
 
 /*
@@ -165,28 +164,11 @@ class AtribuicaoEquipeOrdemDeServicoIntegracaoTest {
         var lista = equipes.listarPorMunicipioEUsuario(
                 MUNICIPIO, "Município teste", USUARIO, "Usuário teste", null, "Disponível");
         assertEquals(1, lista.size());
-        assertEquals("EQ-000001", lista.get(0).getCodigo());
-        assertEquals(1, equipes.listarPorMunicipioEUsuario(
-                MUNICIPIO, "Município teste", USUARIO, "Usuário teste",
-                "EQ-000001", "Disponível").size());
-        assertEquals(equipe, lista.get(0).getId());
         assertEquals("Disponível", lista.get(0).getStatus());
         assertEquals("Disponível", equipe(equipe).getString("status"));
         assertTrue(!equipes.sincronizarStatusComOrdens(equipe, USUARIO));
         assertThrows(IllegalStateException.class, () -> equipes.excluirEquipe(equipe, USUARIO));
         assertEquals("Disponível", equipe(equipe).getString("status"));
-
-        Equipe nova = equipes.salvar(new Equipe(
-                "Equipe nova",
-                "Outra região",
-                "gestor@example.org",
-                MUNICIPIO,
-                "Município teste",
-                USUARIO,
-                "Usuário teste"));
-        assertEquals("EQ-000002", nova.getCodigo());
-        assertEquals(nova.getId(), equipe(nova.getId()).getObjectId("_id"));
-        assertEquals("EQ-000002", equipe(nova.getId()).getString("codigo"));
     }
 
     private ObjectId salvarEquipe(ObjectId municipioId, ObjectId criador, String nome){

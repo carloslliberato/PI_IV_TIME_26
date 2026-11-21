@@ -2,9 +2,6 @@
 
 package dto;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class CadastroContaDTO {
 
     private String nome;
@@ -18,10 +15,6 @@ public class CadastroContaDTO {
     private String setor;
     private String outroSetor;
     private String cargo;
-
-    // Dados específicos do cidadão
-    private Boolean receberNotificacoes;
-    private List<String> preferencias;
 
     // Construtor vazio
     public CadastroContaDTO() {
@@ -65,16 +58,6 @@ public class CadastroContaDTO {
         return cargo;
     }
 
-    public Boolean isReceberNotificacoes() {
-        return receberNotificacoes;
-    }
-
-    public List<String> getPreferencias() {
-        return preferencias == null
-                ? null
-                : new ArrayList<>(preferencias);
-    }
-
     // Setters
 
     public void setNome(String nome) {
@@ -113,13 +96,4 @@ public class CadastroContaDTO {
         this.cargo = cargo;
     }
 
-    public void setReceberNotificacoes(boolean receberNotificacoes) {
-        this.receberNotificacoes = receberNotificacoes;
-    }
-
-    public void setPreferencias(List<String> preferencias) {
-        this.preferencias = preferencias == null
-                ? null
-                : new ArrayList<>(preferencias);
-    }
 }

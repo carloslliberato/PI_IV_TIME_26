@@ -19,7 +19,7 @@ A aplicação possui um portal público para cidadãos e um painel profissional 
 ### Portal do cidadão
 
 - Cadastro, login e acompanhamento de chamados.
-- Abertura de ocorrências relacionadas a árvores, com localização, descrição, prioridade e contato para notificações.
+- Abertura e acompanhamento de ocorrências relacionadas a árvores, com localização, descrição, prioridade e atualização da preferência para notificações no acompanhamento do chamado.
 - Consulta do protocolo de acompanhamento da ocorrência.
 
 ### Gestão profissional

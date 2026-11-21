@@ -59,8 +59,6 @@ public class ConexaoServidorTest {
                 "Senha123",
                 null,
                 null,
-                null,
-                false,
                 null);
 
         ResultadoValidacaoCadastro resultado = conexaoServidor.validarCadastro(pedido);
@@ -84,8 +82,6 @@ public class ConexaoServidorTest {
                 "Senha124",
                 null,
                 null,
-                null,
-                false,
                 null);
         ResultadoValidacaoCadastro resultado = conexaoServidor.validarCadastro(pedido);
 
@@ -106,8 +102,6 @@ public class ConexaoServidorTest {
                 "Senha123",
                 null,
                 null,
-                null,
-                false,
                 null);
 
         ResultadoValidacaoCadastro resultado = conexaoServidor.validarCadastro(pedido);
@@ -129,8 +123,6 @@ public class ConexaoServidorTest {
                 "Senha123",
                 null,
                 null,
-                null,
-                false,
                 null);
 
         ResultadoValidacaoCadastro resultado = conexaoServidor.validarCadastro(pedido);
@@ -152,8 +144,6 @@ public class ConexaoServidorTest {
                 "Senha123",
                 null,
                 null,
-                null,
-                false,
                 null);
 
         ResultadoValidacaoCadastro resultado = conexaoServidor.validarCadastro(pedido);
@@ -175,9 +165,7 @@ public class ConexaoServidorTest {
                 "Arboriza123",
                 "Departamento de Arborização Urbana",
                 null,
-                "Analista Ambiental",
-                null,
-                null);
+                "Analista Ambiental");
 
         ResultadoValidacaoCadastro resultado = conexaoServidor.validarCadastro(pedido);
 
@@ -198,9 +186,7 @@ public class ConexaoServidorTest {
                 "Arboriza123",
                 null,
                 null,
-                "Analista Ambiental",
-                null,
-                null);
+                "Analista Ambiental");
 
         ResultadoValidacaoCadastro resultado = conexaoServidor.validarCadastro(pedido);
 
@@ -221,9 +207,7 @@ public class ConexaoServidorTest {
                 "Arboriza123",
                 "Secretaria de Tecnologia",
                 null,
-                "Analista Ambiental",
-                null,
-                null);
+                "Analista Ambiental");
 
         ResultadoValidacaoCadastro resultado = conexaoServidor.validarCadastro(pedido);
 
@@ -244,9 +228,7 @@ public class ConexaoServidorTest {
                 "Arboriza123",
                 "Outro",
                 null,
-                "Analista Ambiental",
-                null,
-                null);
+                "Analista Ambiental");
 
         ResultadoValidacaoCadastro resultado = conexaoServidor.validarCadastro(pedido);
 
@@ -266,8 +248,6 @@ public class ConexaoServidorTest {
                 "Arboriza123",
                 "Arboriza123",
                 "Departamento de Arborização Urbana",
-                null,
-                null,
                 null,
                 null);
 
@@ -290,9 +270,7 @@ public class ConexaoServidorTest {
                 "Arboriza123",
                 "Departamento de Arborização Urbana",
                 null,
-                "A",
-                null,
-                null);
+                "A");
 
         ResultadoValidacaoCadastro resultado = conexaoServidor.validarCadastro(pedido);
 

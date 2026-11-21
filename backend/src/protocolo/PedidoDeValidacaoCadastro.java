@@ -2,9 +2,6 @@
 
 package protocolo;
 
-import java.util.List;
-import java.util.ArrayList;
-
 public class PedidoDeValidacaoCadastro extends Comunicado {
     private String tipoConta;
     private String nome;
@@ -18,12 +15,8 @@ public class PedidoDeValidacaoCadastro extends Comunicado {
     private String outroSetor;
     private String cargo;
 
-    private Boolean receberNotificacoes;
-    private List<String> preferenciasNotificacoes;
-
     public PedidoDeValidacaoCadastro(String tipoConta, String nome, String email, String telefone, String municipio,
-            String senha, String confirmarSenha, String setor, String outroSetor, String cargo,
-            Boolean receberNotificacoes, List<String> preferenciasNotificacoes) {
+            String senha, String confirmarSenha, String setor, String outroSetor, String cargo) {
 
         this.tipoConta = tipoConta;
         this.nome = nome;
@@ -35,10 +28,6 @@ public class PedidoDeValidacaoCadastro extends Comunicado {
         this.setor = setor;
         this.outroSetor = outroSetor;
         this.cargo = cargo;
-        this.receberNotificacoes = receberNotificacoes;
-        this.preferenciasNotificacoes = preferenciasNotificacoes == null
-                ? null
-                : new ArrayList<>(preferenciasNotificacoes);
     }
 
     public String getTipoConta() {
@@ -119,26 +108,6 @@ public class PedidoDeValidacaoCadastro extends Comunicado {
 
     public void setCargo(String cargo) {
         this.cargo = cargo;
-    }
-
-    public Boolean getReceberNotificacoes() {
-        return receberNotificacoes;
-    }
-
-    public void setReceberNotificacoes(Boolean receberNotificacoes) {
-        this.receberNotificacoes = receberNotificacoes;
-    }
-
-    public List<String> getPreferenciasNotificacoes() {
-        return preferenciasNotificacoes == null
-                ? null
-                : new ArrayList<>(preferenciasNotificacoes);
-    }
-
-    public void setPreferenciasNotificacoes(List<String> preferenciasNotificacoes) {
-        this.preferenciasNotificacoes = preferenciasNotificacoes == null
-                ? null
-                : new ArrayList<>(preferenciasNotificacoes);
     }
 
 }

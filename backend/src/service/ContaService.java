@@ -82,16 +82,8 @@ public class ContaService {
         String outroSetor = null;
         String cargo = null;
 
-        Boolean receberNotificacoes = null;
-        List<String> preferencias = null;
-
         // Campos específicos de cada perfil
-        if ("CIDADAO".equals(tipoConta)) {
-
-            receberNotificacoes = dados.isReceberNotificacoes();
-            preferencias = dados.getPreferencias();
-
-        } else if ("FUNCIONARIO".equals(tipoConta)) {
+        if ("FUNCIONARIO".equals(tipoConta)) {
 
             setor = dados.getSetor();
             outroSetor = dados.getOutroSetor();
@@ -108,9 +100,7 @@ public class ContaService {
                 dados.getConfirmarSenha(),
                 setor,
                 outroSetor,
-                cargo,
-                receberNotificacoes,
-                preferencias);
+                cargo);
 
         return conexaoServidor.validarCadastro(pedido);
     }
@@ -165,9 +155,7 @@ public class ContaService {
                 dados.getConfirmarSenha(),
                 null,
                 null,
-                null,
-                dados.isReceberNotificacoes(),
-                dados.getPreferencias());
+                null);
 
         // Envia os dados para validação
         ResultadoValidacaoCadastro resultado = conexaoServidor.validarCadastro(pedido);
@@ -181,10 +169,6 @@ public class ContaService {
         // Adiciona o perfil de cidadão
         perfis.add("CIDADAO");
         conta.setPerfis(perfis);
-
-        // Atualiza as informações de notificações
-        conta.setReceberNotificacoes(dados.isReceberNotificacoes());
-        conta.setPreferenciasNotificacoes(dados.getPreferencias());
 
         // Atualiza a conta existente no MongoDB
         contaRepository.atualizar(conta);
@@ -231,9 +215,7 @@ public class ContaService {
                 municipioId,
                 dados.getSetor(),
                 dados.getOutroSetor(),
-                dados.getCargo(),
-                dados.isReceberNotificacoes(),
-                dados.getPreferencias());
+                dados.getCargo());
 
         // Salva a nova conta no MongoDB
         contaRepository.salvar(conta);

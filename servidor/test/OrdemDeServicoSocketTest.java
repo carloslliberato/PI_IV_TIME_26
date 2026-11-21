@@ -156,12 +156,12 @@ class OrdemDeServicoSocketTest {
 
             PedidoDeValidacaoCadastro conta = new PedidoDeValidacaoCadastro(
                     "CIDADAO", "Teste Socket", "socket@example.org", "19999999999",
-                    "campinas", "SenhaTeste123", "SenhaTeste123", null, null, null, false, null);
+                    "campinas", "SenhaTeste123", "SenhaTeste123", null, null, null);
             assertTrue(cliente.validarCadastro(conta).isValido());
             // Um pedido novo evita que o cache de serialização reutilize o objeto anterior.
             PedidoDeValidacaoCadastro contaInvalida = new PedidoDeValidacaoCadastro(
                     "CIDADAO", null, "socket@example.org", "19999999999",
-                    "campinas", "SenhaTeste123", "SenhaTeste123", null, null, null, false, null);
+                    "campinas", "SenhaTeste123", "SenhaTeste123", null, null, null);
             assertFalse(cliente.validarCadastro(contaInvalida).isValido());
             assertTrue(cliente.validarOrdemDeServico(
                     PedidoDeValidacaoOrdemDeServico.atribuicaoEquipe(EQUIPE)).isValido());

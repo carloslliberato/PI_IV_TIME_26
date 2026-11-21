@@ -2,35 +2,11 @@
 
 // Prepara os controles do cadastro quando o DOM estiver disponivel.
 function initializeCitizenSignup() {
-  // Guarda referencias aos campos, preferencias e aviso de sucesso usados na tela.
+  // Guarda referencias aos campos e ao aviso de sucesso usados na tela.
   const form = document.getElementById("citizenSignupForm");
-  const notificationToggle = document.getElementById("wantsNotifications");
-  const preferencesPanel = document.getElementById("notificationPreferences");
-  const preferencesHint = document.getElementById("preferencesHint");
-  const preferenceInputs = [...document.querySelectorAll('input[name="preferencias"]')];
   const toastElement = document.getElementById("citizenToast");
   const toastBody = toastElement.querySelector(".toast-body");
   const successToast = bootstrap.Toast.getOrCreateInstance(toastElement, { delay: 4500 });
-
-  // Exibe as preferencias quando notificacoes estao ligadas e limpa selecoes ao desativar.
-  function togglePreferences() {
-    const enabled = notificationToggle.checked;
-    preferencesPanel.classList.toggle("d-none", !enabled);
-    preferenceInputs.forEach(input => { input.required = false; });
-
-    if (!enabled) {
-      preferenceInputs.forEach(input => { input.checked = false; });
-      preferencesHint.classList.add("d-none");
-    }
-  }
-
-  // Atualiza o painel sempre que a opcao principal de notificacoes muda.
-  notificationToggle.addEventListener("change", togglePreferences);
-
-  preferenceInputs.forEach(input => input.addEventListener("change", () => {
-    const anySelected = preferenceInputs.some(option => option.checked);
-    preferencesHint.classList.toggle("d-none", !notificationToggle.checked || anySelected);
-  }));
 
   const password = document.getElementById("citizenPassword");
   const passwordConfirm = document.getElementById("citizenPasswordConfirm");
@@ -79,17 +55,6 @@ function initializeCitizenSignup() {
       return;
     }
 
-    // Exige uma categoria quando a pessoa opta por receber notificacoes.
-    const preferenciasSelecionadas = preferenceInputs
-      .filter(input => input.checked)
-      .map(input => input.value);
-
-    if (notificationToggle.checked && preferenciasSelecionadas.length === 0) {
-      preferencesHint.classList.remove("d-none");
-      preferencesHint.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
-    }
-
     // Monta o objeto com os campos esperados pelo CadastroContaDTO.
     const dadosCadastro = {
       nome: document.getElementById("citizenName").value.trim(),
@@ -97,9 +62,7 @@ function initializeCitizenSignup() {
       telefone: phone.value.replace(/\D/g, ""),
       senha: password.value,
       confirmarSenha: passwordConfirm.value,
-      municipio: document.getElementById("citizenMunicipality").value,
-      receberNotificacoes: notificationToggle.checked,
-      preferencias: notificationToggle.checked ? preferenciasSelecionadas : []
+      municipio: document.getElementById("citizenMunicipality").value
     };
 
     try {
@@ -142,7 +105,6 @@ function initializeCitizenSignup() {
       form.reset();
       passwordConfirm.setCustomValidity("");
       form.classList.remove("was-validated");
-      togglePreferences();
 
     } catch (erro) {
       // Informa o erro sem apagar os dados preenchidos.

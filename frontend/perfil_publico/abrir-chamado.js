@@ -6,11 +6,6 @@
 function initializeReportForm() {
   // Pega os elementos do HTML pelos IDs originais da tela
   const form = document.getElementById("reportForm");
-  const wantsNotifications = document.getElementById("wantsReportNotifications");
-  const notificationFields = document.getElementById("reportNotificationFields");
-  const nameInput = document.getElementById("reportContactName");
-  const emailInput = document.getElementById("reportContactEmail");
-  const phoneInput = document.getElementById("reportContactPhone");
   const imageInput = document.getElementById("reportImage");
   const imagePreviewWrap = document.getElementById("imagePreviewWrap");
   const imagePreview = document.getElementById("imagePreview");
@@ -24,7 +19,7 @@ function initializeReportForm() {
   // Guarda o ID do cidadão caso ele esteja logado na sessão
   let cidadaoLogadoId = null;
 
-  // Consulta o back-end para saber se o cidadão está logado e preenche nome/e-mail automaticamente
+  // Consulta o back-end para associar o chamado ao cidadão logado.
   async function carregarDadosDaSessao() {
     try {
       const response = await fetch("/api/contas/sessao");
@@ -33,44 +28,13 @@ function initializeReportForm() {
       const sessao = await response.json();
       if (sessao && (sessao.nome || sessao.email)) {
         cidadaoLogadoId = sessao.id || sessao._id || null;
-        if (nameInput && sessao.nome) nameInput.value = sessao.nome;
-        if (emailInput && sessao.email) emailInput.value = sessao.email;
-        if (phoneInput && sessao.telefone) phoneInput.value = sessao.telefone;
       }
     } catch (erro) {
       // Se não estiver logado, continua normalmente como cidadão anônimo
     }
   }
 
-  // Mostra ou esconde os campos de contato (Nome, E-mail e Telefone) quando marca o checkbox
-  function toggleNotificationFields() {
-    const enabled = wantsNotifications.checked;
-    notificationFields.classList.toggle("d-none", !enabled);
-    [nameInput, emailInput, phoneInput].forEach(input => {
-      input.disabled = !enabled;
-      input.required = enabled;
-      if (!enabled) input.classList.remove("is-invalid");
-    });
-  }
-
-  // Ativa o evento de clique no checkbox de notificações
-  wantsNotifications.addEventListener("change", toggleNotificationFields);
-  toggleNotificationFields();
   carregarDadosDaSessao();
-
-  // Aplica máscara automática de telefone no formato (00) 00000-0000 enquanto o usuário digita
-  phoneInput.addEventListener("input", () => {
-    if (phoneInput.disabled || phoneInput.readOnly) return;
-    const digits = phoneInput.value.replace(/\D/g, "").slice(0, 11);
-    if (digits.length <= 10) {
-      phoneInput.value = digits.replace(
-        /(\d{2})(\d{0,4})(\d{0,4})/,
-        (_, a, b, c) => `(${a}${a.length === 2 ? ") " : ""}${b || ""}${c ? "-" + c : ""}`
-      );
-    } else {
-      phoneInput.value = digits.replace(/(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3");
-    }
-  });
 
   // Formata o tamanho da imagem anexada em KB ou MB
   function formatBytes(bytes) {
@@ -135,23 +99,7 @@ function initializeReportForm() {
   form.addEventListener("submit", async event => {
     event.preventDefault();
     form.classList.add("was-validated");
-    let valid = form.checkValidity();
-
-    // Se marcou que quer receber notificações, valida se o telefone tem 10 ou 11 dígitos
-    if (wantsNotifications.checked) {
-      const phoneDigits = phoneInput.value.replace(/\D/g, "");
-      if (phoneDigits.length < 10 || phoneDigits.length > 11) {
-        phoneInput.setCustomValidity("Informe um telefone válido.");
-        valid = false;
-      } else {
-        phoneInput.setCustomValidity("");
-      }
-      [nameInput, emailInput, phoneInput].forEach(input => {
-        if (!input.checkValidity()) valid = false;
-      });
-    }
-
-    if (!valid) {
+    if (!form.checkValidity()) {
       form.reportValidity();
       return;
     }
@@ -181,11 +129,7 @@ function initializeReportForm() {
       // O nome enviado é resolvido para ObjectId pelo MunicipioRepository, como no cadastro de conta.
       municipioId: municipioSelecionado,
       cidadaoId: cidadaoLogadoId,
-      imagem: imagemBase64,
-      receberNotificacoes: wantsNotifications.checked,
-      nomeContato: wantsNotifications.checked ? nameInput.value.trim() : null,
-      emailContato: wantsNotifications.checked ? emailInput.value.trim() : null,
-      telefoneContato: wantsNotifications.checked ? phoneInput.value.trim() : null
+      imagem: imagemBase64
     };
 
     try {

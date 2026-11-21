@@ -66,16 +66,6 @@ public class OcorrenciaService {
         ObjectId municipioId = municipioRepository.buscarIdPorNome(municipioNome)
                 .orElseThrow(() -> new IllegalArgumentException("Município não encontrado."));
 
-        // Se o cidadão marcou que quer receber notificações, valida se preencheu nome, email e telefone
-        boolean querNotificacao = Boolean.TRUE.equals(dto.receberNotificacoes);
-        if (querNotificacao) {
-            if (dto.nomeContato == null || dto.nomeContato.isBlank() ||
-                dto.emailContato == null || dto.emailContato.isBlank() ||
-                dto.telefoneContato == null || dto.telefoneContato.isBlank()) {
-                throw new IllegalArgumentException("Para receber notificações, preencha nome completo, e-mail e telefone.");
-            }
-        }
-
         // Monta o objeto Ocorrencia com os dados validados
         Ocorrencia nova = new Ocorrencia();
         nova.setTipoProblema(tipo.trim());
@@ -84,10 +74,6 @@ public class OcorrenciaService {
         nova.setBairro(dto.bairro.trim());
         nova.setDescricao(dto.descricao.trim());
         nova.setImagem(dto.imagem);
-        nova.setReceberNotificacoes(querNotificacao);
-        nova.setNomeContato(dto.nomeContato != null ? dto.nomeContato.trim() : null);
-        nova.setEmailContato(dto.emailContato != null ? dto.emailContato.trim() : null);
-        nova.setTelefoneContato(dto.telefoneContato != null ? dto.telefoneContato.trim() : null);
         nova.setLatitude(dto.latitude);
         nova.setLongitude(dto.longitude);
 
@@ -150,7 +136,6 @@ public class OcorrenciaService {
         return repository.atualizarPrioridade(id, novaPrioridade);
     }
 
-    // Chama o repositório para salvar a preferência de notificação
     public boolean alterarNotificacao(String id, AtualizacaoOcorrenciaDTO dto) {
         boolean receber = dto != null && Boolean.TRUE.equals(dto.receberNotificacoes);
         return repository.atualizarNotificacao(id, receber,

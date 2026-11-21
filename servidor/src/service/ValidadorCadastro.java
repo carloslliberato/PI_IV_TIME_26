@@ -17,13 +17,6 @@ public class ValidadorCadastro {
             "Defesa Civil",
             "Outro");
 
-    private static final List<String> PREFERENCIAS = Arrays.asList(
-            "arvores-risco",
-            "alertas-meteorologicos",
-            "podas-programadas",
-            "floracao",
-            "frutificacao");
-
     public static ResultadoValidacaoCadastro validar(
             PedidoDeValidacaoCadastro pedido) {
 
@@ -105,11 +98,6 @@ public class ValidadorCadastro {
                 erros.add("O cargo deve possuir pelo menos 2 caracteres.");
             }
 
-            if (pedido.getReceberNotificacoes() != null ||
-                    pedido.getPreferenciasNotificacoes() != null) {
-
-                erros.add("Funcionários não devem enviar dados de notificações.");
-            }
         }
 
         // VALIDAÇÕES DE CIDADÃO
@@ -123,33 +111,6 @@ public class ValidadorCadastro {
                 erros.add("Cidadãos não devem enviar dados profissionais.");
             }
 
-            if (pedido.getReceberNotificacoes() == null) {
-
-                erros.add("Informe se deseja receber notificações.");
-
-            } else if (pedido.getReceberNotificacoes()) {
-
-                List<String> preferencias = pedido.getPreferenciasNotificacoes();
-
-                if (preferencias == null || preferencias.isEmpty()) {
-
-                    erros.add("Selecione pelo menos uma preferência de notificação.");
-
-                } else {
-
-                    for (String preferencia : preferencias) {
-                        if (!PREFERENCIAS.contains(preferencia)) {
-                            erros.add("Preferência de notificação inválida: "
-                                    + preferencia);
-                        }
-                    }
-                }
-
-            } else if (pedido.getPreferenciasNotificacoes() != null &&
-                    !pedido.getPreferenciasNotificacoes().isEmpty()) {
-
-                erros.add("Não devem existir preferências quando as notificações estão desativadas.");
-            }
         }
 
         return new ResultadoValidacaoCadastro(erros.isEmpty(), erros);

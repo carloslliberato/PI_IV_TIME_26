@@ -3,7 +3,11 @@
 package model;
 
 import java.time.Instant;
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.bson.types.ObjectId;
+
+import java.time.Year;
 
 // Classe que representa uma Ocorrência (chamado) dentro do sistema
 public class Ocorrencia {
@@ -31,11 +35,13 @@ public class Ocorrencia {
     private String criadoEm;
     private String atualizadoEm;
 
-    // O ObjectId e o protocolo são gerados no backend; o código OC personalizado é atribuído pelo repositório.
+    // Construtor que já gera ID automático, protocolo único e valores iniciais
     public Ocorrencia() {
         this.ocorrenciaId = new ObjectId();
         long currentTimeMillis = System.currentTimeMillis();
         this.protocolo = "CH-" + currentTimeMillis;
+        int aleatorio = ThreadLocalRandom.current().nextInt(10_000); // 4 dígitos aleatórios
+        this.id = "OCO" + Year.now().getValue() + aleatorio + currentTimeMillis;
         this.status = "Recebida";
         this.urgencia = "Média";
         this.cidadaoId = "cid_anonimo";

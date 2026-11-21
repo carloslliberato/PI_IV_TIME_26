@@ -25,19 +25,19 @@
         <div>
           <span class="citizen-eyebrow"><i class="bi bi-globe2 me-2"></i>PORTAL PÚBLICO</span>
           <h1>Faça seu cadastro</h1>
-          <p>Receba informações sobre a arborização urbana do município que importa para você.</p>
+          <p>Cadastre-se para acompanhar ocorrências de arborização urbana do seu município.</p>
         </div>
         <div class="citizen-heading-icon"><i class="bi bi-person-vcard"></i></div>
       </div>
 
-      <!-- Cartao que agrupa dados pessoais, preferencias e acoes do cadastro. -->
+      <!-- Cartao que agrupa dados pessoais e acoes do cadastro. -->
       <div class="citizen-form-card">
         <div class="citizen-form-intro">
           <div class="citizen-intro-icon"><i class="bi bi-person-plus-fill"></i></div>
-          <div><h2>Seus dados</h2><p>Preencha os campos abaixo para personalizar sua experiência no Arboriza.</p></div>
+          <div><h2>Seus dados</h2><p>Preencha os campos abaixo para criar seu acesso ao Arboriza.</p></div>
         </div>
 
-        <!-- O JavaScript valida os campos, a senha e as preferencias antes da confirmacao. -->
+        <!-- O JavaScript valida os campos e a senha antes da confirmacao. -->
         <form id="citizenSignupForm" novalidate>
           <div class="row g-3">
             <div class="col-12">
@@ -76,26 +76,6 @@
                 <!-- <option value="outro">Outro município</option> -->
               </select>
               <div class="invalid-feedback">Selecione um município de interesse.</div>
-            </div>
-          </div>
-
-          <!-- Ativar notificacoes exibe as categorias que a pessoa pode acompanhar. -->
-          <div class="notification-preference-box">
-            <label class="notification-toggle" for="wantsNotifications">
-              <span class="notification-toggle-icon"><i class="bi bi-bell-fill"></i></span>
-              <span class="notification-toggle-copy"><strong>Quero receber notificações</strong><small>Escolha se deseja receber novidades e avisos sobre a arborização.</small></span>
-              <input class="form-check-input" type="checkbox" role="switch" id="wantsNotifications" name="receberNotificacoes">
-            </label>
-            <div id="notificationPreferences" class="notification-preferences d-none">
-              <div class="preferences-heading"><strong>Preferências de notificações</strong><span>Selecione uma ou mais opções</span></div>
-              <div class="preference-options">
-                <label class="preference-option"><input class="form-check-input" type="checkbox" name="preferencias" value="arvores-risco"><span><i class="bi bi-exclamation-triangle"></i>Árvores em risco</span></label>
-                <label class="preference-option"><input class="form-check-input" type="checkbox" name="preferencias" value="alertas-meteorologicos"><span><i class="bi bi-cloud-lightning-rain"></i>Alertas meteorológicos</span></label>
-                <label class="preference-option"><input class="form-check-input" type="checkbox" name="preferencias" value="podas-programadas"><span><i class="bi bi-scissors"></i>Podas programadas</span></label>
-                <label class="preference-option"><input class="form-check-input" type="checkbox" name="preferencias" value="floracao"><span><i class="bi bi-flower1"></i>Floração</span></label>
-                <label class="preference-option"><input class="form-check-input" type="checkbox" name="preferencias" value="frutificacao"><span><i class="bi bi-apple"></i>Frutificação</span></label>
-              </div>
-              <p class="preference-hint d-none" id="preferencesHint">Selecione pelo menos uma preferência ou desative as notificações.</p>
             </div>
           </div>
 

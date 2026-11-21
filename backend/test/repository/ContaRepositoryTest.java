@@ -46,9 +46,7 @@ class ContaRepositoryTest {
                 obterMunicipioCampinas(),
                 null,
                 null,
-                null,
-                false,
-                List.of("arvores-risco")
+                null
         );
     }
 

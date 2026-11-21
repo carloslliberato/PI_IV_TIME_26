@@ -16,7 +16,6 @@ Atributos:
 | municipioId | ObjectId | Sim | Identificador do município ao qual a conta está vinculada. |
 | setorId | ObjectId | Condicional | Identificador do setor ao qual o funcionário pertence. Obrigatório para contas com perfil funcionario. |
 | cargo | String | Condicional | Cargo ocupado pelo funcionário. Obrigatório para contas com perfil funcionario. |
-| preferenciasNotificacao | Array de String | Não | Categorias de notificações selecionadas pelo cidadão. |
 | dataCadastro | Date | Sim | Data e horário de criação da conta. |
 | dataAtualizacao | Date | Não | Data e horário da última atualização dos dados da conta. |
 
@@ -28,13 +27,15 @@ Atributos principais:
 | Nome | Tipo | Obrigatoriedade | Descrição |
 | --- | --- | --- | --- |
 | _id | ObjectId | Sim | Identificador interno BSON atribuído na criação e usado nas referências entre coleções. |
-| id | String | Sim | Identificador personalizado global da ocorrência (`OC-000001`), usado na tabela e nas buscas. |
+| id | String | Sim | Identificador personalizado da ocorrência, usado pelas telas e rotas da API. |
 | protocolo | String | Sim | Código de acompanhamento apresentado ao cidadão. |
 | municipioId | ObjectId | Sim | Identificador do documento do município associado. |
 | cidadaoId | String | Sim | Identificador do cidadão associado ou valor anônimo. |
 | tipoProblema | String | Sim | Categoria do problema informado. |
 | descricao | String | Sim | Descrição do problema. |
-| localizacao | String | Sim | Endereço ou localização informada. |
+| localizacao | String | Sim | Nome da rua informado para o local. |
+| numero | String | Sim | Número do imóvel ou referência informado para o local. |
+| bairro | String | Sim | Bairro informado para o local. |
 | urgencia | String | Sim | Prioridade da ocorrência. |
 | status | String | Sim | Situação atual do chamado. |
 
@@ -46,7 +47,7 @@ Descrição: Armazena o inventário de árvores do município, incluindo identif
 | Nome | Tipo | Obrigatoriedade | Descrição |
 | --- | --- | --- | --- |
 | _id | ObjectId | Sim | Identificador interno BSON. É usado em referências como `arvoreId` nas ordens de serviço. Gerado pelo backend. |
-| codigoArv | String | Sim | Código legível e único global da árvore, gerado sequencialmente (por exemplo, `AR-00001`). |
+| codigoArv | String | Sim | Código legível e único da árvore, gerado sequencialmente com base no município (por exemplo, `ARV-CAMP-00001`). |
 | municipioId | ObjectId | Sim | Identificador do município associado. |
 | nomePopular | String | Sim | Nome popular da árvore. Obrigatório no cadastro. |
 | nomeCientifico | String | Não | Nome científico da espécie. |

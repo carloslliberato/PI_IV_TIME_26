@@ -13,12 +13,6 @@ public class CadastroOcorrenciaDTO {
     public String descricao;
     public String imagem;
 
-    // Dados preenchidos quando o cidadão marca que quer receber notificações
-    public Boolean receberNotificacoes;
-    public String nomeContato;
-    public String emailContato;
-    public String telefoneContato;
-
     // Dados complementares do chamado
     // Recebe o nome do município, resolvido para ObjectId pelo MunicipioRepository.
     public String municipioId;

@@ -379,7 +379,7 @@ function focusProfessionalMapRecord(type, recordId) {
 // Alterna entre as camadas de Árvores, Ocorrências e Ordens de Serviço no menu "Camadas"
 async function activateProfessionalMapLayer(layer) {
   activeMapDataLayer = layer;
-  document.getElementById("professionalRiskLegend").hidden = layer !== "trees";
+  document.getElementById("professionalRiskLegend").hidden = layer === "serviceOrders";
   professionalMap.removeLayer(treeMarkerLayer);
   professionalMap.removeLayer(occurrenceMarkerLayer);
   professionalMap.removeLayer(serviceOrderMarkerLayer);

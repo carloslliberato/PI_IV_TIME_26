@@ -5,59 +5,32 @@ package repository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
 
-import org.bson.BsonType;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.IndexOptions;
-import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.Sorts;
 import com.mongodb.client.model.Updates;
-import com.mongodb.client.model.UpdateOptions;
 
 import model.Ocorrencia;
 
 // Classe responsável por salvar, buscar e atualizar as ocorrências no MongoDB
 public class OcorrenciaRepository {
 
-    private static final String ID_CONTADOR_CODIGO_GLOBAL = "codigo_ocorrencia_global";
-    private static final String CAMPO_MIGRACAO_CODIGO_GLOBAL = "codigoGlobalMigrado";
-
     private final MongoCollection<Document> colecao;
-    private final MongoCollection<Document> contadores;
 
     // Conecta na coleção "ocorrencias" do banco de dados
     public OcorrenciaRepository() {
-        this(ConexaoMongo.getDatabase());
-    }
-
-    public OcorrenciaRepository(MongoDatabase db) {
-        Objects.requireNonNull(db, "O banco de ocorrências não pode ser nulo.");
+        MongoDatabase db = ConexaoMongo.getDatabase();
         this.colecao = db.getCollection("ocorrencias");
-        this.contadores = db.getCollection("contadores_ocorrencias");
-        migrarCodigosParaSequenciaGlobal();
-        this.colecao.createIndex(
-                com.mongodb.client.model.Indexes.ascending("id"),
-                new IndexOptions()
-                        .name("codigo_ocorrencia_unico")
-                        .unique(true)
-                        .partialFilterExpression(Filters.type("id", BsonType.STRING)));
     }
 
     // Salva uma nova ocorrência no MongoDB
     public Document criar(Ocorrencia o) {
-        if (o == null) {
-            throw new IllegalArgumentException("Os dados da ocorrência são obrigatórios.");
-        }
-        o.setId(gerarCodigoOcorrencia());
         Document doc = new Document("_id", o.getOcorrenciaId())
                 .append("id", o.getId())
                 .append("protocolo", o.getProtocolo())
@@ -84,65 +57,6 @@ public class OcorrenciaRepository {
 
         colecao.insertOne(doc);
         return doc;
-    }
-
-    private String gerarCodigoOcorrencia() {
-        Document contador = contadores.findOneAndUpdate(
-                Filters.eq("_id", ID_CONTADOR_CODIGO_GLOBAL),
-                Updates.inc("sequencia", 1L),
-                new FindOneAndUpdateOptions()
-                        .upsert(true)
-                        .returnDocument(ReturnDocument.AFTER));
-        if (contador == null) {
-            throw new IllegalStateException("Não foi possível gerar o código da ocorrência.");
-        }
-        long sequencia = ((Number) contador.get("sequencia")).longValue();
-        return String.format(Locale.ROOT, "OC-%06d", sequencia);
-    }
-
-    private void migrarCodigosParaSequenciaGlobal() {
-        Document contador = contadores.find(Filters.eq("_id", ID_CONTADOR_CODIGO_GLOBAL)).first();
-        if (contador != null && Boolean.TRUE.equals(contador.get(CAMPO_MIGRACAO_CODIGO_GLOBAL))) {
-            return;
-        }
-
-        List<Document> documentos = colecao.find()
-                .projection(new Document("_id", 1).append("id", 1))
-                .sort(Sorts.ascending("_id"))
-                .into(new ArrayList<>());
-
-        for (int indice = 0; indice < documentos.size(); indice++) {
-            Document documento = documentos.get(indice);
-            Object id = documento.get("_id");
-            String codigoNovo = formatarCodigoOcorrencia(indice + 1L);
-            Object codigoAtual = documento.get("id");
-            if (!codigoNovo.equals(codigoAtual)) {
-                colecao.updateOne(
-                        Filters.eq("_id", id),
-                        Updates.set("id", "MIGRANDO-OC-" + new ObjectId().toHexString()));
-            }
-        }
-
-        for (int indice = 0; indice < documentos.size(); indice++) {
-            Document documento = documentos.get(indice);
-            Object id = documento.get("_id");
-            String codigoNovo = formatarCodigoOcorrencia(indice + 1L);
-            colecao.updateOne(
-                    Filters.eq("_id", id),
-                    Updates.set("id", codigoNovo));
-        }
-
-        long sequencia = documentos.size();
-        contadores.updateOne(
-                Filters.eq("_id", ID_CONTADOR_CODIGO_GLOBAL),
-                Updates.combine(
-                        Updates.set("sequencia", sequencia),
-                        Updates.set(CAMPO_MIGRACAO_CODIGO_GLOBAL, true)),
-                new UpdateOptions().upsert(true));
-    }
-
-    private static String formatarCodigoOcorrencia(long sequencia) {
-        return String.format(Locale.ROOT, "OC-%06d", sequencia);
     }
 
     // Lista as ocorrências podendo filtrar por município, tipo, status, prioridade ou cidadão
@@ -208,7 +122,6 @@ public class OcorrenciaRepository {
         ).getModifiedCount() > 0;
     }
 
-    // Atualiza a preferência de notificações de um chamado no MongoDB
     public boolean atualizarNotificacao(String id, boolean receber, String nome, String email, String telefone) {
         return colecao.updateOne(
                 filtroPorId(id),

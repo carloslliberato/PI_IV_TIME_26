@@ -52,85 +52,6 @@ public class OrdemDeServicoController {
         }
     }
 
-    public void listarEquipesDisponiveisParaOcorrencia(Context ctx) {
-        HttpSession sessao = obterSessaoDeFuncionario(ctx);
-        if (sessao == null) return;
-        try {
-            ObjectId municipioId = ordemService.obterMunicipioDoFuncionario(
-                    sessao.getAttribute("usuarioId").toString());
-            String ocorrenciaId = ctx.pathParam("id");
-            if (!ObjectId.isValid(ocorrenciaId)) {
-                throw new IllegalArgumentException(
-                        "O identificador da ocorrência é inválido.");
-            }
-            List<Map<String, Object>> equipes = new ArrayList<>();
-            for (EquipeParaOrdemDeServico equipe
-                    : ordemService.listarEquipesDisponiveisParaOcorrencia(
-                            new ObjectId(ocorrenciaId), municipioId)) {
-                Map<String, Object> item = new HashMap<>();
-                item.put("id", converterId(equipe.id()));
-                item.put("nome", equipe.nome());
-                item.put("disponivel", equipe.disponivel());
-                equipes.add(item);
-            }
-            ctx.status(200).json(Map.of("equipes", equipes));
-        } catch (SecurityException erro) {
-            ctx.status(403).json(Map.of("erro", erro.getMessage()));
-        } catch (IllegalArgumentException erro) {
-            ctx.status(400).json(Map.of("erro", erro.getMessage()));
-        } catch (NoSuchElementException erro) {
-            ctx.status(404).json(Map.of("erro", erro.getMessage()));
-        } catch (Exception erro) {
-            erro.printStackTrace();
-            ctx.status(500).json(Map.of(
-                    "erro", "Não foi possível consultar equipes disponíveis."));
-        }
-    }
-
-    public void criarParaOcorrencia(Context ctx) {
-        HttpSession sessao = obterSessaoDeFuncionario(ctx);
-        if (sessao == null) return;
-        try {
-            ObjectId municipioId = ordemService.obterMunicipioDoFuncionario(
-                    sessao.getAttribute("usuarioId").toString());
-            String ocorrenciaId = ctx.pathParam("id");
-            if (!ObjectId.isValid(ocorrenciaId)) {
-                throw new IllegalArgumentException(
-                        "O identificador da ocorrência é inválido.");
-            }
-            JsonElement raiz = JsonParser.parseString(ctx.body());
-            if (raiz == null || !raiz.isJsonObject()) {
-                throw new IllegalArgumentException(
-                        "Informe a equipe selecionada para esta ocorrência.");
-            }
-            JsonElement equipeId = raiz.getAsJsonObject().get("equipeId");
-            if (equipeId == null || !equipeId.isJsonPrimitive()
-                    || !equipeId.getAsJsonPrimitive().isString()) {
-                throw new IllegalArgumentException(
-                        "Informe o identificador da equipe como texto.");
-            }
-            OrdemDeServico ordem = ordemService.criarParaOcorrencia(
-                    new ObjectId(ocorrenciaId), municipioId, equipeId.getAsString());
-            ctx.status(201).json(Map.of("ordem", paraResposta(ordem)));
-        } catch (JsonParseException erro) {
-            ctx.status(400).json(Map.of("erro", "Formato JSON inválido."));
-        } catch (SecurityException erro) {
-            ctx.status(403).json(Map.of("erro", erro.getMessage()));
-        } catch (IllegalArgumentException erro) {
-            ctx.status(400).json(Map.of("erro", erro.getMessage()));
-        } catch (NoSuchElementException erro) {
-            ctx.status(404).json(Map.of("erro", erro.getMessage()));
-        } catch (IllegalStateException erro) {
-            ctx.status(409).json(Map.of("erro", erro.getMessage()));
-        } catch (ValidacaoOrdemDeServicoIndisponivelException erro) {
-            ctx.status(503).json(Map.of("erro", erro.getMessage()));
-        } catch (Exception erro) {
-            erro.printStackTrace();
-            ctx.status(500).json(Map.of(
-                    "erro", "Não foi possível confirmar a criação da OS. Consulte a listagem antes de tentar novamente."));
-        }
-    }
-
     // O município vem da sessão; o cadastro recebe os valores finais editados pelo funcionário.
     public void criar(Context ctx){
         HttpSession sessao = obterSessaoDeFuncionario(ctx);
@@ -180,15 +101,11 @@ public class OrdemDeServicoController {
             ObjectId municipioId = ordemService.obterMunicipioDoFuncionario(usuarioId);
 
             List<OrdemDeServico> ordens = ordemService.listarPorMunicipio(municipioId);
-            Map<ObjectId, String> nomesEquipes = ordemService.buscarNomesEquipes(
-                    ordens, municipioId);
 
             List<Map<String, Object>> resposta = new ArrayList<>();
 
             for (OrdemDeServico ordem : ordens){
-                Map<String, Object> item = paraResposta(ordem);
-                item.put("equipeNome", nomesEquipes.get(ordem.getEquipeId()));
-                resposta.add(item);
+                resposta.add(paraResposta(ordem));
             }
 
             ctx.status(200).json(Map.of("ordens", resposta));
@@ -460,7 +377,7 @@ public class OrdemDeServicoController {
         Map<String, Object> resposta = new HashMap<>();
 
         resposta.put("id", converterId(ordem.getOrdemServicoId()));
-        resposta.put("codigo", formatarCodigo(ordem.getCodigo()));
+        resposta.put("codigo", ordem.getCodigo());
         resposta.put("intervencaoConclusaoId", converterId(ordem.getIntervencaoConclusaoId()));
         resposta.put("municipioId", converterId(ordem.getMunicipioId()));
         resposta.put("arvoreId", converterId(ordem.getArvoreId()));
@@ -477,12 +394,6 @@ public class OrdemDeServicoController {
         resposta.put("dataConclusao", converterData(ordem.getDataConclusao()));
 
         return resposta;
-    }
-
-    private String formatarCodigo(String codigo) {
-        return codigo != null && codigo.matches("OS[0-9]+")
-                ? "OS-" + codigo.substring(2)
-                : codigo;
     }
 
     // Usado apenas no detalhe e na conclusão, sem consultas adicionais para cada item da lista.
