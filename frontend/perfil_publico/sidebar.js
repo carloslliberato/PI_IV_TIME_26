@@ -185,6 +185,10 @@ if (sidebarContainer) {
   }
 
   // Carrega a logica especifica desta tela depois que o sidebar ja foi inserido no documento.
+  const requiredMarkerScript = document.createElement("script");
+  requiredMarkerScript.src = "/shared/required-field-markers.js";
+  document.body.appendChild(requiredMarkerScript);
+
   if (pageScript) {
     const script = document.createElement("script");
     script.src = pageScript;

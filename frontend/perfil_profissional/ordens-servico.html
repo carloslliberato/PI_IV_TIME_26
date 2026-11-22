@@ -16,7 +16,7 @@
 <body>
   <div class="app-shell">
     <!-- O sidebar valida login e setor, destaca Ordens de serviço e carrega o script da página. -->
-  <div id="sidebar-profissional" data-script="/perfil_profissional/ordens-servico.js?v=20261121-conclusao-fotos-v1"></div>
+  <div id="sidebar-profissional" data-script="/perfil_profissional/ordens-servico.js?v=20261122-order-submit-retry-v2"></div>
 
     <main class="main professional-main">
       <!-- Apresenta a finalidade da tela e o município relacionado aos registros. -->
@@ -25,7 +25,7 @@
           <div>
             <span class="professional-eyebrow">GESTÃO MUNICIPAL</span>
             <h1 id="serviceOrdersPageTitle">Ordens de serviço</h1>
-            <p>Consulte os serviços destinados às equipes do município.</p>
+            <p>Consulte as ordens de serviço destinadas às equipes do município.</p>
           </div>
           <div class="service-orders-heading-actions">
             <!-- Abre o cadastro autenticado de uma nova ordem. -->
@@ -48,7 +48,7 @@
             <input
               id="serviceOrdersSearch"
               type="search"
-              placeholder="Buscar por código, título, descrição ou ID..."
+              placeholder="Buscar por código de identificação, tipo, equipe..."
               autocomplete="off">
           </label>
           <label class="service-orders-select" for="serviceOrdersSort">
@@ -120,7 +120,7 @@
         <span class="service-order-detail-icon"><i class="bi bi-clipboard-plus" aria-hidden="true"></i></span>
         <div><span class="service-order-detail-eyebrow">NOVA ORDEM · <span id="createServiceOrderMunicipality"></span></span><h2 id="createServiceOrderModalTitle">Criar ordem de serviço</h2></div>
       </header>
-      <p class="service-order-create-intro">Informe o tipo de ocorrência e o local. O código será gerado ao salvar; a equipe poderá ser atribuída depois.</p>
+      <p class="service-order-create-intro">Informe o tipo de ocorrência e o local. A equipe poderá ser atribuída depois.</p>
       <p id="createServiceOrderOptionsStatus" class="service-order-create-intro" role="status" aria-live="polite"></p>
       <ul id="createServiceOrderWarnings" class="service-order-create-warnings" hidden></ul>
       <form class="service-order-create-form" id="createServiceOrderForm">
@@ -128,7 +128,7 @@
           <select id="createServiceOrderOccurrence" name="ocorrenciaId"><option value="">Sem ocorrência vinculada</option></select>
         </label>
         <div class="service-order-create-wide service-order-prefill">
-          <small>Ao selecionar uma ocorrência, os dados existentes de tipo, descrição e local serão usados na ordem.</small>
+          <small>Ao selecionar uma ocorrência, tipo, descrição, local e prioridade vêm dela. Esses campos ficam somente para leitura; você ainda pode vincular uma árvore quando a ocorrência não tiver uma.</small>
         </div>
         <label class="service-order-create-wide" for="createServiceOrderTitle">Tipo da ocorrência
           <select id="createServiceOrderTitle" name="titulo" required>
@@ -141,7 +141,10 @@
           </select>
         </label>
         <label class="service-order-create-wide" for="createServiceOrderAddress">Endereço do local
-          <input id="createServiceOrderAddress" name="endereco" maxlength="300" required autocomplete="street-address" placeholder="Nome da rua, número">
+          <input id="createServiceOrderAddress" name="endereco" maxlength="300" required autocomplete="street-address" placeholder="Nome da rua">
+        </label>
+        <label class="service-order-create-wide" for="createServiceOrderNumber">Número <span>(opcional)</span>
+          <input id="createServiceOrderNumber" name="numero" maxlength="30" placeholder="Número mais próximo">
         </label>
         <label class="service-order-create-wide" for="createServiceOrderNeighborhood">Bairro
           <input id="createServiceOrderNeighborhood" name="bairro" maxlength="120" required autocomplete="address-level3" placeholder="Informe o bairro">
@@ -151,8 +154,8 @@
             <option value="">Preencha rua e bairro para buscar árvores</option>
           </select>
         </label>
-        <label for="createServiceOrderPriority">Prioridade <span>(opcional)</span>
-          <input id="createServiceOrderPriority" name="prioridade" list="createServiceOrderPriorities" maxlength="40" placeholder="Ex.: Baixa">
+        <label for="createServiceOrderPriority">Prioridade
+          <input id="createServiceOrderPriority" name="prioridade" list="createServiceOrderPriorities" maxlength="40" required placeholder="Ex.: Baixa">
           <datalist id="createServiceOrderPriorities"><option value="Baixa"><option value="Média"><option value="Alta"><option value="Crítica"></datalist>
         </label>
         <label class="service-order-create-wide" for="createServiceOrderDescription">Descrição do serviço

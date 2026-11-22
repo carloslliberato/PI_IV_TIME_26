@@ -450,6 +450,8 @@ public class ArvoreRepository {
                         "endereco",
                         arvore.getEndereco())
 
+                .append("numero", arvore.getNumero())
+
                 .append(
                         "bairro",
                         arvore.getBairro())
@@ -533,6 +535,8 @@ public class ArvoreRepository {
 
         arvore.setEndereco(
                 documento.getString("endereco"));
+
+        arvore.setNumero(documento.getString("numero"));
 
         arvore.setBairro(
                 documento.getString("bairro"));

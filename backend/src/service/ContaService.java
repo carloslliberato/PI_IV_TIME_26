@@ -53,6 +53,15 @@ public class ContaService {
                 .orElse("");
     }
 
+    // Resolve o nome do município associado à conta autenticada.
+    public String buscarNomeMunicipioDaConta(String usuarioId) {
+        String municipioId = buscarMunicipioId(usuarioId);
+        if (municipioId.isBlank()) {
+            return "";
+        }
+        return municipioRepository.buscarNomePorId(new ObjectId(municipioId)).orElse("");
+    }
+
     // Busca o ID do município pelo nome
     private ObjectId buscarMunicipio(String nomeMunicipio) {
 

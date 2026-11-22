@@ -18,6 +18,7 @@ public class Arvore {
 
     // Localização
     private String endereco;
+    private String numero;
     private String bairro;
     private Double latitude;
     private Double longitude;
@@ -105,6 +106,10 @@ public class Arvore {
     public String getEndereco() {
         return endereco;
     }
+
+    public String getNumero() { return numero; }
+
+    public void setNumero(String numero) { this.numero = numero; }
 
     public String getBairro() {
         return bairro;

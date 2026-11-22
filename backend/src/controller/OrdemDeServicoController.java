@@ -63,7 +63,7 @@ public class OrdemDeServicoController {
                 throw new IllegalArgumentException("Informe um objeto JSON com os dados da nova OS.");
             JsonObject objeto = raiz.getAsJsonObject();
             for (String campo : List.of("titulo", "descricao", "arvoreId", "ocorrenciaId",
-                    "equipeId", "prioridade", "observacoes", "endereco", "bairro")){
+                    "equipeId", "prioridade", "observacoes", "endereco", "numero", "bairro")){
                 JsonElement valor = objeto.get(campo);
                 if (valor != null && !valor.isJsonNull()
                         && (!valor.isJsonPrimitive() || !valor.getAsJsonPrimitive().isString()))
@@ -494,6 +494,7 @@ public class OrdemDeServicoController {
         resposta.put("observacoes", ordem.getObservacoes());
         resposta.put("motivoCancelamento", ordem.getMotivoCancelamento());
         resposta.put("endereco", ordem.getEndereco());
+        resposta.put("numero", ordem.getNumero());
         resposta.put("bairro", ordem.getBairro());
         resposta.put("latitude", ordem.getLatitude());
         resposta.put("longitude", ordem.getLongitude());

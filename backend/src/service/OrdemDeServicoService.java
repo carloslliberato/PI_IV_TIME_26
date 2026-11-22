@@ -95,6 +95,9 @@ public class OrdemDeServicoService {
                     canonico.getPrioridade(), null, canonico.getEndereco(), canonico.getBairro());
         }
         var cadastro = validador.prepararCadastro(dadosParaValidar);
+        if (cadastro.prioridade() == null || cadastro.prioridade().isBlank()) {
+            throw new IllegalArgumentException("Informe a prioridade da ordem.");
+        }
         String endereco = cadastro.endereco();
         String bairro = cadastro.bairro();
         String numero = null;
@@ -104,9 +107,6 @@ public class OrdemDeServicoService {
             endereco = primeiroTexto(ocorrencia, "localizacao", "endereco");
             numero = primeiroTexto(ocorrencia, "numero");
             bairro = primeiroTexto(ocorrencia, "bairro");
-            if (endereco != null && numero != null && !endereco.endsWith(numero)) {
-                endereco += ", " + numero;
-            }
             latitude = coordenada(ocorrencia.get("latitude"), -90, 90);
             longitude = coordenada(ocorrencia.get("longitude"), -180, 180);
             if (latitude == null || longitude == null) {
@@ -114,8 +114,17 @@ public class OrdemDeServicoService {
                 longitude = null;
             }
         }
-        var coordenadas = geocodificarSeNecessario(
-                municipioId, endereco, numero, bairro, latitude, longitude);
+        boolean arvoreVinculada = cadastro.arvoreId() != null;
+        if (arvoreVinculada && (latitude == null || longitude == null)) {
+            Document arvore = ordemRepository.buscarArvoreParaOrdem(
+                    new ObjectId(cadastro.arvoreId()), municipioId);
+            latitude = coordenada(arvore.get("latitude"), -90, 90);
+            longitude = coordenada(arvore.get("longitude"), -180, 180);
+        }
+        var coordenadas = latitude != null && longitude != null
+                ? new Geocodificador.Coordenadas(latitude, longitude)
+                : arvoreVinculada ? null
+                : geocodificarSeNecessario(municipioId, endereco, numero, bairro, null, null);
         latitude = coordenadas == null ? null : coordenadas.latitude();
         longitude = coordenadas == null ? null : coordenadas.longitude();
         String codigo;
@@ -131,6 +140,7 @@ public class OrdemDeServicoService {
                 cadastro.ocorrenciaId() == null ? null : new ObjectId(cadastro.ocorrenciaId()), null, cadastro.titulo(), cadastro.descricao(),
                 cadastro.prioridade(), cadastro.observacoes(), codigo, endereco, bairro,
                 latitude, longitude);
+        ordem.setNumero(ocorrencia != null ? numero : dados == null ? null : dados.getNumero());
         return ordemRepository.criarComReferencias(ordem);
     }
 
@@ -148,9 +158,6 @@ public class OrdemDeServicoService {
                 : arvore instanceof String texto && ObjectId.isValid(texto) ? texto : null;
         String endereco = primeiroTexto(ocorrencia, "localizacao", "endereco");
         String numero = primeiroTexto(ocorrencia, "numero");
-        if (endereco != null && numero != null && !endereco.endsWith(numero)) {
-            endereco += ", " + numero;
-        }
         return new CadastroOrdemDeServicoDTO(arvoreId, ocorrenciaId.toHexString(), null,
                 titulo, descricao, primeiroTexto(ocorrencia, "prioridade", "urgencia"),
                 null, endereco, primeiroTexto(ocorrencia, "bairro"));
@@ -259,6 +266,7 @@ public class OrdemDeServicoService {
                 bairro,
                 coordenadas == null ? null : coordenadas.latitude(),
                 coordenadas == null ? null : coordenadas.longitude());
+        ordem.setNumero(numero);
         return ordemRepository.criarParaOcorrencia(ordem,
                 "Ordem " + codigo + " atribuída à equipe " + idEquipe.toHexString());
     }

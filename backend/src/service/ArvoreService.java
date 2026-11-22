@@ -204,7 +204,7 @@ public class ArvoreService {
 
     private void geocodificarEndereco(Arvore arvore, String nomeMunicipio) {
         var coordenadas = geocodificador.geocodificar(
-                arvore.getEndereco(), null, arvore.getBairro(), nomeMunicipio);
+                arvore.getEndereco(), arvore.getNumero(), arvore.getBairro(), nomeMunicipio);
         if (coordenadas.isPresent()) {
             arvore.setLatitude(coordenadas.get().latitude());
             arvore.setLongitude(coordenadas.get().longitude());

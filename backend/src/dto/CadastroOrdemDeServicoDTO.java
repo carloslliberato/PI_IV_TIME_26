@@ -12,6 +12,7 @@ public class CadastroOrdemDeServicoDTO{
     private String prioridade;
     private String observacoes;
     private String endereco;
+    private String numero;
     private String bairro;
 
     public CadastroOrdemDeServicoDTO() {
@@ -81,6 +82,8 @@ public class CadastroOrdemDeServicoDTO{
     public String getEndereco(){
         return endereco;
     }
+
+    public String getNumero(){ return numero; }
 
     public String getBairro(){
         return bairro;

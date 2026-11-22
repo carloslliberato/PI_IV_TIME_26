@@ -80,7 +80,7 @@
             <input
               id="treeSearchInput"
               type="search"
-              placeholder="Buscar árvore, espécie, bairro ou endereço..."
+              placeholder="Buscar código de identificação, nome, espécie, bairro, endereço..."
               autocomplete="off"
             >
           </label>
@@ -133,7 +133,7 @@
               <i class="bi bi-geo-alt-fill"></i>
 
               <span id="treeMunicipality">
-                Campinas - SP
+                Carregando município...
               </span>
             </span>
           </div>
@@ -407,7 +407,7 @@
           </h2>
 
           <p>
-            Cadastro salvo no MongoDB pelo Javalin.
+            Cadastro salvo no banco de dados.
           </p>
         </div>
 
@@ -459,7 +459,12 @@
             name="endereco"
             required
             maxlength="250"
-            placeholder="Rua, número ou referência">
+            placeholder="Nome da rua">
+        </label>
+
+        <label class="form-field-wide">
+          Número <span>(opcional)</span>
+          <input name="numero" maxlength="30" placeholder="Número mais próximo">
         </label>
 
         <p class="form-field-wide tree-location-note">

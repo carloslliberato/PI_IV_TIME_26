@@ -275,6 +275,18 @@ public class OrdemDeServicoRepository {
         return ocorrencia;
     }
 
+    public Document buscarArvoreParaOrdem(ObjectId arvoreId, ObjectId municipioId) {
+        if (arvoreId == null || municipioId == null) {
+            throw new IllegalArgumentException("Informe a árvore e o município.");
+        }
+        Document arvore = arvores.find(and(eq("_id", arvoreId),
+                eq("municipioId", municipioId), ne("ativa", false))).first();
+        if (!referenciaCanonica(arvore, municipioId)) {
+            throw new NoSuchElementException("Árvore não encontrada ou inativa nesse município.");
+        }
+        return arvore;
+    }
+
     public List<EquipeParaOrdemDeServico> listarEquipesDisponiveisParaOcorrencia(
             ObjectId ocorrenciaId,
             ObjectId municipioId) {
@@ -808,6 +820,7 @@ public class OrdemDeServicoRepository {
         documento.append("observacoes", ordem.getObservacoes());
         documento.append("motivoCancelamento", ordem.getMotivoCancelamento());
         documento.append("endereco", ordem.getEndereco());
+        documento.append("numero", ordem.getNumero());
         documento.append("bairro", ordem.getBairro());
         documento.append("latitude", ordem.getLatitude());
         documento.append("longitude", ordem.getLongitude());
@@ -836,7 +849,7 @@ public class OrdemDeServicoRepository {
         Instant instanteAtualizacao = dataAtualizacao == null ? null : dataAtualizacao.toInstant();
         Instant instanteConclusao = dataConclusao == null ? null : dataConclusao.toInstant();
 
-        return new OrdemDeServico(
+        OrdemDeServico ordem = new OrdemDeServico(
             documento.getObjectId("_id"),
             documento.getObjectId("municipioId"),
             objectIdPersistido(documento.get("arvoreId")),
@@ -857,6 +870,8 @@ public class OrdemDeServicoRepository {
             documento.getString("bairro"),
             coordenadaPersistida(documento.get("latitude")),
             coordenadaPersistida(documento.get("longitude")));
+        ordem.setNumero(documento.getString("numero"));
+        return ordem;
     }
 
     private Double coordenadaPersistida(Object valor) {

@@ -81,8 +81,13 @@
               <div class="col-md-6">
                 <label class="form-label" for="reportAddress">Endereço do local <span>*</span></label>
                 <input class="form-control" id="reportAddress" name="endereco" type="text"
-                  placeholder="Nome da rua, número" required minlength="5">
-                <div class="invalid-feedback">Informe a rua e o número do local.</div>
+                  placeholder="Nome da rua" required minlength="5">
+                <div class="invalid-feedback">Informe o nome da rua.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="reportNumber">Número <span class="optional-label">(opcional)</span></label>
+                <input class="form-control" id="reportNumber" name="numero" type="text" maxlength="30"
+                  placeholder="Número mais próximo">
               </div>
               <div class="col-md-6">
                 <label class="form-label" for="reportNeighborhood">Bairro <span>*</span></label>

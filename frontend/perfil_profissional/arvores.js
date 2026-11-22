@@ -9,11 +9,6 @@
 
 (() => {
 
-  const MUNICIPIOS = {
-    "6ae666a7680e8a4330a1ab66": "Campinas - SP",
-    "6ae7854cb9962492d01e6af6": "Hortolândia - SP",
-    "6ae7856ab9962492d01e6af7": "Sumaré - SP"
-  };
   let municipioIdFuncionario = null;
 
   const el = id => document.getElementById(id);
@@ -252,11 +247,11 @@
 
     const sessao = await requisicao("/api/contas/sessao");
     municipioIdFuncionario = String(sessao.municipioId || "").toLowerCase();
-    const nomeMunicipio = MUNICIPIOS[municipioIdFuncionario];
-    if (!nomeMunicipio) {
+    const nomeMunicipio = typeof sessao.municipioNome === "string" ? sessao.municipioNome.trim() : "";
+    if (!municipioIdFuncionario) {
       throw new Error("O município do funcionário não está disponível na sessão.");
     }
-    el("treeMunicipality").textContent = nomeMunicipio;
+    el("treeMunicipality").textContent = nomeMunicipio || "Município de atuação";
 
     const registros = await requisicao("/api/arvores");
 
@@ -432,6 +427,7 @@
       nomeCientifico: v.nomeCientifico.value.trim(),
       especie: v.especie.value.trim(),
       endereco: v.endereco.value.trim(),
+      numero: v.numero.value.trim() || null,
       bairro: v.bairro.value.trim(),
 
       idade: v.idade.value.trim(),
@@ -523,7 +519,7 @@
       }
 
       const acao = metodo === "POST"
-        ? "Árvore cadastrada no MongoDB!"
+        ? "Árvore cadastrada no banco de dados."
         : "Árvore atualizada no MongoDB!";
       const temCoordenadas = Number.isFinite(salva?.latitude)
         && Number.isFinite(salva?.longitude);
@@ -730,6 +726,7 @@
     const feedback = el("newInterventionFeedback");
     form.elements.arvoreNome.value = arvoreSelecionada.nomePopular || arvoreSelecionada.especie || "\u00c1rvore";
     form.elements.endereco.value = arvoreSelecionada.endereco || "";
+    form.elements.numero.value = arvoreSelecionada.numero || "";
     form.elements.bairro.value = arvoreSelecionada.bairro || "";
     form.elements.tipo.value = "";
     form.elements.prioridade.value = "";

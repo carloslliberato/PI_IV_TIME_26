@@ -22,6 +22,7 @@ public class OrdemDeServico {
     private String observacoes;
     private String motivoCancelamento;
     private String endereco;
+    private String numero;
     private String bairro;
     private Double latitude;
     private Double longitude;
@@ -326,6 +327,10 @@ public class OrdemDeServico {
     public String getEndereco(){
         return endereco;
     }
+
+    public String getNumero(){ return numero; }
+
+    public void setNumero(String numero){ this.numero = numero; }
 
     public String getBairro(){
         return bairro;

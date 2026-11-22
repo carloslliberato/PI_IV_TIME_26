@@ -191,6 +191,10 @@
   });
 
   // Carrega a lógica específica da tela depois de montar o sidebar.
+  const requiredMarkerScript = document.createElement("script");
+  requiredMarkerScript.src = "/shared/required-field-markers.js";
+  document.body.appendChild(requiredMarkerScript);
+
   if (scriptDaTela) {
 
     const script = document.createElement("script");

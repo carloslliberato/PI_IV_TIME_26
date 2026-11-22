@@ -165,6 +165,7 @@ function initializeReportForm() {
       "#reportAddress, #reportLocation, #localizacao, #endereco",
       'input[type="text"]:not(#reportContactName)'
     );
+    const numeroDigitado = document.querySelector("#reportNumber")?.value.trim() || null;
     const bairroDigitado = obterValorDoCampo("#reportNeighborhood, #bairro", 'input[name*="bairro" i]');
     const descricaoDigitada = obterValorDoCampo("#reportDescription, #descricao", "textarea");
     const municipioSelecionado = obterValorDoCampo("#reportMunicipality, #municipioId", 'select[name*="municipio" i]');
@@ -177,6 +178,7 @@ function initializeReportForm() {
     const dadosChamado = {
       tipoProblema: tipoSelecionado,
       localizacao: enderecoDigitado,
+      numero: numeroDigitado,
       bairro: bairroDigitado,
       descricao: descricaoDigitada,
       prioridade: obterValorDoCampo("#reportPriority", 'select[name="prioridade"]'),
