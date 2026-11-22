@@ -45,6 +45,10 @@ public class ValidadorArvore {
         Double latitude = pedido.getLatitude();
         Double longitude = pedido.getLongitude();
 
+        if (latitude == null && longitude == null) {
+            return;
+        }
+
         if (latitude == null ||
                 !Double.isFinite(latitude) ||
                 latitude < -90 ||

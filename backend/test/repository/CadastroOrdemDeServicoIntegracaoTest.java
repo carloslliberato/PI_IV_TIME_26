@@ -123,6 +123,26 @@ class CadastroOrdemDeServicoIntegracaoTest {
     }
 
     @Test
+    void criaOrdemSemArvorePersistindoEnderecoBairroECoordenadas(){
+        OrdemDeServico nova = new OrdemDeServico(MUNICIPIO, null, null, null,
+                "Galho quebrado", "Remover o galho.", "Alta", null, "OS020263",
+                "Rua das Flores, 25", "Centro", -22.9, -47.06);
+
+        OrdemDeServico salva = repositorio.criarComReferencias(nova);
+        Document persistida = banco.getCollection("ordens_servico")
+                .find(eq("_id", salva.getOrdemServicoId())).first();
+
+        assertNull(salva.getArvoreId());
+        assertEquals("Rua das Flores, 25", persistida.getString("endereco"));
+        assertEquals("Centro", persistida.getString("bairro"));
+        assertEquals(-22.9, persistida.getDouble("latitude"));
+        assertEquals(-47.06, persistida.getDouble("longitude"));
+        OrdemDeServico reconstruida = repositorio.buscarPorId(salva.getOrdemServicoId()).orElseThrow();
+        assertEquals("Rua das Flores, 25", reconstruida.getEndereco());
+        assertEquals(-22.9, reconstruida.getLatitude());
+    }
+
+    @Test
     void criaOSDaOcorrenciaEReservaEquipeDisponivelNaMesmaTransacao(){
         ObjectId equipeId = new ObjectId("400000000000000000000001");
         ObjectId equipeIndisponivelId = new ObjectId("400000000000000000000002");

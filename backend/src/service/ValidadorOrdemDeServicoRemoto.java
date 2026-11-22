@@ -32,16 +32,17 @@ public class ValidadorOrdemDeServicoRemoto {
                 ? PedidoDeValidacaoOrdemDeServico.semDados(Operacao.CADASTRO, null)
                 : PedidoDeValidacaoOrdemDeServico.cadastro(dados.getArvoreId(), dados.getOcorrenciaId(),
                         dados.getEquipeId(), dados.getTitulo(), dados.getDescricao(),
-                        dados.getPrioridade(), dados.getObservacoes());
+                        dados.getPrioridade(), dados.getObservacoes(),
+                        dados.getEndereco(), dados.getBairro());
         CadastroValidado cadastro = enviar(pedido).getCadastro();
         // A conversão confirma o contrato da resposta antes de reservar o código ou gravar.
         try {
             if (cadastro.ocorrenciaId() != null) new ObjectId(cadastro.ocorrenciaId());
             if (cadastro.arvoreId() != null) {
                 new ObjectId(cadastro.arvoreId());
-            } else if (cadastro.ocorrenciaId() == null) {
-                throw new IllegalArgumentException(
-                        "Resposta de cadastro sem árvore nem ocorrência.");
+            } else if (cadastro.ocorrenciaId() == null
+                    && (cadastro.endereco() == null || cadastro.bairro() == null)) {
+                throw new IllegalArgumentException("Resposta de cadastro sem local.");
             }
             if (cadastro.titulo() == null || cadastro.descricao() == null) {
                 throw new IllegalArgumentException("Resposta de cadastro incompleta.");

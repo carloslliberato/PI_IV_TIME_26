@@ -103,6 +103,11 @@
       texto: "Relatórios",
       icone: "bi-file-earmark-bar-graph",
       caminho: "/relatorio"
+    },
+    {
+      texto: "Perfil público",
+      icone: "bi-globe2",
+      caminho: "/perfil-publico"
     }
   ];
 

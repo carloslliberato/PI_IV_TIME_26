@@ -1,9 +1,10 @@
-// Autor: Sophia Fernandes
+// Autor: Sophia Fernandes, Gabrielle Mota
 
 package service;
 
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -16,9 +17,11 @@ import repository.OcorrenciaRepository;
 
 // Classe com as regras de negócio e validações das ocorrências
 public class OcorrenciaService {
+    private static final Logger LOGGER = Logger.getLogger(OcorrenciaService.class.getName());
 
     private final OcorrenciaRepository repository;
     private final MunicipioRepository municipioRepository;
+    private final Geocodificador geocodificador;
 
     // Lista de status e prioridades permitidos no sistema
     private static final Set<String> STATUS_VALIDOS = Set.of(
@@ -30,28 +33,38 @@ public class OcorrenciaService {
     );
 
     public OcorrenciaService(OcorrenciaRepository repository, MunicipioRepository municipioRepository) {
+        this(repository, municipioRepository, new NominatimGeocodificador());
+    }
+
+    public OcorrenciaService(
+            OcorrenciaRepository repository,
+            MunicipioRepository municipioRepository,
+            Geocodificador geocodificador) {
         this.repository = repository;
         this.municipioRepository = municipioRepository;
+        if (geocodificador == null) {
+            throw new IllegalArgumentException("O geocodificador não pode ser nulo.");
+        }
+        this.geocodificador = geocodificador;
     }
 
     // Valida os campos do formulário e cria um novo chamado
     public Document abrirChamado(CadastroOcorrenciaDTO dto) {
+        // Etapa 1: rejeita requisições sem dados.
         if (dto == null) {
             throw new IllegalArgumentException("Os dados da ocorrência não foram enviados.");
         }
 
-        // Aceita tanto tipoProblema quanto tipoOcorrencia vindos do front-end
+        // Etapa 2: compatibiliza os nomes de campos usados pelas versões do front-end.
         String tipo = (dto.tipoProblema != null && !dto.tipoProblema.isBlank()) ? dto.tipoProblema : dto.tipoOcorrencia;
         String local = (dto.localizacao != null && !dto.localizacao.isBlank()) ? dto.localizacao : dto.endereco;
 
+        // Etapa 3: valida os dados obrigatórios antes de consultar o banco.
         if (tipo == null || tipo.isBlank()) {
             throw new IllegalArgumentException("Selecione o tipo de ocorrência.");
         }
         if (local == null || local.isBlank()) {
             throw new IllegalArgumentException("Informe o endereço do local.");
-        }
-        if (dto.numero == null || dto.numero.isBlank()) {
-            throw new IllegalArgumentException("Informe o número do local.");
         }
         if (dto.bairro == null || dto.bairro.isBlank()) {
             throw new IllegalArgumentException("Informe o bairro do local.");
@@ -62,20 +75,20 @@ public class OcorrenciaService {
         if (dto.municipioId == null || dto.municipioId.isBlank()) {
             throw new IllegalArgumentException("Selecione o município da ocorrência.");
         }
+
+        // Etapa 4: resolve o nome do município para o identificador armazenado na ocorrência.
         String municipioNome = dto.municipioId.trim();
         ObjectId municipioId = municipioRepository.buscarIdPorNome(municipioNome)
                 .orElseThrow(() -> new IllegalArgumentException("Município não encontrado."));
 
-        // Monta o objeto Ocorrencia com os dados validados
+        // Etapa 5: monta a ocorrência com os campos já validados e normalizados.
         Ocorrencia nova = new Ocorrencia();
         nova.setTipoProblema(tipo.trim());
         nova.setLocalizacao(local.trim());
-        nova.setNumero(dto.numero.trim());
+        nova.setNumero(dto.numero == null || dto.numero.isBlank() ? null : dto.numero.trim());
         nova.setBairro(dto.bairro.trim());
         nova.setDescricao(dto.descricao.trim());
         nova.setImagem(dto.imagem);
-        nova.setLatitude(dto.latitude);
-        nova.setLongitude(dto.longitude);
 
         if (dto.urgencia != null && !dto.urgencia.isBlank()) {
             nova.setUrgencia(dto.urgencia);
@@ -86,16 +99,21 @@ public class OcorrenciaService {
         }
         nova.setArvoreId(dto.arvoreId);
 
-        // Define coordenadas reais ou gera um ponto válido em Campinas caso o cidadão tenha aberto pelo formulário público
-        if (dto.latitude != null && dto.longitude != null) {
-            nova.setLatitude(dto.latitude);
-            nova.setLongitude(dto.longitude);
+        // Etapa 6: tenta localizar a árvore pelo endereço informado no chamado.
+        var coordenadas = geocodificador.geocodificar(
+                nova.getLocalizacao(), nova.getNumero(), nova.getBairro(), municipioNome);
+        if (coordenadas.isPresent()) {
+            // Se houver correspondência, guarda o ponto para exibição nos mapas.
+            nova.setLatitude(coordenadas.get().latitude());
+            nova.setLongitude(coordenadas.get().longitude());
         } else {
-            double[] coords = obterCoordenadasPorBairro(nova.getBairro(), municipioNome);
-            nova.setLatitude(coords[0]);
-            nova.setLongitude(coords[1]);
+            // Sem correspondência, mantém o chamado, mas não inventa coordenadas.
+            nova.setLatitude(null);
+            nova.setLongitude(null);
+            LOGGER.warning("Endereço da ocorrência não geocodificado; as coordenadas serão omitidas.");
         }
 
+        // Etapa 7: persiste a ocorrência e retorna o documento criado.
         return repository.criar(nova);
     }
 
@@ -144,17 +162,4 @@ public class OcorrenciaService {
                 dto != null ? dto.telefoneContato : null);
     }
 
-    // Retorna coordenadas aproximadas para que ocorrências sem GPS apareçam no mapa.
-    private double[] obterCoordenadasPorBairro(String bairro, String municipioNome) {
-        String b = (bairro != null) ? bairro.toLowerCase() : "";
-        if (b.contains("taquaral")) return new double[]{-22.8754, -47.0475};
-        if (b.contains("cambu")) return new double[]{-22.8942, -47.0531};
-        if (b.contains("chapad")) return new double[]{-22.8895, -47.0742};
-        if (b.contains("barao") || b.contains("barão")) return new double[]{-22.8228, -47.0805};
-        if ("Sumaré".equalsIgnoreCase(municipioNome)) return new double[]{-22.8214, -47.2660};
-        if ("Hortolândia".equalsIgnoreCase(municipioNome)) return new double[]{-22.8583, -47.2200};
-        // Padrão: Centro de Campinas (com leve variação para não sobrepor pinos)
-        double offset = (Math.random() - 0.5) * 0.006;
-        return new double[]{-22.9056 + offset, -47.0608 + offset};
-    }
 }

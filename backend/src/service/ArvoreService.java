@@ -12,21 +12,36 @@ import protocolo.ResultadoValidacaoArvore;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.logging.Logger;
 
 public class ArvoreService {
+    private static final Logger LOGGER = Logger.getLogger(ArvoreService.class.getName());
 
     private final ArvoreRepository repository;
     private final MunicipioRepository municipioRepository;
     private final ConexaoServidor conexaoServidor;
+    private final Geocodificador geocodificador;
 
     public ArvoreService(
             ArvoreRepository repository,
             MunicipioRepository municipioRepository,
             ConexaoServidor conexaoServidor) {
+        this(repository, municipioRepository, conexaoServidor, new NominatimGeocodificador());
+    }
+
+    public ArvoreService(
+            ArvoreRepository repository,
+            MunicipioRepository municipioRepository,
+            ConexaoServidor conexaoServidor,
+            Geocodificador geocodificador) {
 
         this.repository = repository;
         this.municipioRepository = municipioRepository;
         this.conexaoServidor = conexaoServidor;
+        if (geocodificador == null) {
+            throw new IllegalArgumentException("O geocodificador não pode ser nulo.");
+        }
+        this.geocodificador = geocodificador;
     }
 
     private void validarNoServidor(Arvore arvore) {
@@ -128,14 +143,17 @@ public class ArvoreService {
     }
 
     public Arvore cadastrar(Arvore arvore) {
-
-        validarNoServidor(arvore);
+        limparCoordenadasRecebidas(arvore);
         validarDados(arvore);
+
+        String nomeMunicipio = municipioRepository.buscarNomePorId(arvore.getMunicipioId())
+                .orElseThrow(() -> new IllegalArgumentException("Municipio nao encontrado."));
+        geocodificarEndereco(arvore, nomeMunicipio);
+        validarDados(arvore);
+        validarNoServidor(arvore);
 
         // O identificador é sempre gerado como ObjectId pelo backend.
         arvore.setId(null);
-        String nomeMunicipio = municipioRepository.buscarNomePorId(arvore.getMunicipioId())
-                .orElseThrow(() -> new IllegalArgumentException("Municipio nao encontrado."));
         arvore.setCodigoArv(repository.gerarCodigoArv(arvore.getMunicipioId(), nomeMunicipio));
         arvore.setAtiva(true);
 
@@ -149,10 +167,14 @@ public class ArvoreService {
             Arvore novosDados) {
 
         validarId(id);
-        validarNoServidor(novosDados);
-        validarDados(novosDados);
-
         Arvore arvoreAtual = buscarPorId(id);
+        limparCoordenadasRecebidas(novosDados);
+        validarDados(novosDados);
+        String nomeMunicipio = municipioRepository.buscarNomePorId(novosDados.getMunicipioId())
+                .orElseThrow(() -> new IllegalArgumentException("Municipio nao encontrado."));
+        geocodificarEndereco(novosDados, nomeMunicipio);
+        validarDados(novosDados);
+        validarNoServidor(novosDados);
 
         novosDados.setId(arvoreAtual.getId());
         novosDados.setCodigoArv(arvoreAtual.getCodigoArv());
@@ -170,6 +192,27 @@ public class ArvoreService {
         }
 
         return novosDados;
+    }
+
+    private void limparCoordenadasRecebidas(Arvore arvore) {
+        if (arvore == null) {
+            throw new IllegalArgumentException("Os dados da arvore sao obrigatorios.");
+        }
+        arvore.setLatitude(null);
+        arvore.setLongitude(null);
+    }
+
+    private void geocodificarEndereco(Arvore arvore, String nomeMunicipio) {
+        var coordenadas = geocodificador.geocodificar(
+                arvore.getEndereco(), null, arvore.getBairro(), nomeMunicipio);
+        if (coordenadas.isPresent()) {
+            arvore.setLatitude(coordenadas.get().latitude());
+            arvore.setLongitude(coordenadas.get().longitude());
+        } else {
+            arvore.setLatitude(null);
+            arvore.setLongitude(null);
+            LOGGER.warning("Endereço da árvore não geocodificado; as coordenadas serão omitidas.");
+        }
     }
 
     public Arvore alterarStatus(
@@ -232,6 +275,13 @@ public class ArvoreService {
             throw new IllegalArgumentException("Municipio nao encontrado.");
         }
 
+        if (arvore.getEndereco() == null || arvore.getEndereco().isBlank()) {
+            throw new IllegalArgumentException("O endereço da árvore é obrigatório.");
+        }
+        if (arvore.getBairro() == null || arvore.getBairro().isBlank()) {
+            throw new IllegalArgumentException("O bairro da árvore é obrigatório.");
+        }
+
         if (arvore.getRisco() == null) {
             throw new IllegalArgumentException(
                     "O nivel de risco e obrigatorio.");
@@ -239,23 +289,14 @@ public class ArvoreService {
 
         Double latitude = arvore.getLatitude();
         Double longitude = arvore.getLongitude();
-
-        if (latitude == null ||
-                !Double.isFinite(latitude) ||
-                latitude < -90 ||
-                latitude > 90) {
-
-            throw new IllegalArgumentException(
-                    "Latitude invalida.");
+        if ((latitude == null) != (longitude == null)) {
+            throw new IllegalArgumentException("Informe latitude e longitude juntas.");
         }
-
-        if (longitude == null ||
-                !Double.isFinite(longitude) ||
-                longitude < -180 ||
-                longitude > 180) {
-
-            throw new IllegalArgumentException(
-                    "Longitude invalida.");
+        if (latitude != null && (!Double.isFinite(latitude) || latitude < -90 || latitude > 90)) {
+            throw new IllegalArgumentException("Latitude invalida.");
+        }
+        if (longitude != null && (!Double.isFinite(longitude) || longitude < -180 || longitude > 180)) {
+            throw new IllegalArgumentException("Longitude invalida.");
         }
 
         validarMedida(

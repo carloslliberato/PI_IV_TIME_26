@@ -26,7 +26,9 @@ import service.ConexaoServidor;
 import service.ContaService;
 import service.EquipeService;
 import service.EspecieService;
+import service.Geocodificador;
 import service.IntervencaoService;
+import service.NominatimGeocodificador;
 import service.OcorrenciaService;
 import service.OrdemDeServicoService;
 import service.RecuperacaoSenhaService;
@@ -79,11 +81,15 @@ public class ConfiguracaoRotas {
         ArvoreRepository arvoreRepository =
                 new ArvoreRepository();
 
+        Geocodificador geocodificador =
+                new NominatimGeocodificador();
+
         ArvoreService arvoreService =
                 new ArvoreService(
                         arvoreRepository,
                         municipioRepository,
-                        conexaoServidor);
+                        conexaoServidor,
+                        geocodificador);
 
         this.arvoreController =
                 new ArvoreController(arvoreService);
@@ -111,7 +117,8 @@ public class ConfiguracaoRotas {
                 new OcorrenciaRepository();
 
         OcorrenciaService ocorrenciaService =
-                new OcorrenciaService(ocorrenciaRepository, municipioRepository);
+                new OcorrenciaService(
+                        ocorrenciaRepository, municipioRepository, geocodificador);
 
         this.ocorrenciaController =
                 new OcorrenciaController(ocorrenciaService);
@@ -122,7 +129,9 @@ public class ConfiguracaoRotas {
                 new OrdemDeServicoService(
                         ordemRepository,
                         contaRepository,
-                        conexaoServidor);
+                        conexaoServidor,
+                        municipioRepository,
+                        geocodificador);
 
         this.ordemDeServicoController =
                 new OrdemDeServicoController(ordemService);
@@ -282,6 +291,15 @@ public class ConfiguracaoRotas {
         servidorHttp.get(
                 "/api/ordens-servico/opcoes-cadastro",
                 ctx -> ordemDeServicoController.opcoesCadastro(ctx));
+
+        // As rotas específicas da ocorrência vêm antes da consulta genérica de OS por ID.
+        servidorHttp.get(
+                "/api/ordens-servico/ocorrencias/{ocorrenciaId}/equipes-disponiveis",
+                ctx -> ordemDeServicoController.listarEquipesDisponiveisParaOcorrencia(ctx));
+
+        servidorHttp.post(
+                "/api/ordens-servico/ocorrencias/{ocorrenciaId}",
+                ctx -> ordemDeServicoController.criarParaOcorrencia(ctx));
 
         servidorHttp.get(
                 "/api/ordens-servico/{id}",

@@ -159,13 +159,15 @@
 .service-order-create-form input, .service-order-create-form textarea, .service-order-create-form select { box-sizing: border-box; }
 .service-order-prefill { display: flex; align-items: center; gap: 14px; }
 .service-order-prefill small { color: #718078; font-size: 11px; line-height: 1.5; }
-.service-order-prefill button { flex: 0 0 auto; }
-.service-order-refresh-options { margin-top: 12px; }
 .service-order-create-warnings { padding: 12px 12px 12px 30px; border: 1px solid #eadcaa; border-radius: 8px; background: #fff9e9; color: #725c20; font-size: 12px; line-height: 1.6; }
 .service-order-create-feedback.is-error, .service-order-create-intro.is-error { color: #a03727; }
 .service-order-create-recovery { display: flex; flex-wrap: wrap; gap: 10px; }
 .service-order-create-form :disabled { opacity: .65; cursor: not-allowed; }
 .service-order-create-recovery [hidden], .service-order-create-warnings[hidden] { display: none; }
+
+/* Confirma o cadastro após o modal fechar. */
+.service-order-toast { position: fixed; z-index: 1400; right: 22px; bottom: 22px; max-width: min(420px, calc(100vw - 32px)); padding: 13px 17px; border: 1px solid #d5e5da; border-radius: 10px; background: #fff; color: #246244; font-size: 12px; font-weight: 700; box-shadow: 0 8px 28px rgba(17, 49, 32, .16); }
+.service-order-toast[hidden] { display: none; }
 @media (max-width: 720px) {
   .service-order-prefill { align-items: stretch; flex-direction: column; }
   .service-order-create-recovery { flex-direction: column; }

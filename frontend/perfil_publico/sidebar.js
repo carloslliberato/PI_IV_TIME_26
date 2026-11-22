@@ -3,7 +3,7 @@
 // Define a estrutura HTML reutilizada como menu lateral nas paginas do portal publico.
 const publicSidebarMarkup = `
 <aside class="sidebar">
-  <a class="brand brand-link" href="/" aria-label="Arboriza - página inicial">
+  <a class="brand brand-link" href="/perfil-publico" aria-label="Arboriza - página inicial">
     <div class="brand-mark"><i class="bi bi-tree-fill"></i></div>
     <div>
       <div class="brand-name">Arboriza</div>
@@ -39,14 +39,14 @@ if (sidebarContainer) {
   document.querySelectorAll(".sidebar-nav .nav-item").forEach(link => {
     const page = link.dataset.page;
     if (page) {
-      // Na pagina inicial, o link de arvores aponta para a secao local; nas outras, volta ao mapa.
+      // Mantém a navegação do portal público na rota que não redireciona funcionários.
       link.href = page === "/"
-        ? (currentPage === "/" ? "#arvores" : "/#arvores")
+        ? (currentPage === "/" ? "#arvores" : "/perfil-publico#arvores")
         : page;
     }
 
     // Aplica o estado visual ativo e a indicacao acessivel na pagina correspondente.
-    const isActive = page === currentPage;
+    const isActive = page === currentPage || (page === "/" && currentPage === "/perfil-publico");
     link.classList.toggle("active", isActive);
     if (isActive) link.setAttribute("aria-current", "page");
   });

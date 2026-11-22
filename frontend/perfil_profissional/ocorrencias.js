@@ -4,14 +4,11 @@
 
 // Guarda na memória os dados reais vindos do banco de dados
 const occurrenceData = {
-  municipality: { id: "campinas", name: "Campinas - SP" },
   occurrences: [],
-  teams: [
-    { id: "TEAM-01", name: "Equipe Norte", available: true },
-    { id: "TEAM-02", name: "Equipe Central", available: true },
-    { id: "TEAM-03", name: "Equipe Sul", available: true },
-    { id: "TEAM-04", name: "Equipe de poda", available: true }
-  ]
+  teams: [],
+  teamsLoading: false,
+  teamsError: "",
+  teamsRequestId: 0
 };
 
 // Mantém as referências dos elementos HTML da página pelos IDs originais
@@ -28,6 +25,7 @@ const occurrencePage = {
 
 let selectedOccurrenceId = null;
 let occurrenceToastTimer = null;
+let occurrenceOrderInProgress = false;
 
 // Protege o HTML escapando caracteres especiais nos textos vindos do banco
 function escapeOccurrenceText(value) {
@@ -97,13 +95,11 @@ function renderOccurrencesTable() {
   const records = getVisibleOccurrences();
 
   occurrencePage.tableBody.innerHTML = records.map(occurrence => {
-    const assignedTeam = occurrence.order
-      ? (occurrence.order.teamName || occurrenceData.teams.find(team => team.id === occurrence.order.teamId)?.name || "Equipe designada")
-      : "—";
+    const assignedTeam = occurrence.order?.teamName || "—";
 
     return `
       <tr>
-        <td><button class="occurrence-id-link" type="button" data-open-occurrence="${escapeOccurrenceText(occurrence.id)}">${escapeOccurrenceText(occurrence.protocolo)}</button></td>
+        <td><button class="occurrence-id-link" type="button" data-open-occurrence="${escapeOccurrenceText(occurrence.id)}">${escapeOccurrenceText(occurrence.codigoIdentificador)}</button></td>
         <td>${escapeOccurrenceText(occurrence.type)}</td>
         <td>${escapeOccurrenceText(occurrence.neighborhood)}</td>
         <td><span class="occurrence-risk-badge ${occurrenceRiskClass(occurrence.risk)}">${escapeOccurrenceText(occurrence.risk)}</span></td>
@@ -164,9 +160,16 @@ function renderOccurrenceDetails(occurrence) {
 
 // Monta o formulário dentro do modal para escolher uma equipe livre e gerar a Ordem de Serviço
 function renderCreateOrderForm() {
+  if (occurrenceData.teamsLoading) {
+    return '<section class="occurrence-order-create"><h3>Criar ordem de serviço</h3><p role="status">Consultando equipes disponíveis para o município da ocorrência...</p></section>';
+  }
+  if (occurrenceData.teamsError) {
+    return `<section class="occurrence-order-create"><h3>Criar ordem de serviço</h3><p class="occurrence-no-team">${escapeOccurrenceText(occurrenceData.teamsError)}</p><button class="occurrence-primary-button" type="button" data-reload-occurrence-teams>Tentar carregar equipes novamente</button></section>`;
+  }
+
   const freeTeams = occurrenceData.teams.filter(team => team.available);
   if (!freeTeams.length) {
-    return '<section class="occurrence-order-create"><h3>Criar ordem de serviço</h3><p class="occurrence-no-team"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> Não há equipes livres no momento.</p></section>';
+    return '<section class="occurrence-order-create"><h3>Criar ordem de serviço</h3><p class="occurrence-no-team"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> Não há equipes disponíveis neste município.</p><button class="occurrence-primary-button" type="button" data-reload-occurrence-teams>Atualizar equipes</button></section>';
   }
   return `
     <form class="occurrence-order-create" id="createOccurrenceOrderForm">
@@ -192,6 +195,7 @@ function openOccurrenceDetails(occurrenceId) {
   occurrencePage.modal.hidden = false;
   document.body.classList.add("occurrence-modal-open");
   document.getElementById("closeOccurrenceModal")?.focus();
+  if (!occurrence.order) carregarEquipesDisponiveisDaOcorrencia(occurrence);
 }
 
 // Fecha o modal de detalhes
@@ -209,39 +213,133 @@ function showOccurrenceToast(message) {
   occurrenceToastTimer = window.setTimeout(() => { occurrencePage.toast.hidden = true; }, 3600);
 }
 
-// Envia para o back-end a criação de vínculo da Ordem de Serviço e muda o status para "Em Atendimento"
+// Consulta a API já validada pelo município da ocorrência e exibe somente equipes disponíveis.
+async function carregarEquipesDisponiveisDaOcorrencia(occurrence) {
+  const requestId = ++occurrenceData.teamsRequestId;
+  occurrenceData.teams = [];
+  occurrenceData.teamsError = "";
+  occurrenceData.teamsLoading = true;
+  if (String(selectedOccurrenceId) === String(occurrence.id)) renderOccurrenceDetails(occurrence);
+
+  try {
+    // Usa o ObjectId do Mongo, não o identificador público OC-..., na rota protegida.
+    const response = await fetch(
+      `/api/ordens-servico/ocorrencias/${encodeURIComponent(occurrence.databaseId)}/equipes-disponiveis`,
+      { credentials: "same-origin", cache: "no-store" }
+    );
+    const responseText = await response.text();
+    let responseData;
+    try {
+      responseData = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      throw new Error("O servidor retornou uma resposta inválida ao consultar as equipes.");
+    }
+    if (!response.ok) {
+      throw new Error(responseData.erro || `O servidor respondeu com status ${response.status}.`);
+    }
+    if (!Array.isArray(responseData.equipes)
+        || responseData.equipes.some(team => !team || typeof team.id !== "string"
+          || typeof team.nome !== "string" || team.disponivel !== true)) {
+      throw new Error("A resposta do servidor não contém uma lista válida de equipes disponíveis.");
+    }
+    if (requestId !== occurrenceData.teamsRequestId) return;
+
+    // Converte o formato da API para os campos usados pelo seletor do modal.
+    occurrenceData.teams = responseData.equipes.map(team => ({
+      id: team.id,
+      name: team.nome,
+      available: true
+    }));
+  } catch (error) {
+    if (requestId !== occurrenceData.teamsRequestId) return;
+    console.error("Erro ao consultar equipes da ocorrência:", error);
+    occurrenceData.teamsError = error.message;
+  } finally {
+    if (requestId === occurrenceData.teamsRequestId) {
+      occurrenceData.teamsLoading = false;
+      if (String(selectedOccurrenceId) === String(occurrence.id)
+          && occurrencePage.modal && !occurrencePage.modal.hidden) {
+        renderOccurrenceDetails(occurrence);
+      }
+    }
+  }
+}
+
+// Cria a OS já vinculada à ocorrência e à equipe selecionada no backend.
 async function createOccurrenceOrder(teamId) {
   const occurrence = occurrenceData.occurrences.find(item => String(item.id) === String(selectedOccurrenceId));
   const team = occurrenceData.teams.find(item => String(item.id) === String(teamId) && item.available);
-  if (!occurrence || occurrence.order || !team) return;
+  if (!occurrence || occurrence.order || !team || occurrenceOrderInProgress) return;
+  if (!occurrence.databaseId) {
+    showOccurrenceToast("Não foi possível identificar esta ocorrência no banco de dados.");
+    return;
+  }
 
-  const nextOrderNumber = String(occurrenceData.occurrences.length + 381).padStart(4, "0");
-  const orderId = `OS-2026-${nextOrderNumber}`;
+  const submitButton = occurrencePage.modalContent.querySelector(
+    "#createOccurrenceOrderForm button[type='submit']"
+  );
+  occurrenceOrderInProgress = true;
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = "Criando ordem...";
+  }
 
   try {
-    // Atualiza o status da ocorrência no back-end Java via PATCH /api/ocorrencias/{id}/status
-    const response = await fetch(`/api/ocorrencias/${encodeURIComponent(occurrence.id)}/status`, {
-      method: "PATCH",
+    // A rota grava a OS, reserva a equipe e atualiza o status da ocorrência em uma única transação.
+    const response = await fetch(
+      `/api/ordens-servico/ocorrencias/${encodeURIComponent(occurrence.databaseId)}`,
+      {
+      method: "POST",
+      credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        status: "Em Atendimento",
-        observacaoInterna: `Ordem ${orderId} atribuída à equipe ${team.name} (${team.id})`
-      })
-    });
+      body: JSON.stringify({ equipeId: team.id })
+      }
+    );
+    const responseText = await response.text();
+    let responseData;
+    try {
+      responseData = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      throw new Error("O servidor retornou uma resposta inválida ao criar a ordem.");
+    }
+    if (!response.ok) {
+      throw new Error(responseData.erro || `O servidor respondeu com status ${response.status}.`);
+    }
 
-    if (!response.ok) throw new Error("Falha ao atualizar status no servidor");
+    // Confere se o backend persistiu exatamente os vínculos escolhidos antes de mostrar sucesso.
+    const savedOrder = responseData.ordem;
+    if (!savedOrder || String(savedOrder.ocorrenciaId || "").toLowerCase()
+        !== occurrence.databaseId.toLowerCase()
+        || String(savedOrder.equipeId || "").toLowerCase() !== team.id.toLowerCase()
+        || savedOrder.status !== "Em andamento") {
+      throw new Error("O servidor não confirmou os vínculos da ordem de serviço.");
+    }
 
-    // Atualiza os dados na tela imediatamente
-    occurrence.order = { id: orderId, status: "Em andamento", teamId: team.id, teamName: team.name };
+    // Reflete na tela os dados confirmados pelo backend.
+    occurrence.order = {
+      id: savedOrder.codigo || savedOrder.id,
+      status: savedOrder.status,
+      teamId: savedOrder.equipeId,
+      teamName: team.name
+    };
     occurrence.status = "Em Atendimento";
-    team.available = false;
+    occurrenceData.teams = occurrenceData.teams.filter(item => item.id !== team.id);
 
     renderOccurrencesTable();
-    renderOccurrenceDetails(occurrence);
+    if (String(selectedOccurrenceId) === String(occurrence.id)) renderOccurrenceDetails(occurrence);
     showOccurrenceToast(`Ordem ${occurrence.order.id} criada e destinada à ${team.name}.`);
   } catch (erro) {
     console.error("Erro ao criar ordem para a ocorrência:", erro);
-    showOccurrenceToast("Erro ao salvar a ordem no servidor.");
+    showOccurrenceToast(`Não foi possível criar a ordem. ${erro.message}`);
+    if (String(selectedOccurrenceId) === String(occurrence.id)) {
+      await carregarEquipesDisponiveisDaOcorrencia(occurrence);
+    }
+  } finally {
+    occurrenceOrderInProgress = false;
+    if (submitButton && submitButton.isConnected) {
+      submitButton.disabled = false;
+      submitButton.innerHTML = '<i class="bi bi-clipboard-plus" aria-hidden="true"></i>Criar ordem';
+    }
   }
 }
 
@@ -254,23 +352,25 @@ function extrairBairro(endereco) {
   return "Centro";
 }
 
-// Busca as ocorrências reais e as equipes disponíveis no back-end (Javalin + MongoDB)
+// Busca as ocorrências e as ordens reais do back-end (Javalin + MongoDB).
 async function carregarDadosDoBackend() {
+  let ordensPorOcorrencia = new Map();
   try {
-    // 1. Tenta carregar as equipes cadastradas na API da Pessoa 4 (/api/equipes)
-    const respEquipes = await fetch("/api/equipes");
-    if (respEquipes.ok) {
-      const equipesBanco = await respEquipes.json();
-      if (Array.isArray(equipesBanco) && equipesBanco.length > 0) {
-        occurrenceData.teams = equipesBanco.map(eq => ({
-          id: eq.id || eq._id,
-          name: eq.nome || eq.nomeEquipe || "Equipe Operacional",
-          available: eq.disponivel !== false && eq.status !== "Inativa"
-        }));
-      }
+    // Busca as OS reais para relacionar cada ocorrência à equipe nela registrada.
+    const respOrdens = await fetch("/api/ordens-servico");
+    if (!respOrdens.ok) throw new Error(`Erro ao buscar ordens de serviço (HTTP ${respOrdens.status})`);
+    const dadosOrdens = await respOrdens.json();
+    if (!Array.isArray(dadosOrdens.ordens)) {
+      throw new Error("Resposta inesperada da API de ordens de serviço");
     }
-  } catch (e) {
-    // Se a rota de equipes não responder, mantém as equipes padrão em memória
+
+    ordensPorOcorrencia = new Map(
+      dadosOrdens.ordens
+        .filter(ordem => ordem.ocorrenciaId)
+        .map(ordem => [String(ordem.ocorrenciaId).toLowerCase(), ordem])
+    );
+  } catch (erro) {
+    console.error("Erro ao carregar ordens de serviço vinculadas:", erro);
   }
 
   try {
@@ -283,10 +383,12 @@ async function carregarDadosDoBackend() {
     // Converte os documentos do MongoDB para o formato usado pela tabela profissional
     occurrenceData.occurrences = dadosBanco.map(doc => {
       const dataIso = (doc.criadoEm || doc.dataHora || new Date().toISOString()).split("T")[0];
-      const jaEmAtendimento = doc.status === "Em Atendimento" || doc.status === "Concluída";
+      const ordem = ordensPorOcorrencia.get(String(doc._id || "").toLowerCase());
 
       return {
         id: doc.id || doc._id,
+        databaseId: String(doc._id || ""),
+        codigoIdentificador: doc.id || doc.codigoIdentificador || doc._id,
         protocolo: doc.protocolo || doc.id || doc._id,
         municipalityId: doc.municipioId || "campinas",
         type: doc.tipoProblema || "Ocorrência arbórea",
@@ -299,12 +401,12 @@ async function carregarDadosDoBackend() {
         reporter: doc.nomeContato || (doc.cidadaoId === "cid_anonimo" ? "Portal Público (Anônimo)" : `Cidadão (${doc.cidadaoId || "Portal"})`),
         description: doc.descricao || "Sem descrição detalhada.",
         status: doc.status || "Recebida",
-        order: jaEmAtendimento
+        order: ordem
           ? {
-              id: `OS-${String(doc.protocolo || doc.id).slice(-4)}`,
-              status: doc.status === "Concluída" ? "Concluída" : "Em andamento",
-              teamId: "TEAM-01",
-              teamName: doc.observacaoInterna || "Equipe designada"
+              id: ordem.codigo || ordem.id,
+              status: ordem.status,
+              teamId: ordem.equipeId || null,
+              teamName: ordem.equipeNome || null
             }
           : null
       };
@@ -325,6 +427,15 @@ function setupOccurrencePageEvents() {
   occurrencePage.tableBody?.addEventListener("click", event => {
     const trigger = event.target.closest("[data-open-occurrence]");
     if (trigger) openOccurrenceDetails(trigger.dataset.openOccurrence);
+  });
+
+  // Permite tentar novamente se a consulta inicial de equipes falhar ou retornar lista vazia.
+  occurrencePage.modalContent?.addEventListener("click", event => {
+    if (!event.target.closest("[data-reload-occurrence-teams]")) return;
+    const occurrence = occurrenceData.occurrences.find(
+      item => String(item.id) === String(selectedOccurrenceId)
+    );
+    if (occurrence && !occurrence.order) carregarEquipesDisponiveisDaOcorrencia(occurrence);
   });
 
   occurrencePage.modalContent?.addEventListener("submit", event => {

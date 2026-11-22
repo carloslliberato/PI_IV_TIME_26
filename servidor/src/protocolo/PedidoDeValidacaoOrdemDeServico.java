@@ -27,6 +27,8 @@ public final class PedidoDeValidacaoOrdemDeServico extends Comunicado {
     private final String descricao;
     private final String prioridade;
     private final String observacoes;
+    private final String endereco;
+    private final String bairro;
     private final String tipo;
     private final String dataExecucao;
     private final ArrayList<String> fotos;
@@ -35,7 +37,8 @@ public final class PedidoDeValidacaoOrdemDeServico extends Comunicado {
     private PedidoDeValidacaoOrdemDeServico(Operacao operacao, boolean dadosPresentes,
             Instant agora, String arvoreId, String ocorrenciaId, String equipeId,
             String titulo, String descricao, String prioridade, String observacoes,
-            String tipo, String dataExecucao, List<String> fotos, String motivoCancelamento) {
+            String endereco, String bairro, String tipo, String dataExecucao,
+            List<String> fotos, String motivoCancelamento) {
         this.requisicaoId = UUID.randomUUID();
         this.operacao = operacao;
         this.dadosPresentes = dadosPresentes;
@@ -47,6 +50,8 @@ public final class PedidoDeValidacaoOrdemDeServico extends Comunicado {
         this.descricao = descricao;
         this.prioridade = prioridade;
         this.observacoes = observacoes;
+        this.endereco = endereco;
+        this.bairro = bairro;
         this.tipo = tipo;
         this.dataExecucao = dataExecucao;
         // Preserva entradas nulas para que o validador devolva o erro de domínio.
@@ -57,30 +62,47 @@ public final class PedidoDeValidacaoOrdemDeServico extends Comunicado {
     public static PedidoDeValidacaoOrdemDeServico cadastro(String arvoreId,
             String ocorrenciaId, String equipeId, String titulo, String descricao,
             String prioridade, String observacoes) {
+        return cadastro(arvoreId, ocorrenciaId, equipeId, titulo, descricao,
+                prioridade, observacoes, null, null);
+    }
+
+    public static PedidoDeValidacaoOrdemDeServico cadastro(String arvoreId,
+            String ocorrenciaId, String equipeId, String titulo, String descricao,
+            String prioridade, String observacoes, String endereco, String bairro) {
         return new PedidoDeValidacaoOrdemDeServico(Operacao.CADASTRO, true, null,
                 arvoreId, ocorrenciaId, equipeId, titulo, descricao, prioridade,
-                observacoes, null, null, null, null);
+                observacoes, endereco, bairro, null, null, null, null);
     }
 
     public static PedidoDeValidacaoOrdemDeServico conclusao(String tipo,
             String descricao, String dataExecucao, List<String> fotos, Instant agora) {
         return new PedidoDeValidacaoOrdemDeServico(Operacao.CONCLUSAO, true, agora,
-                null, null, null, null, descricao, null, null, tipo, dataExecucao, fotos, null);
+                null, null, null, null, descricao, null, null, null, null,
+                tipo, dataExecucao, fotos, null);
     }
 
     public static PedidoDeValidacaoOrdemDeServico atribuicaoEquipe(String equipeId) {
         return new PedidoDeValidacaoOrdemDeServico(Operacao.ATRIBUICAO_EQUIPE, true, null,
-                null, null, equipeId, null, null, null, null, null, null, null, null);
+                null, null, equipeId, null, null, null, null, null, null,
+                null, null, null, null);
     }
 
     public static PedidoDeValidacaoOrdemDeServico cancelamento(String motivoCancelamento) {
         return new PedidoDeValidacaoOrdemDeServico(Operacao.CANCELAMENTO, true, null,
-                null, null, null, null, null, null, null, null, null, null, motivoCancelamento);
+                null, null, null,
+                null, null, null, null,
+                null, null,
+                null, null, null,
+                motivoCancelamento);
     }
 
     public static PedidoDeValidacaoOrdemDeServico semDados(Operacao operacao, Instant agora) {
         return new PedidoDeValidacaoOrdemDeServico(operacao, false, agora,
-                null, null, null, null, null, null, null, null, null, null, null);
+                null, null, null,
+                null, null, null, null,
+                null, null,
+                null, null, null,
+                null);
     }
 
     public UUID getRequisicaoId() { return requisicaoId; }
@@ -94,6 +116,8 @@ public final class PedidoDeValidacaoOrdemDeServico extends Comunicado {
     public String getDescricao() { return descricao; }
     public String getPrioridade() { return prioridade; }
     public String getObservacoes() { return observacoes; }
+    public String getEndereco() { return endereco; }
+    public String getBairro() { return bairro; }
     public String getTipo() { return tipo; }
     public String getDataExecucao() { return dataExecucao; }
     public List<String> getFotos() { return fotos == null ? null : new ArrayList<>(fotos); }

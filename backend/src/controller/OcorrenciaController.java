@@ -1,8 +1,9 @@
-// Autor: Carlos Luciano, Sophia Fernandes
+// Autor: Carlos Luciano, Sophia Fernandes, Gabrielle Mota
 
 package controller;
 
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.bson.Document;
@@ -33,25 +34,47 @@ public class OcorrenciaController {
 
     // POST /api/ocorrencias -> Recebe os dados do formulário e cria o chamado
     public void abrirChamado(Context ctx) {
+        // Etapa 1: informa ao cliente que todas as respostas deste endpoint serão JSON em UTF-8.
         ctx.contentType("application/json; charset=utf-8");
         try {
+            // Etapa 2: converte o corpo da requisição para o DTO usado pelo cadastro.
             CadastroOcorrenciaDTO dto = gson.fromJson(ctx.body(), CadastroOcorrenciaDTO.class);
+
+            // Etapa 3: delega a validação e a persistência da ocorrência ao serviço.
             Document criada = service.abrirChamado(dto);
-            ctx.status(201).result(gson.toJson(Map.of(
-                    "mensagem", "Chamado aberto com sucesso!",
-                    "protocolo", criada.getString("protocolo"),
-                    "ocorrencia", criada
-            )));
+
+            // Etapa 4: prepara a resposta com a mensagem, a identificação pública, o protocolo e o registro salvo.
+            Map<String, Object> resposta = new LinkedHashMap<>();
+            resposta.put("mensagem", "Chamado aberto com sucesso!");
+            resposta.put("codigoIdentificador", criada.getString("id"));
+            resposta.put("protocolo", criada.getString("protocolo"));
+            resposta.put("ocorrencia", criada);
+
+            // Etapa 5: avisa que a ocorrência foi salva, mas não poderá ser exibida no mapa sem as duas coordenadas.
+            if (!(criada.get("latitude") instanceof Number)
+                    || !(criada.get("longitude") instanceof Number)) {
+                resposta.put("aviso",
+                        "Chamado registrado, mas o endereço não foi localizado. "
+                                + "Ele não aparecerá no mapa até que haja coordenadas.");
+            }
+
+            // Etapa 6: confirma a criação com HTTP 201 e serializa o resultado para JSON.
+            ctx.status(201).result(gson.toJson(resposta));
         } catch (IllegalArgumentException e) {
+            // Etapa 7: devolve HTTP 400 quando os dados enviados não passam pela validação.
             ctx.status(400).result(gson.toJson(Map.of("erro", e.getMessage())));
         } catch (Exception e) {
+            // Etapa 8: devolve HTTP 500 para falhas inesperadas durante o cadastro.
             ctx.status(500).result(gson.toJson(Map.of("erro", "Erro ao registrar ocorrência: " + e.getMessage())));
         }
     }
 
     // GET /api/ocorrencias -> Lista as ocorrências na tabela (com suporte aos filtros da tela)
     public void listarOcorrencias(Context ctx) {
+        // Etapa 1: configura a resposta HTTP como JSON.
         ctx.contentType("application/json; charset=utf-8");
+
+        // Etapa 2: lê os filtros aceitando os nomes atuais e os aliases anteriores.
         String municipio = ctx.queryParam("municipioId");
         if (municipio == null) municipio = ctx.queryParam("municipio");
 
@@ -63,6 +86,7 @@ public class OcorrenciaController {
         String prioridade = ctx.queryParam("urgencia");
         if (prioridade == null) prioridade = ctx.queryParam("prioridade");
 
+        // Etapa 3: consulta o serviço com os filtros e devolve a lista serializada.
         List<Document> lista = service.listarOcorrencias(municipio, tipo, status, prioridade);
         ctx.status(200).result(gson.toJson(lista));
     }

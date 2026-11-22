@@ -368,6 +368,9 @@ public class ArvoreRepository {
         // Preserva fotos, historico e documentos
         Document atualizacao = new Document(
                 "$set", documento);
+        if (!documento.containsKey("localizacao")) {
+            atualizacao.append("$unset", new Document("localizacao", ""));
+        }
 
         long quantidade = colecao.updateOne(
                 Filters.eq("_id", id),
@@ -422,7 +425,7 @@ public class ArvoreRepository {
                         "alertaClimatico",
                         arvore.isAlertaClimatico());
 
-        return new Document(
+        Document documento = new Document(
                 "_id", arvore.getId())
 
                 .append(
@@ -481,10 +484,6 @@ public class ArvoreRepository {
                         caracteristicas)
 
                 .append(
-                        "localizacao",
-                        localizacao)
-
-                .append(
                         "ultimaPoda",
                         arvore.getUltimaPoda())
 
@@ -495,6 +494,11 @@ public class ArvoreRepository {
                 .append(
                         "proximaManutencao",
                         arvore.getProximaManutencao());
+
+        if (arvore.getLatitude() != null && arvore.getLongitude() != null) {
+            documento.append("localizacao", localizacao);
+        }
+        return documento;
     }
 
     // CONVERTER DOCUMENTO MONGODB PARA OBJETO JAVA

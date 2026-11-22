@@ -104,6 +104,32 @@ class AtribuicaoEquipeOrdemDeServicoIntegracaoTest {
     }
 
     @Test
+    void naoListaNemAtribuiEquipeIndisponivel(){
+        ObjectId equipe = salvarEquipe(MUNICIPIO, USUARIO, "Equipe ocupada");
+        banco.getCollection("equipes").updateOne(eq("_id", equipe),
+                new Document("$set", new Document("status", "Indisponível")));
+        OrdemDeServico os = salvarOrdem(MUNICIPIO);
+
+        assertTrue(repositorio.listarEquipesParaOrdem(os.getOrdemServicoId(), MUNICIPIO)
+                .stream().noneMatch(item -> item.id().equals(equipe)));
+        assertThrows(IllegalStateException.class,
+                () -> repositorio.atribuirEquipe(os.getOrdemServicoId(), MUNICIPIO, equipe, CONCLUSAO));
+        assertNull(ordem(os).get("equipeId"));
+    }
+
+    @Test
+    void preservaOcorrenciaVinculadaAoAtribuirEquipe(){
+        ObjectId ocorrencia = new ObjectId();
+        ObjectId equipe = salvarEquipe(MUNICIPIO, USUARIO, "Equipe da ocorrência");
+        OrdemDeServico os = salvarOrdem(MUNICIPIO, ocorrencia);
+
+        repositorio.atribuirEquipe(os.getOrdemServicoId(), MUNICIPIO, equipe, CONCLUSAO);
+
+        assertEquals(ocorrencia, ordem(os).getObjectId("ocorrenciaId"));
+        assertEquals(equipe, ordem(os).getObjectId("equipeId"));
+    }
+
+    @Test
     void trocaEquipeELiberaAsEquipesAoCancelarEConcluir(){
         ObjectId primeira = salvarEquipe(MUNICIPIO, USUARIO, "Equipe A");
         ObjectId segunda = salvarEquipe(MUNICIPIO, USUARIO, "Equipe B");
@@ -183,7 +209,11 @@ class AtribuicaoEquipeOrdemDeServicoIntegracaoTest {
     }
 
     private OrdemDeServico salvarOrdem(ObjectId municipioId){
-        OrdemDeServico ordem = new OrdemDeServico(municipioId, ARVORE, null, null,
+        return salvarOrdem(municipioId, null);
+    }
+
+    private OrdemDeServico salvarOrdem(ObjectId municipioId, ObjectId ocorrenciaId){
+        OrdemDeServico ordem = new OrdemDeServico(municipioId, ARVORE, ocorrenciaId, null,
                 "[TESTE] Atribuição de equipe", "Serviço de teste.", "Baixa", null,
                 "OS02026" + proximoCodigo++);
         repositorio.salvar(ordem);

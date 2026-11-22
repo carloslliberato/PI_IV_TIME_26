@@ -396,9 +396,12 @@
   function payloadDoFormulario(form, original = {}) {
 
     const v = form.elements;
+    const dadosOriginais = { ...original };
+    delete dadosOriginais.latitude;
+    delete dadosOriginais.longitude;
 
     return {
-      ...original,
+      ...dadosOriginais,
 
       municipioId:
         original.municipioId || municipioIdFuncionario,
@@ -408,9 +411,6 @@
       especie: v.especie.value.trim(),
       endereco: v.endereco.value.trim(),
       bairro: v.bairro.value.trim(),
-
-      latitude: Number(v.latitude.value),
-      longitude: Number(v.longitude.value),
 
       idade: v.idade.value.trim(),
       alturaMetros: v.alturaMetros.value === ""
@@ -436,8 +436,6 @@
       "endereco",
       "bairro",
       "idade",
-      "latitude",
-      "longitude",
       "alturaMetros",
       "diametroCm",
       "estado",
@@ -473,32 +471,7 @@
   }
 
   function validarFormulario(form) {
-
-    if (!form.reportValidity()) {
-      return false;
-    }
-
-    const latitude =
-      Number(form.elements.latitude.value);
-
-    const longitude =
-      Number(form.elements.longitude.value);
-
-    if (
-      latitude < -90 ||
-      latitude > 90 ||
-      longitude < -180 ||
-      longitude > 180
-    ) {
-      mostrarAviso(
-        "Latitude ou longitude fora dos limites permitidos.",
-        true
-      );
-
-      return false;
-    }
-
-    return true;
+    return form.reportValidity();
   }
 
   // Executa POST ou PUT.
@@ -519,7 +492,7 @@
 
     try {
 
-      await requisicao(caminho, {
+      const salva = await requisicao(caminho, {
         method: metodo,
         body: JSON.stringify(
           payloadDoFormulario(form, original)
@@ -540,11 +513,14 @@
         form.reset();
       }
 
-      mostrarAviso(
-        metodo === "POST"
-          ? "Árvore cadastrada no MongoDB!"
-          : "Árvore atualizada no MongoDB!"
-      );
+      const acao = metodo === "POST"
+        ? "Árvore cadastrada no MongoDB!"
+        : "Árvore atualizada no MongoDB!";
+      const temCoordenadas = Number.isFinite(salva?.latitude)
+        && Number.isFinite(salva?.longitude);
+      mostrarAviso(temCoordenadas
+        ? acao
+        : `${acao} O endereço não foi localizado; ela foi salva sem marcador no mapa.`);
 
     } catch (erro) {
 

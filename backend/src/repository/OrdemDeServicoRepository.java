@@ -135,6 +135,12 @@ public class OrdemDeServicoRepository {
                 item.put("titulo", primeiroTexto(documento, "titulo", "tipoProblema"));
                 item.put("descricao", primeiroTexto(documento, "descricao"));
                 item.put("prioridade", primeiroTexto(documento, "prioridade", "urgencia"));
+                String endereco = primeiroTexto(documento, "localizacao", "endereco");
+                String numero = primeiroTexto(documento, "numero");
+                if (endereco != null && numero != null && !endereco.endsWith(numero))
+                    endereco += ", " + numero;
+                item.put("endereco", endereco);
+                item.put("bairro", primeiroTexto(documento, "bairro"));
                 item.put("arvoreId", arvore instanceof ObjectId id && arvoresDisponiveis.contains(id) ? id.toHexString() : null);
                 opcoesOcorrencias.add(item);
             }
@@ -177,25 +183,34 @@ public class OrdemDeServicoRepository {
         }
     }
 
-    // Confere referências reais e persiste os valores finais enviados pelo funcionário.
+    // Confere referências reais e persiste uma OS vinculada a árvore ou com local informado.
     public OrdemDeServico criarComReferencias(OrdemDeServico ordem){
         if (ordem == null || ordem.getOrdemServicoId() == null || ordem.getMunicipioId() == null
-                || ordem.getArvoreId() == null || ordem.getCodigo() == null || ordem.getCodigo().isBlank()
+                || ordem.getCodigo() == null || ordem.getCodigo().isBlank()
+                || (ordem.getArvoreId() == null
+                    && (ordem.getEndereco() == null || ordem.getEndereco().isBlank()
+                        || ordem.getBairro() == null || ordem.getBairro().isBlank()))
                 || ordem.getEquipeId() != null || !"Aberta".equals(ordem.getStatus()))
-            throw new IllegalArgumentException("A nova OS deve estar aberta, possuir código e árvore, e não ter equipe inicial.");
+            throw new IllegalArgumentException("A nova OS deve estar aberta, possuir código e árvore ou endereço/bairro, e não ter equipe inicial.");
         garantirIndiceCodigo();
         try (ClientSession sessao = Objects.requireNonNull(abrirSessao.get())){
             return sessao.withTransaction(() -> {
                 ObjectId municipioId = ordem.getMunicipioId();
-                Document arvore = arvores.find(sessao, and(eq("_id", ordem.getArvoreId()),
-                        eq("municipioId", municipioId), ne("ativa", false))).first();
-                if (!referenciaCanonica(arvore, municipioId))
-                    throw new NoSuchElementException("Árvore não encontrada ou inativa nesse município.");
+                if (ordem.getArvoreId() != null) {
+                    Document arvore = arvores.find(sessao, and(eq("_id", ordem.getArvoreId()),
+                            eq("municipioId", municipioId), ne("ativa", false))).first();
+                    if (!referenciaCanonica(arvore, municipioId))
+                        throw new NoSuchElementException("Árvore não encontrada ou inativa nesse município.");
+                }
                 if (ordem.getOcorrenciaId() != null){
                     Document ocorrencia = ocorrencias.find(sessao, and(eq("_id", ordem.getOcorrenciaId()),
                             eq("municipioId", municipioId))).first();
                     if (!referenciaCanonica(ocorrencia, municipioId))
                         throw new NoSuchElementException("Ocorrência não encontrada nesse município.");
+                    Object arvoreDaOcorrencia = ocorrencia.get("arvoreId");
+                    if (arvoreDaOcorrencia instanceof ObjectId idArvore
+                            && !idArvore.equals(ordem.getArvoreId()))
+                        throw new IllegalStateException("A árvore da OS não corresponde à ocorrência vinculada.");
                 }
                 colecao.insertOne(sessao, converterParaDocumento(ordem));
                 Document persistida = colecao.find(sessao, and(eq("_id", ordem.getOrdemServicoId()),
@@ -498,6 +513,18 @@ public class OrdemDeServicoRepository {
                     throw new IllegalStateException("A OS foi alterada. Consulte seus dados antes de concluir.");
                 }
 
+                if (ordem.getOcorrenciaId() != null) {
+                    UpdateResult ocorrenciaAtualizada = ocorrencias.updateOne(sessao,
+                            and(eq("_id", ordem.getOcorrenciaId()),
+                                    eq("municipioId", municipioId)),
+                            new Document("$set", new Document("status", "Concluída")
+                                    .append("atualizadoEm", dataConclusao.toString())));
+                    if (ocorrenciaAtualizada.getMatchedCount() != 1) {
+                        throw new NoSuchElementException(
+                                "Ocorrência vinculada não encontrada nesse município.");
+                    }
+                }
+
                 intervencaoRepository.salvar(sessao, intervencao);
                 liberarEquipeSeSemOrdemAtiva(sessao, ordem.getEquipeId(), municipioId);
 
@@ -530,9 +557,13 @@ public class OrdemDeServicoRepository {
         List<EquipeParaOrdemDeServico> resposta = new ArrayList<>();
         for (Document equipe : equipes.find(eq("municipioId", municipioId)).sort(ascending("nome"))){
             ObjectId equipeId = equipe.getObjectId("_id");
-            resposta.add(new EquipeParaOrdemDeServico(equipeId, textoDaEquipe(equipe, "nome", "nomeEquipe"),
-                    textoDaEquipe(equipe, "regiao", "regiaoAtuacao"), !ocupadas.contains(equipeId.toHexString()),
-                    equipeId.equals(atual)));
+            boolean equipeAtual = equipeId.equals(atual);
+            boolean disponivel = "Disponível".equals(equipe.getString("status"))
+                    && !ocupadas.contains(equipeId.toHexString());
+            if (disponivel || equipeAtual){
+                resposta.add(new EquipeParaOrdemDeServico(equipeId, textoDaEquipe(equipe, "nome", "nomeEquipe"),
+                        textoDaEquipe(equipe, "regiao", "regiaoAtuacao"), disponivel, equipeAtual));
+            }
         }
         return resposta;
     }
@@ -575,6 +606,8 @@ public class OrdemDeServicoRepository {
                 if (colecao.find(sessao, and(filtroEquipeAtiva(equipeId), ne("_id", id))).first() != null)
                     throw new IllegalStateException("A equipe já está vinculada a outra OS ativa.");
                 ObjectId anterior = documento.getObjectId("equipeId");
+                if (!equipeId.equals(anterior) && !"Disponível".equals(equipe.getString("status")))
+                    throw new IllegalStateException("A equipe selecionada não está disponível.");
 
                 // A escrita na equipe disputa o documento com uma eventual exclusão concorrente.
                 UpdateResult reserva = equipes.updateOne(sessao,
@@ -689,6 +722,10 @@ public class OrdemDeServicoRepository {
         documento.append("prioridade", ordem.getPrioridade());
         documento.append("observacoes", ordem.getObservacoes());
         documento.append("motivoCancelamento", ordem.getMotivoCancelamento());
+        documento.append("endereco", ordem.getEndereco());
+        documento.append("bairro", ordem.getBairro());
+        documento.append("latitude", ordem.getLatitude());
+        documento.append("longitude", ordem.getLongitude());
 
         if (ordem.getDataCriacao() != null) {
             documento.append("dataCriacao", Date.from(ordem.getDataCriacao()));
@@ -730,7 +767,15 @@ public class OrdemDeServicoRepository {
             instanteConclusao,
             documento.getString("codigo"),
             documento.getObjectId("intervencaoConclusaoId"),
-            documento.getString("motivoCancelamento"));
+            documento.getString("motivoCancelamento"),
+            documento.getString("endereco"),
+            documento.getString("bairro"),
+            coordenadaPersistida(documento.get("latitude")),
+            coordenadaPersistida(documento.get("longitude")));
+    }
+
+    private Double coordenadaPersistida(Object valor) {
+        return valor instanceof Number numero ? numero.doubleValue() : null;
     }
 
 }

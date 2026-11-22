@@ -11,6 +11,8 @@ public class CadastroOrdemDeServicoDTO{
     private String descricao;
     private String prioridade;
     private String observacoes;
+    private String endereco;
+    private String bairro;
 
     public CadastroOrdemDeServicoDTO() {
     }
@@ -23,6 +25,20 @@ public class CadastroOrdemDeServicoDTO{
             String descricao,
             String prioridade,
             String observacoes) {
+        this(arvoreId, ocorrenciaId, equipeId, titulo, descricao, prioridade,
+                observacoes, null, null);
+    }
+
+    public CadastroOrdemDeServicoDTO(
+            String arvoreId,
+            String ocorrenciaId,
+            String equipeId,
+            String titulo,
+            String descricao,
+            String prioridade,
+            String observacoes,
+            String endereco,
+            String bairro) {
         this.arvoreId = arvoreId;
         this.ocorrenciaId = ocorrenciaId;
         this.equipeId = equipeId;
@@ -30,6 +46,8 @@ public class CadastroOrdemDeServicoDTO{
         this.descricao = descricao;
         this.prioridade = prioridade;
         this.observacoes = observacoes;
+        this.endereco = endereco;
+        this.bairro = bairro;
     }
 
     public String getArvoreId(){
@@ -58,5 +76,13 @@ public class CadastroOrdemDeServicoDTO{
 
     public String getObservacoes(){
         return observacoes;
+    }
+
+    public String getEndereco(){
+        return endereco;
+    }
+
+    public String getBairro(){
+        return bairro;
     }
 }

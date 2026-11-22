@@ -124,6 +124,36 @@ class ConclusaoOrdemDeServicoIntegracaoTest {
     }
 
     @Test
+    void concluiOcorrenciaVinculadaNaMesmaTransacaoDaOrdem(){
+        ObjectId ocorrenciaId = new ObjectId();
+        banco.getCollection("ocorrencias").insertOne(new Document("_id", ocorrenciaId)
+                .append("municipioId", MUNICIPIO)
+                .append("status", "Em Atendimento")
+                .append("atualizadoEm", "2026-11-19T10:00:00Z"));
+        OrdemDeServico ordem = salvarOrdem(MUNICIPIO, EQUIPE, ocorrenciaId);
+
+        repositorio.concluirComIntervencao(ordem.getOrdemServicoId(), MUNICIPIO, USUARIO,
+                "Poda", "Serviço executado.", List.of(), EXECUCAO, CONCLUSAO);
+
+        Document ocorrencia = banco.getCollection("ocorrencias")
+                .find(eq("_id", ocorrenciaId)).first();
+        assertNotNull(ocorrencia);
+        assertEquals("Concluída", ocorrencia.getString("status"));
+        assertEquals(CONCLUSAO.toString(), ocorrencia.getString("atualizadoEm"));
+    }
+
+    @Test
+    void naoConcluiOrdemSeOcorrenciaVinculadaNaoForEncontrada(){
+        OrdemDeServico ordem = salvarOrdem(MUNICIPIO, EQUIPE, new ObjectId());
+        Document antes = documento(ordem);
+
+        assertThrows(NoSuchElementException.class, () -> concluir(ordem, MUNICIPIO));
+
+        assertEquals(antes, documento(ordem));
+        assertEquals(0L, banco.getCollection("intervencoes").countDocuments());
+    }
+
+    @Test
     void falhaNaInsercaoDaIntervencaoDesfazTambemAConclusaoDaOrdem(){
         OrdemDeServico ordem = salvarOrdem(MUNICIPIO, null);
         Document antes = documento(ordem);
@@ -179,8 +209,13 @@ class ConclusaoOrdemDeServicoIntegracaoTest {
     }
 
     private OrdemDeServico salvarOrdem(ObjectId municipioId, ObjectId equipeId){
+        return salvarOrdem(municipioId, equipeId, null);
+    }
+
+    private OrdemDeServico salvarOrdem(
+            ObjectId municipioId, ObjectId equipeId, ObjectId ocorrenciaId){
         OrdemDeServico ordem = new OrdemDeServico(
-                municipioId, ARVORE, null, equipeId,
+                municipioId, ARVORE, ocorrenciaId, equipeId,
                 "[TESTE] Conclusão transacional", "Descrição original da ordem.",
                 "Baixa", null, "OS02026" + proximoCodigo++);
         repositorio.salvar(ordem);

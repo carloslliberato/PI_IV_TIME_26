@@ -21,6 +21,10 @@ public class OrdemDeServico {
     private String prioridade;
     private String observacoes;
     private String motivoCancelamento;
+    private String endereco;
+    private String bairro;
+    private Double latitude;
+    private Double longitude;
     private Instant dataCriacao;
     private Instant dataAtualizacao;
     private Instant dataConclusao;
@@ -36,6 +40,25 @@ public class OrdemDeServico {
             String prioridade,
             String observacoes,
             String codigo){
+        this(municipioId, arvoreId, ocorrenciaId, equipeId, titulo, descricao,
+                prioridade, observacoes, codigo, null, null, null, null);
+    }
+
+    // Cria a OS com os dados do endereço e, quando encontrado, as coordenadas do local.
+    public OrdemDeServico(
+            ObjectId municipioId,
+            ObjectId arvoreId,
+            ObjectId ocorrenciaId,
+            ObjectId equipeId,
+            String titulo,
+            String descricao,
+            String prioridade,
+            String observacoes,
+            String codigo,
+            String endereco,
+            String bairro,
+            Double latitude,
+            Double longitude){
 
         this.ordemServicoId = new ObjectId();
         this.codigo = codigo;
@@ -47,6 +70,10 @@ public class OrdemDeServico {
         this.descricao = descricao;
         this.prioridade = prioridade;
         this.observacoes = observacoes;
+        this.endereco = endereco;
+        this.bairro = bairro;
+        this.latitude = latitude;
+        this.longitude = longitude;
         this.dataCriacao = Instant.now();
         this.dataAtualizacao = this.dataCriacao;
 
@@ -120,6 +147,34 @@ public class OrdemDeServico {
             String codigo,
             ObjectId intervencaoConclusaoId,
             String motivoCancelamento){
+        this(ordemServicoId, municipioId, arvoreId, ocorrenciaId, equipeId, titulo,
+                descricao, status, prioridade, observacoes, dataCriacao, dataAtualizacao,
+                dataConclusao, codigo, intervencaoConclusaoId, motivoCancelamento,
+                null, null, null, null);
+    }
+
+    // Reconstrói também o endereço e as coordenadas persistidos para a OS.
+    public OrdemDeServico(
+            ObjectId ordemServicoId,
+            ObjectId municipioId,
+            ObjectId arvoreId,
+            ObjectId ocorrenciaId,
+            ObjectId equipeId,
+            String titulo,
+            String descricao,
+            String status,
+            String prioridade,
+            String observacoes,
+            Instant dataCriacao,
+            Instant dataAtualizacao,
+            Instant dataConclusao,
+            String codigo,
+            ObjectId intervencaoConclusaoId,
+            String motivoCancelamento,
+            String endereco,
+            String bairro,
+            Double latitude,
+            Double longitude){
 
         this.ordemServicoId = ordemServicoId;
         this.codigo = codigo;
@@ -134,6 +189,10 @@ public class OrdemDeServico {
         this.prioridade = prioridade;
         this.observacoes = observacoes;
         this.motivoCancelamento = motivoCancelamento;
+        this.endereco = endereco;
+        this.bairro = bairro;
+        this.latitude = latitude;
+        this.longitude = longitude;
         this.dataCriacao = dataCriacao;
         this.dataAtualizacao = dataAtualizacao;
         this.dataConclusao = dataConclusao;
@@ -262,6 +321,22 @@ public class OrdemDeServico {
 
     public String getMotivoCancelamento(){
         return motivoCancelamento;
+    }
+
+    public String getEndereco(){
+        return endereco;
+    }
+
+    public String getBairro(){
+        return bairro;
+    }
+
+    public Double getLatitude(){
+        return latitude;
+    }
+
+    public Double getLongitude(){
+        return longitude;
     }
 
     public void setObservacoes(String observacoes){
