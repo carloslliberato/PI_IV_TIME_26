@@ -75,7 +75,7 @@ public class RelatorioRepository {
 
         Document agrupamentos = new Document("porStatus", etapasAgrupamento("status"))
                 .append("porBairro", etapasAgrupamento("bairro"))
-                .append("porUrgencia", etapasAgrupamento("urgencia"));
+                .append("porUrgencia", etapasAgrupamento("prioridade"));
 
         return colecaoOcorrencias.aggregate(List.of(
                 new Document("$match", filtro),

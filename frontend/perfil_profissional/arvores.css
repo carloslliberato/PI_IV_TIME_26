@@ -12,7 +12,7 @@
 .tree-button-secondary { border-color: #dce6e0; background: #fff; color: #58665f; }
 .tree-button-edit { border-color: #dce9e2; background: #f2f8f4; color: #176344; }
 .tree-button-delete { border-color: #f0d6d3; background: #fff5f4; color: #b53b31; }
-.trees-toolbar { display: grid; grid-template-columns: minmax(250px, 1fr) minmax(230px, 310px); gap: 13px; margin-bottom: 17px; }
+.trees-toolbar { display: grid; grid-template-columns: minmax(250px, 1fr) minmax(200px, 250px) minmax(200px, 250px); gap: 13px; margin-bottom: 17px; }
 .tree-search, .tree-filter { min-height: 48px; display: flex; align-items: center; gap: 11px; padding: 0 15px; border: 1px solid #e2eae5; border-radius: 11px; background: #fff; color: #748179; box-shadow: 0 3px 12px rgba(31, 66, 48, .025); }
 .tree-search:focus-within, .tree-filter:focus-within { border-color: #8cb69d; box-shadow: 0 0 0 3px rgba(37, 120, 79, .08); }
 .tree-search > i, .tree-filter > i { color: #668271; font-size: 16px; }

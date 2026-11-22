@@ -25,7 +25,7 @@ public class OcorrenciaService {
 
     // Lista de status e prioridades permitidos no sistema
     private static final Set<String> STATUS_VALIDOS = Set.of(
-            "Recebida", "Em Análise", "Em Atendimento", "Concluída", "Cancelada"
+            "Recebida", "Em andamento", "Cancelada", "Concluída"
     );
 
     private static final Set<String> URGENCIAS_VALIDAS = Set.of(
@@ -90,8 +90,12 @@ public class OcorrenciaService {
         nova.setDescricao(dto.descricao.trim());
         nova.setImagem(dto.imagem);
 
-        if (dto.urgencia != null && !dto.urgencia.isBlank()) {
-            nova.setUrgencia(dto.urgencia);
+        String prioridade = dto.prioridade != null ? dto.prioridade : dto.urgencia;
+        if (prioridade != null && !prioridade.isBlank()) {
+            if (!URGENCIAS_VALIDAS.contains(prioridade)) {
+                throw new IllegalArgumentException("Prioridade inválida. Use: " + URGENCIAS_VALIDAS);
+            }
+            nova.setUrgencia(prioridade);
         }
         nova.setMunicipioId(municipioId);
         if (dto.cidadaoId != null && !dto.cidadaoId.isBlank()) {

@@ -3,6 +3,7 @@
 package model;
 
 import java.util.Date;
+import java.util.List;
 import org.bson.types.ObjectId;
 
 public class Arvore {
@@ -41,6 +42,7 @@ public class Arvore {
     private Date ultimaPoda;
     private Date ultimaInspecao;
     private Date proximaManutencao;
+    private List<String> fotos = List.of();
 
     // Construtor vazio
     public Arvore() {
@@ -168,6 +170,10 @@ public class Arvore {
         return proximaManutencao;
     }
 
+    public List<String> getFotos() {
+        return fotos;
+    }
+
     // SETTERS
 
     public void setId(ObjectId id) {
@@ -260,5 +266,9 @@ public class Arvore {
 
     public void setProximaManutencao(Date proximaManutencao) {
         this.proximaManutencao = proximaManutencao;
+    }
+
+    public void setFotos(List<String> fotos) {
+        this.fotos = fotos == null ? List.of() : List.copyOf(fotos);
     }
 }

@@ -3,11 +3,11 @@ subprojects {
     apply plugin: 'java'
     apply plugin: 'application'
 
-    // Evita falhas de limpeza dos outputs do Gradle dentro do OneDrive.
+    // Mantém os outputs de build fora do OneDrive e do diretório de cache antigo.
     if (rootProject.projectDir.toPath().any { it.toString().equalsIgnoreCase('OneDrive') }) {
         layout.buildDirectory.set(new File(
-                System.getProperty('user.home'),
-                ".gradle/workspace-builds/${rootProject.name}/${project.name}"))
+                System.getProperty('java.io.tmpdir'),
+                "arboriza-gradle-builds/${rootProject.name}/${project.name}"))
     }
 
     repositories {
@@ -53,6 +53,8 @@ project(':servidor') {
     }
 
     tasks.named('run', JavaExec) {
+        // O servidor só pode iniciar depois que as classes do backend estiverem compiladas.
+        dependsOn ':backend:classes'
         standardInput = System.in
     }
 }

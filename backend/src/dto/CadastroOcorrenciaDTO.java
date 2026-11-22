@@ -21,4 +21,5 @@ public class CadastroOcorrenciaDTO {
     public Double latitude;
     public Double longitude;
     public String urgencia;
+    public String prioridade;
 }

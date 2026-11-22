@@ -47,6 +47,20 @@ public class OcorrenciaRepository {
         this.colecao = banco.getCollection("ocorrencias");
         this.sequencias = banco.getCollection("sequencias_ocorrencias");
         inicializarSequenciaCodigo();
+        normalizarStatusLegados();
+        migrarUrgenciaParaPrioridade();
+    }
+
+    private void migrarUrgenciaParaPrioridade(){
+        colecao.updateMany(Filters.and(Filters.exists("urgencia", true), Filters.exists("prioridade", false)),
+                Updates.combine(Updates.rename("urgencia", "prioridade")));
+        colecao.updateMany(Filters.exists("urgencia", true), Updates.unset("urgencia"));
+    }
+
+    private void normalizarStatusLegados(){
+        colecao.updateMany(Filters.eq("status", "Em Atendimento"), Updates.set("status", "Em andamento"));
+        colecao.updateMany(Filters.eq("status", "Em Análise"), Updates.set("status", "Em andamento"));
+        colecao.updateMany(Filters.eq("status", "Pendente"), Updates.set("status", "Recebida"));
     }
 
     // Salva uma nova ocorrência no MongoDB
@@ -71,7 +85,7 @@ public class OcorrenciaRepository {
                 .append("nomeContato", o.getNomeContato())
                 .append("emailContato", o.getEmailContato())
                 .append("telefoneContato", o.getTelefoneContato())
-                .append("urgencia", o.getUrgencia())
+                .append("prioridade", o.getUrgencia())
                 .append("status", o.getStatus())
                 .append("observacaoInterna", o.getObservacaoInterna())
                 .append("criadoEm", o.getCriadoEm())
@@ -205,7 +219,7 @@ public class OcorrenciaRepository {
             filtros.add(Filters.regex("status", "^" + status + "$", "i"));
         }
         if (urgencia != null && !urgencia.isBlank()) {
-            filtros.add(Filters.regex("urgencia", "^" + urgencia + "$", "i"));
+            filtros.add(Filters.regex("prioridade", "^" + urgencia + "$", "i"));
         }
         if (cidadaoId != null && !cidadaoId.isBlank()) {
             filtros.add(Filters.eq("cidadaoId", cidadaoId));
@@ -229,6 +243,9 @@ public class OcorrenciaRepository {
 
     // Atualiza o status do chamado no banco
     public boolean atualizarStatus(String id, String novoStatus, String observacao) {
+        if (!List.of("Recebida", "Em andamento", "Cancelada", "Concluída").contains(novoStatus)) {
+            throw new IllegalArgumentException("Status de ocorrência inválido.");
+        }
         List<Bson> updates = new ArrayList<>();
         updates.add(Updates.set("status", novoStatus));
         updates.add(Updates.set("atualizadoEm", Instant.now().toString()));
@@ -243,7 +260,8 @@ public class OcorrenciaRepository {
         return colecao.updateOne(
                 filtroPorId(id),
                 Updates.combine(
-                        Updates.set("urgencia", novaUrgencia),
+                        Updates.set("prioridade", novaUrgencia),
+                        Updates.unset("urgencia"),
                         Updates.set("atualizadoEm", Instant.now().toString())
                 )
         ).getModifiedCount() > 0;

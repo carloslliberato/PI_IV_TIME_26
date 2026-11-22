@@ -27,7 +27,7 @@ public class Ocorrencia {
     private String emailContato;
     private String telefoneContato;
     private String urgencia; // Baixa, Média, Alta, Crítica
-    private String status;   // Recebida, Em Análise, Em Atendimento, Concluída, Cancelada
+    private String status;   // Recebida, Em andamento, Cancelada, Concluída
     private String observacaoInterna;
     private String criadoEm;
     private String atualizadoEm;

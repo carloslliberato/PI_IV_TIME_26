@@ -68,6 +68,17 @@
                 <div class="invalid-feedback">Selecione o tipo de ocorrência.</div>
               </div>
               <div class="col-md-6">
+                <label class="form-label" for="reportPriority">Prioridade <span>*</span></label>
+                <select class="form-select" id="reportPriority" name="prioridade" required>
+                  <option value="" selected disabled>Selecione a prioridade</option>
+                  <option value="Baixa">Baixa</option>
+                  <option value="Média">Média</option>
+                  <option value="Alta">Alta</option>
+                  <option value="Crítica">Crítica</option>
+                </select>
+                <div class="invalid-feedback">Selecione a prioridade do chamado.</div>
+              </div>
+              <div class="col-md-6">
                 <label class="form-label" for="reportAddress">Endereço do local <span>*</span></label>
                 <input class="form-control" id="reportAddress" name="endereco" type="text"
                   placeholder="Nome da rua, número" required minlength="5">

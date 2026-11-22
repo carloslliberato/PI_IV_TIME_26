@@ -105,7 +105,7 @@ async function carregarOcorrencias() {
         bairro: oco.bairro || "Não informado",
         endereco: [oco.localizacao, oco.numero].filter(Boolean).join(", ") || "Endereço não informado",
         status: oco.status || "Recebida",
-        risco: oco.urgencia || "Média"
+        risco: oco.prioridade || oco.urgencia || "Média"
       }));
     professionalMapDemo.occurrences = professionalMapDemo.occurrenceLocations
       .filter(temCoordenadasValidas);

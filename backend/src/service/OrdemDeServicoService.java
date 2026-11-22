@@ -141,7 +141,7 @@ public class OrdemDeServicoService {
             endereco += ", " + numero;
         }
         return new CadastroOrdemDeServicoDTO(arvoreId, ocorrenciaId.toHexString(), null,
-                titulo, descricao, primeiroTexto(ocorrencia, "urgencia", "prioridade"),
+                titulo, descricao, primeiroTexto(ocorrencia, "prioridade", "urgencia"),
                 null, endereco, primeiroTexto(ocorrencia, "bairro"));
     }
 
@@ -202,7 +202,7 @@ public class OrdemDeServicoService {
         }
         Object arvore = ocorrencia.get("arvoreId");
         String arvoreId = arvore instanceof ObjectId id ? id.toHexString() : null;
-        String prioridade = primeiroTexto(ocorrencia, "urgencia", "prioridade");
+        String prioridade = primeiroTexto(ocorrencia, "prioridade", "urgencia");
 
         var cadastro = validador.prepararCadastro(new CadastroOrdemDeServicoDTO(
                 arvoreId, ocorrenciaId.toHexString(), null, titulo, descricao,

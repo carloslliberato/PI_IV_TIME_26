@@ -36,6 +36,8 @@
 
   let arvores = [];
   let arvoreSelecionada = null;
+  let fotosDaArvore = [];
+  let indiceFotoAtual = 0;
   let abaAtiva = "occurrences";
   let toastTimer;
 
@@ -49,23 +51,6 @@
   const classesRisco = {
     BAIXO: "low", MODERADO: "moderate", ALTO: "high", CRITICO: "critical"
   };
-
-  // Acrescenta filtros sem alterar o HTML/CSS existente ou a navegação.
-  // Por enquanto os filtros atuam sobre os dados já recebidos da API.
-  const filtrosExtras = [
-    ["ativas", "Somente ativas"],
-    ["arquivadas", "Somente arquivadas"],
-    ["frutiferas", "Árvores frutíferas"],
-    ["estado:saudavel", "Estado: Saudável"],
-    ["estado:bom", "Estado: Bom"],
-    ["estado:regular", "Estado: Regular"],
-    ["estado:ruim", "Estado: Ruim"],
-    ["estado:critico", "Estado: Crítico"]
-  ];
-  const seletorFiltro = el("treeRiskFilter");
-  filtrosExtras.forEach(([valor, titulo]) => {
-    seletorFiltro.add(new Option(titulo, valor));
-  });
 
   // ========================================
   // COMUNICAÇÃO COM A API
@@ -195,19 +180,15 @@
 
       const risco = normalizar(arvore.risco);
 
-      const filtraRisco =
-        !filtro ||
-        risco === filtro ||
-        (filtro === "manutencao" && arvore.manutencao) ||
-        (filtro === "floracao" && arvore.floracao) ||
-        (filtro === "frutiferas" && arvore.frutifera) ||
-        (filtro === "ativas" && arvore.ativa !== false) ||
-        (filtro === "arquivadas" && arvore.ativa === false) ||
-        (filtro.startsWith("estado:") &&
-          normalizar(arvore.estado) === filtro.slice(7));
+      const filtraRisco = !filtro || risco === filtro;
 
       return conteudo.includes(busca) && filtraRisco;
     });
+
+    if (el("treeSortOrder").value === "alphabetical") {
+      lista.sort((a, b) => String(a.nomePopular || "")
+        .localeCompare(String(b.nomePopular || ""), "pt-BR", { sensitivity: "base" }));
+    }
 
     el("treesTableBody").innerHTML = lista.map(arvore => {
 
@@ -227,16 +208,7 @@
           </td>
 
           <td>
-            <strong>
-              ${escapeHtml(
-                arvore.nomePopular ||
-                arvore.especie ||
-                "Não informado"
-              )}
-            </strong>
-            <small class="tree-scientific-cell">
-              ${escapeHtml(arvore.bairro || "Bairro não informado")}
-            </small>
+            <strong>${escapeHtml(arvore.nomePopular || "Não informado")}</strong>
           </td>
 
           <td>
@@ -351,11 +323,13 @@
       ${arquivada ? "Reativar árvore" : "Arquivar árvore"}
     `;
 
-    // Fotos ainda não possuem integração com a API.
-    el("treePhotoCount").textContent =
-      "(integração pendente)";
-
-    el("openTreePhotos").disabled = true;
+    fotosDaArvore = (Array.isArray(arvore.fotos) ? arvore.fotos : [])
+      .filter(foto => typeof foto === "string" && foto.trim())
+      .map(foto => foto.trim());
+    el("treePhotoCount").textContent = fotosDaArvore.length
+      ? `(${fotosDaArvore.length})`
+      : "";
+    el("openTreePhotos").disabled = false;
 
     abaAtiva = "occurrences";
 
@@ -389,6 +363,40 @@
     `;
   }
 
+  function exibirFotoAtual() {
+    el("treeMainPhoto").src = fotosDaArvore[indiceFotoAtual];
+    el("treeMainPhoto").alt = `Foto ${indiceFotoAtual + 1} da árvore`;
+    el("treePhotoViewerCount").textContent =
+      `${indiceFotoAtual + 1} de ${fotosDaArvore.length}`;
+    el("previousTreePhoto").hidden = fotosDaArvore.length < 2;
+    el("nextTreePhoto").hidden = fotosDaArvore.length < 2;
+  }
+
+  el("openTreePhotos").addEventListener("click", () => {
+    if (!fotosDaArvore.length) {
+      mostrarAviso("Não existem fotos anexadas a esta árvore.");
+      return;
+    }
+    indiceFotoAtual = 0;
+    exibirFotoAtual();
+    el("treePhotoViewer").hidden = false;
+  });
+
+  el("closeTreePhotoViewer").addEventListener("click", () => {
+    el("treePhotoViewer").hidden = true;
+    el("treeMainPhoto").removeAttribute("src");
+  });
+
+  el("previousTreePhoto").addEventListener("click", () => {
+    indiceFotoAtual = (indiceFotoAtual - 1 + fotosDaArvore.length) % fotosDaArvore.length;
+    exibirFotoAtual();
+  });
+
+  el("nextTreePhoto").addEventListener("click", () => {
+    indiceFotoAtual = (indiceFotoAtual + 1) % fotosDaArvore.length;
+    exibirFotoAtual();
+  });
+
   // ========================================
   // FORMULÁRIOS
   // ========================================
@@ -399,6 +407,20 @@
     const dadosOriginais = { ...original };
     delete dadosOriginais.latitude;
     delete dadosOriginais.longitude;
+
+    if (original && original.id) {
+      return {
+        ...dadosOriginais,
+        idade: v.idade.value.trim(),
+        alturaMetros: v.alturaMetros.value === ""
+          ? null : Number(v.alturaMetros.value),
+        diametroCm: v.diametroCm.value === ""
+          ? null : Number(v.diametroCm.value),
+        estado: v.estado.value,
+        risco: v.risco.value,
+        manutencao: v.manutencao.value === "true"
+      };
+    }
 
     return {
       ...dadosOriginais,
@@ -430,11 +452,6 @@
   function preencherFormulario(form, arvore) {
 
     [
-      "nomePopular",
-      "nomeCientifico",
-      "especie",
-      "endereco",
-      "bairro",
       "idade",
       "alturaMetros",
       "diametroCm",
@@ -459,15 +476,7 @@
     }
     seletorEstado.value = arvore.estado || "";
 
-    [
-      "frutifera",
-      "manutencao",
-      "floracao"
-    ].forEach(campo => {
-
-      form.elements[campo].value =
-        String(Boolean(arvore[campo]));
-    });
+    form.elements.manutencao.value = String(Boolean(arvore.manutencao));
   }
 
   function validarFormulario(form) {
@@ -544,6 +553,11 @@
   );
 
   el("treeRiskFilter").addEventListener(
+    "change",
+    renderizarTabela
+  );
+
+  el("treeSortOrder").addEventListener(
     "change",
     renderizarTabela
   );
@@ -707,15 +721,82 @@
   );
 
   // ========================================
-  // FUNCIONALIDADES PENDENTES
+  // REGISTRO DE INTERVENÇÃO
   // ========================================
 
-  el("startInterventionButton").disabled = true;
+  el("startInterventionButton").addEventListener("click", async () => {
+    if (!arvoreSelecionada) return;
+    const form = el("newInterventionForm");
+    const feedback = el("newInterventionFeedback");
+    form.elements.arvoreNome.value = arvoreSelecionada.nomePopular || arvoreSelecionada.especie || "\u00c1rvore";
+    form.elements.endereco.value = arvoreSelecionada.endereco || "";
+    form.elements.bairro.value = arvoreSelecionada.bairro || "";
+    form.elements.tipo.value = "";
+    form.elements.prioridade.value = "";
+    form.elements.equipeId.innerHTML = '<option value="">N\u00e3o atribuir equipe agora</option>';
+    form.elements.descricao.value = "";
+    feedback.textContent = "Carregando equipes dispon\u00edveis...";
+    abrirModal(el("newInterventionModal"));
+    try {
+      const opcoes = await requisicao("/api/ordens-servico/opcoes-cadastro");
+      if (!Array.isArray(opcoes?.equipes)) throw new Error("N\u00e3o foi poss\u00edvel carregar as equipes dispon\u00edveis.");
+      opcoes.equipes.forEach(equipe => {
+        if (equipe && typeof equipe.id === "string" && typeof equipe.nome === "string") {
+          form.elements.equipeId.add(new Option(equipe.nome, equipe.id));
+        }
+      });
+      feedback.textContent = "";
+    } catch (erro) {
+      feedback.textContent = erro.message;
+    }
+    form.elements.tipo.focus();
+  });
 
-  el("startInterventionButton").title =
-    "Intervenções: integração com API pendente";
+  el("newInterventionForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    if (!arvoreSelecionada || !validarFormulario(event.currentTarget)) return;
+    const form = event.currentTarget;
+    const submitButton = form.querySelector('button[type="submit"]');
+    const feedback = el("newInterventionFeedback");
+    const equipeId = form.elements.equipeId.value;
+    submitButton.disabled = true;
+    feedback.textContent = "Criando ordem de servi?o...";
+    try {
+      const resultado = await requisicao("/api/ordens-servico", {
+        method: "POST",
+        body: JSON.stringify({
+          arvoreId: arvoreSelecionada.id,
+          titulo: form.elements.tipo.value,
+          descricao: form.elements.descricao.value.trim(),
+          endereco: arvoreSelecionada.endereco || null,
+          bairro: arvoreSelecionada.bairro || null,
+          prioridade: form.elements.prioridade.value || null
+        })
+      });
+      const ordem = resultado?.ordem;
+      if (!ordem?.id) throw new Error("A ordem foi enviada, mas n?o foi poss?vel confirmar o registro.");
+      if (equipeId) {
+        feedback.textContent = "Ordem criada. Atribuindo a equipe...";
+        try {
+          await requisicao(`/api/ordens-servico/${encodeURIComponent(ordem.id)}/equipe`, {
+            method: "PATCH",
+            body: JSON.stringify({ equipeId })
+          });
+        } catch (erroEquipe) {
+          fecharModal(el("newInterventionModal"));
+          mostrarAviso(`Ordem ${ordem.codigo} criada, mas a equipe n?o foi atribu?da: ${erroEquipe.message}`, true);
+          return;
+        }
+      }
+      fecharModal(el("newInterventionModal"));
+      mostrarAviso(`Ordem de servi?o ${ordem.codigo} criada com sucesso!`);
+    } catch (erro) {
+      feedback.textContent = erro.message;
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
 
-  // ========================================
   // FECHAMENTO DOS MODAIS
   // ========================================
 
@@ -749,6 +830,17 @@
   document.addEventListener(
     "keydown",
     evento => {
+
+      if (el("treePhotoViewer").hidden === false) {
+        if (evento.key === "Escape") {
+          el("closeTreePhotoViewer").click();
+        } else if (evento.key === "ArrowLeft" && fotosDaArvore.length > 1) {
+          el("previousTreePhoto").click();
+        } else if (evento.key === "ArrowRight" && fotosDaArvore.length > 1) {
+          el("nextTreePhoto").click();
+        }
+        return;
+      }
 
       if (evento.key !== "Escape") return;
 

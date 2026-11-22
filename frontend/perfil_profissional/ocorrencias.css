@@ -7,7 +7,7 @@
 .occurrences-heading p { margin: 7px 0 0; color: #718078; font-size: 14px; }
 
 /* Busca e ordenação mantêm os mesmos controles visuais do painel profissional. */
-.occurrences-toolbar { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(210px, 280px); gap: 14px; margin-bottom: 20px; }
+.occurrences-toolbar { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(190px, 230px) minmax(190px, 230px); gap: 14px; margin-bottom: 20px; }
 .occurrences-search, .occurrences-sort { height: 52px; display: flex; align-items: center; gap: 12px; padding: 0 16px; border: 1px solid #dfe8e2; border-radius: 12px; background: #fff; color: #638071; box-shadow: 0 3px 12px rgba(20, 60, 40, .025); }
 .occurrences-search:focus-within, .occurrences-sort:focus-within { border-color: #91b8a0; box-shadow: 0 0 0 3px rgba(29, 118, 81, .1); }
 .occurrences-search > i, .occurrences-sort > i { flex: 0 0 auto; font-size: 17px; }

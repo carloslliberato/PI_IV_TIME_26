@@ -124,6 +124,7 @@ function initializeReportForm() {
       localizacao: enderecoDigitado,
       bairro: bairroDigitado,
       descricao: descricaoDigitada,
+      prioridade: obterValorDoCampo("#reportPriority", 'select[name="prioridade"]'),
       // O nome enviado é resolvido para ObjectId pelo MunicipioRepository, como no cadastro de conta.
       municipioId: municipioSelecionado,
       cidadaoId: cidadaoLogadoId,

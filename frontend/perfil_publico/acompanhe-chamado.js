@@ -155,7 +155,7 @@ function initializeTicketTracking() {
         endereco: doc.localizacao || "-",
         tipo: doc.tipoProblema || "-",
         status: doc.status || "Recebida",
-        prioridade: doc.urgencia || "Média",
+        prioridade: doc.prioridade || doc.urgencia || "Média",
         fotoDescricao: doc.descricao || "Sem descrição informada",
         imagem: doc.imagem || null,
         recebeNotificacao: Boolean(doc.receberNotificacoes),

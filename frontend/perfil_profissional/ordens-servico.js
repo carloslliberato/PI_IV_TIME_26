@@ -474,6 +474,16 @@ function formatServiceOrderDate(isoDate){
   return data.toLocaleString("pt-BR");
 }
 
+function formatServiceOrderCreationDate(isoDate){
+  if (!isoDate) return "—";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(isoDate)){
+    const [ano, mes, dia] = isoDate.split("-");
+    return `${dia}/${mes}/${ano}`;
+  }
+  const data = new Date(isoDate);
+  return Number.isNaN(data.getTime()) ? "—" : data.toLocaleDateString("pt-BR");
+}
+
 // Devolve a classe visual correspondente ao status da ordem.
 function serviceOrderStatusClass(status){
   if (status === "Aberta") return "pending";
@@ -546,6 +556,7 @@ function renderServiceOrdersTable(){
       <td>${escapeServiceOrderText(formatServiceOrderTitle(order.titulo))}</td>
       <td>${escapeServiceOrderText(order.equipeNome || "Não atribuída")}</td>
       <td><span class="service-order-status ${serviceOrderStatusClass(order.status)}">${escapeServiceOrderText(order.status)}</span></td>
+      <td>${escapeServiceOrderText(formatServiceOrderCreationDate(order.dataCriacao))}</td>
     </tr>
   `).join("");
 

@@ -11,12 +11,12 @@
   <!-- Carrega os ícones do projeto, o visual compartilhado e os estilos desta tela. -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <link rel="stylesheet" href="/perfil_profissional/styles-profissional.css" data-professional-sidebar-styles="true">
-  <link rel="stylesheet" href="/perfil_profissional/ocorrencias.css?v=ocorrencia-status-v1">
+  <link rel="stylesheet" href="/perfil_profissional/ocorrencias.css?v=20261122-status-filter-v1">
 </head>
 <body>
   <div class="app-shell">
     <!-- O sidebar valida login e setor, destaca Ocorrências e carrega ocorrencias.js após autorizar o acesso. -->
-    <div id="sidebar-profissional" data-script="/perfil_profissional/ocorrencias.js?v=20261121-ocorrencia-status-v1"></div>
+    <div id="sidebar-profissional" data-script="/perfil_profissional/ocorrencias.js?v=20261122-status-filter-v1"></div>
 
     <main class="main professional-main">
       <!-- Apresenta o objetivo da tela e o município dos registros. -->
@@ -44,6 +44,17 @@
               <option value="critical">Mais críticas</option>
             </select>
           </label>
+          <label class="occurrences-sort" for="occurrencesStatusFilter">
+            <i class="bi bi-funnel" aria-hidden="true"></i>
+            <span class="visually-hidden">Filtrar por status</span>
+            <select id="occurrencesStatusFilter">
+              <option value="all">Todos os status</option>
+              <option value="Recebida">Recebida</option>
+              <option value="Em andamento">Em andamento</option>
+              <option value="Cancelada">Cancelada</option>
+              <option value="Concluída">Concluída</option>
+            </select>
+          </label>
         </section>
 
         <!-- A tabela resume as ocorrências municipais e informa OS e equipe vinculadas. -->
@@ -58,10 +69,10 @@
             <table class="occurrences-table">
               <thead>
                 <tr>
-                  <th scope="col">ID da ocorrência</th>
+                  <th scope="col">Identificação</th>
                   <th scope="col">Tipo de ocorrência</th>
                   <th scope="col">Bairro</th>
-                  <th scope="col">Nível de risco</th>
+                  <th scope="col">Prioridade</th>
                   <th scope="col">Ordem de serviço</th>
                   <th scope="col">Equipe designada</th>
                   <th scope="col">Status</th>

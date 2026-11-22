@@ -71,7 +71,7 @@
         <!-- Pesquisa e filtros -->
         <section
           class="trees-toolbar"
-          aria-label="Buscar e filtrar árvores">
+          aria-label="Buscar, filtrar e ordenar árvores">
 
           <label class="tree-search" for="treeSearchInput">
 
@@ -92,16 +92,22 @@
             <select id="treeRiskFilter">
 
               <option value="">
-                Todos os níveis e situações
+                Todos os níveis de risco
               </option>
 
               <option value="baixo">Baixo</option>
               <option value="moderado">Moderado</option>
               <option value="alto">Alto</option>
-              <option value="crítico">Crítico</option>
-              <option value="manutenção">Manutenção</option>
-              <option value="floração">Floração</option>
+              <option value="critico">Crítico</option>
 
+            </select>
+          </label>
+
+          <label class="tree-filter" for="treeSortOrder">
+            <i class="bi bi-sort-alpha-down"></i>
+            <select id="treeSortOrder" aria-label="Ordenar árvores">
+              <option value="default">Ordem padrão</option>
+              <option value="alphabetical">Ordem alfabética</option>
             </select>
           </label>
         </section>
@@ -138,8 +144,8 @@
 
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Árvore</th>
+                  <th>Identificação</th>
+                  <th>Nome popular</th>
                   <th>Bairro</th>
                   <th>Nível de risco</th>
                   <th>Situação</th>
@@ -325,7 +331,7 @@
     </section>
   </div>
 
-  <!-- Visualizador reservado para futura integração -->
+  <!-- Visualizador das fotos anexadas à árvore -->
   <div
     class="tree-photo-viewer"
     id="treePhotoViewer"
@@ -590,7 +596,7 @@
           </h2>
 
           <p>
-            Altera os dados cadastrais no MongoDB.
+            Atualiza os dados da árvore
           </p>
         </div>
 
@@ -601,58 +607,18 @@
         class="tree-form-grid">
 
         <label>
-          Nome popular
-          <input name="nomePopular" required maxlength="120">
-        </label>
-
-        <label>
-          Nome científico
-          <input name="nomeCientifico" required maxlength="160">
-        </label>
-
-        <label>
-          Espécie
-          <input name="especie" required maxlength="120">
-        </label>
-
-        <label>
-          Bairro
-          <input name="bairro" required maxlength="120">
-        </label>
-
-        <label class="form-field-wide">
-          Endereço
-          <input name="endereco" required maxlength="250">
-        </label>
-
-        <p class="form-field-wide">
-          A localização será recalculada automaticamente pelo endereço. Se não for encontrada, a árvore será salva sem
-          marcador no mapa.
-        </p>
-
-        <label>
           Idade estimada
           <input name="idade">
         </label>
 
         <label>
           Altura (m)
-          <input
-            name="alturaMetros"
-            type="number"
-            step="0.1"
-            min="0"
-            required>
+          <input name="alturaMetros" type="number" step="0.1" min="0" required>
         </label>
 
         <label>
           Diâmetro (cm)
-          <input
-            name="diametroCm"
-            type="number"
-            step="0.1"
-            min="0"
-            required>
+          <input name="diametroCm" type="number" step="0.1" min="0" required>
         </label>
 
         <label>
@@ -676,22 +642,6 @@
         </label>
 
         <label>
-          Árvore frutífera
-          <select name="frutifera">
-            <option value="false">Não</option>
-            <option value="true">Sim</option>
-          </select>
-        </label>
-
-        <label>
-          Em floração
-          <select name="floracao">
-            <option value="false">Não</option>
-            <option value="true">Sim</option>
-          </select>
-        </label>
-
-        <label>
           Precisa de manutenção
           <select name="manutencao">
             <option value="false">Não</option>
@@ -700,20 +650,73 @@
         </label>
 
         <div class="tree-form-actions">
+          <button class="tree-button tree-button-secondary" data-close-modal type="button">Cancelar</button>
+          <button class="tree-button tree-button-primary" type="submit">Salvar alterações</button>
+        </div>
+      </form>
+    </section>
+  </div>
 
-          <button
-            class="tree-button tree-button-secondary"
-            data-close-modal
-            type="button">
-            Cancelar
-          </button>
-
-          <button
-            class="tree-button tree-button-primary"
-            type="submit">
-            Salvar alterações
-          </button>
-
+  <div class="tree-modal-backdrop" id="newInterventionModal" role="dialog" aria-modal="true" aria-labelledby="newInterventionTitle" hidden>
+    <section class="tree-modal tree-form-modal">
+      <button class="tree-modal-close" data-close-modal type="button" aria-label="Fechar">
+        <i class="bi bi-x-lg"></i>
+      </button>
+      <div class="tree-form-heading">
+        <span class="tree-form-icon"><i class="bi bi-clipboard-plus"></i></span>
+        <div>
+          <h2 id="newInterventionTitle">Registrar nova intervenção</h2>
+          <p>Informe os dados do serviço realizado nesta árvore.</p>
+        </div>
+      </div>
+      <form id="newInterventionForm" class="tree-form-grid">
+        <label class="form-field-wide">
+          Árvore vinculada
+          <input name="arvoreNome" readonly>
+        </label>
+        <label class="form-field-wide">
+          Endereço
+          <input name="endereco" readonly>
+        </label>
+        <label class="form-field-wide">
+          Bairro
+          <input name="bairro" readonly>
+        </label>
+        <label class="form-field-wide">
+          Tipo de intervenção
+          <select name="tipo" required>
+            <option value="" selected disabled>Selecione o tipo de ocorrência</option>
+            <option>Galho quebrado</option>
+            <option>Árvore caída</option>
+            <option>Árvore em risco</option>
+            <option>Necessidade de poda</option>
+            <option>Outro</option>
+          </select>
+        </label>
+        <label class="form-field-wide">
+          Prioridade <span>(opcional)</span>
+          <select name="prioridade">
+            <option value="">Sem prioridade informada</option>
+            <option>Baixa</option>
+            <option>Média</option>
+            <option>Alta</option>
+            <option>Crítica</option>
+          </select>
+        </label>
+        <label class="form-field-wide">
+          Equipe designada <span>(opcional)</span>
+          <select name="equipeId">
+            <option value="">Não atribuir equipe agora</option>
+          </select>
+        </label>
+        <label class="form-field-wide">
+          Descrição do serviço
+          <textarea name="descricao" rows="4" required maxlength="4000" placeholder="Descreva o serviço realizado"></textarea>
+        </label>
+        <p id="newInterventionFeedback" class="form-field-wide" role="status" aria-live="polite"></p>
+        <div class="tree-form-actions">
+          <button class="tree-button tree-button-secondary" data-close-modal type="button">Cancelar</button>
+          <button class="tree-button tree-button-primary" type="submit">Registrar intervenção</button>
         </div>
       </form>
     </section>

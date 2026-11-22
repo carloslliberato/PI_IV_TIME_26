@@ -84,10 +84,11 @@
             <table class="service-orders-table">
               <thead>
                 <tr>
-                  <th scope="col">Código da OS</th>
-                  <th scope="col">Título da OS</th>
+                  <th scope="col">Identificação</th>
+                  <th scope="col">Tipo de ocorrência</th>
                   <th scope="col">Equipe designada</th>
-                  <th scope="col">Status da ordem de serviço</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Data</th>
                 </tr>
               </thead>
               <tbody id="serviceOrdersTableBody"></tbody>
@@ -129,7 +130,7 @@
         <div class="service-order-create-wide service-order-prefill">
           <small>Ao selecionar uma ocorrência, os dados existentes de tipo, descrição e local serão usados na ordem.</small>
         </div>
-        <label class="service-order-create-wide" for="createServiceOrderTitle">Título da OS
+        <label class="service-order-create-wide" for="createServiceOrderTitle">Tipo da ocorrência
           <select id="createServiceOrderTitle" name="titulo" required>
             <option value="">Selecione o tipo de ocorrência</option>
             <option value="Galho quebrado">Galho quebrado</option>

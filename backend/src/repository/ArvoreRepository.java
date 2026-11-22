@@ -630,6 +630,9 @@ public class ArvoreRepository {
         arvore.setProximaManutencao(
                 documento.getDate("proximaManutencao"));
 
+        List<String> fotos = documento.getList("fotos", String.class);
+        arvore.setFotos(fotos);
+
         return arvore;
     }
 

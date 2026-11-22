@@ -150,7 +150,7 @@ function initializeCitizenOccurrences() {
         bairro: doc.bairro || extrairBairro(doc.localizacao),
         tipo: formatarTipoOcorrencia(doc.tipo || doc.tipoProblema),
         status: doc.status || "Recebida",
-        prioridade: doc.urgencia || doc.prioridade || "-"
+        prioridade: doc.prioridade || doc.urgencia || "-"
       }));
 
       // Atualiza a tabela na tela com os dados recebidos

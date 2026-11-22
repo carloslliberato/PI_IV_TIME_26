@@ -83,8 +83,8 @@ public class OcorrenciaController {
 
         String status = ctx.queryParam("status");
 
-        String prioridade = ctx.queryParam("urgencia");
-        if (prioridade == null) prioridade = ctx.queryParam("prioridade");
+        String prioridade = ctx.queryParam("prioridade");
+        if (prioridade == null) prioridade = ctx.queryParam("urgencia");
 
         // Etapa 3: consulta o serviço com os filtros e devolve a lista serializada.
         List<Document> lista = service.listarOcorrencias(municipio, tipo, status, prioridade);
@@ -142,7 +142,7 @@ public class OcorrenciaController {
         ctx.contentType("application/json; charset=utf-8");
         try {
             AtualizacaoOcorrenciaDTO dto = gson.fromJson(ctx.body(), AtualizacaoOcorrenciaDTO.class);
-            String novaPrioridade = (dto.urgencia != null) ? dto.urgencia : dto.prioridade;
+            String novaPrioridade = (dto.prioridade != null) ? dto.prioridade : dto.urgencia;
             boolean ok = service.alterarPrioridade(ctx.pathParam("id"), novaPrioridade);
             if (ok) {
                 ctx.status(200).result(gson.toJson(Map.of("mensagem", "Prioridade atualizada com sucesso!")));

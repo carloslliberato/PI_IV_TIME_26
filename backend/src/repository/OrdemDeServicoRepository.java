@@ -72,6 +72,25 @@ public class OrdemDeServicoRepository {
 
         // Garante a existência de apenas um contador para cada ano.
         this.sequencias.createIndex(ascending("ano"), new IndexOptions().unique(true));
+        sincronizarOcorrenciasDeOrdensCanceladas();
+    }
+
+    // Corrige ocorrências que já estavam vinculadas a OS canceladas antes da sincronização transacional.
+    private void sincronizarOcorrenciasDeOrdensCanceladas(){
+        try (MongoCursor<Document> cursor = colecao.find(and(
+                eq("status", "Cancelada"), ne("ocorrenciaId", null))).iterator()) {
+            while (cursor.hasNext()) {
+                Document ordem = cursor.next();
+                ObjectId ocorrenciaId = ordem.getObjectId("ocorrenciaId");
+                ObjectId municipioId = ordem.getObjectId("municipioId");
+                if (ocorrenciaId == null || municipioId == null) continue;
+                Document atualizacao = new Document("status", "Cancelada");
+                Object dataAtualizacao = ordem.get("dataAtualizacao");
+                if (dataAtualizacao != null) atualizacao.append("atualizadoEm", dataAtualizacao.toString());
+                ocorrencias.updateOne(and(eq("_id", ocorrenciaId), eq("municipioId", municipioId)),
+                        new Document("$set", atualizacao));
+            }
+        }
     }
 
     // Reserva e retorna o próximo número da sequência de OS do ano informado.
@@ -97,6 +116,7 @@ public class OrdemDeServicoRepository {
         if (municipioId == null) throw new IllegalArgumentException("O município é obrigatório.");
         List<Map<String, Object>> opcoesArvores = new ArrayList<>();
         List<Map<String, Object>> opcoesOcorrencias = new ArrayList<>();
+        List<Map<String, Object>> opcoesEquipes = new ArrayList<>();
         Set<ObjectId> arvoresDisponiveis = new HashSet<>();
         boolean incompativeis = false;
         Bson mesmoIdentificadorMunicipal = or(eq("municipioId", municipioId),
@@ -145,10 +165,22 @@ public class OrdemDeServicoRepository {
                 opcoesOcorrencias.add(item);
             }
         }
+        for (Document equipe : equipes.find(and(eq("municipioId", municipioId),
+                eq("status", "Disponível"))).sort(ascending("nome"))) {
+            Object id = equipe.get("_id");
+            if (!(id instanceof ObjectId equipeId) || colecao.find(and(
+                    or(eq("equipeId", equipeId), eq("equipeId", equipeId.toHexString())),
+                    in("status", "Aberta", "Em andamento"))).first() != null) continue;
+            Map<String, Object> item = new HashMap<>();
+            item.put("id", equipeId.toHexString());
+            item.put("nome", textoDaEquipe(equipe, "nome", "nomeEquipe"));
+            opcoesEquipes.add(item);
+        }
         Map<String, Object> resposta = new HashMap<>();
         resposta.put("municipioId", municipioId.toHexString());
         resposta.put("arvores", opcoesArvores);
         resposta.put("ocorrencias", opcoesOcorrencias);
+        resposta.put("equipes", opcoesEquipes);
         resposta.put("referenciasIncompativeis", incompativeis);
         resposta.put("avisos", incompativeis
                 ? List.of("Há registros deste município com identificadores incompatíveis. Somente as referências compatíveis podem ser selecionadas.")
@@ -363,7 +395,7 @@ public class OrdemDeServicoRepository {
                 UpdateResult atualizacaoOcorrencia = ocorrencias.updateOne(sessao,
                         and(eq("_id", ordem.getOcorrenciaId()), eq("municipioId", municipioId)),
                         new Document("$set", new Document()
-                                .append("status", "Em Atendimento")
+                                .append("status", "Em andamento")
                                 .append("observacaoInterna", observacaoInterna)
                                 .append("atualizadoEm", Instant.now().toString())));
                 if (atualizacaoOcorrencia.getMatchedCount() != 1) {
@@ -624,6 +656,15 @@ public class OrdemDeServicoRepository {
                                 .append("dataAtualizacao", Date.from(agora))));
                 if (atualizacao.getMatchedCount() != 1)
                     throw new IllegalStateException("A OS foi alterada. Consulte novamente antes de atribuir.");
+                ObjectId ocorrenciaId = documento.getObjectId("ocorrenciaId");
+                if (ocorrenciaId != null) {
+                    UpdateResult ocorrenciaAtualizada = ocorrencias.updateOne(sessao,
+                            and(eq("_id", ocorrenciaId), eq("municipioId", municipioId)),
+                            new Document("$set", new Document("status", "Em andamento")
+                                    .append("atualizadoEm", agora.toString())));
+                    if (ocorrenciaAtualizada.getMatchedCount() != 1)
+                        throw new NoSuchElementException("Ocorrência vinculada não encontrada nesse município.");
+                }
                 liberarEquipeSeSemOrdemAtiva(sessao, anterior, municipioId);
                 return converterParaOrdemDeServico(buscarOrdemNaTransacao(sessao, id, municipioId));
             }, opcoesDaTransacao());
@@ -654,6 +695,15 @@ public class OrdemDeServicoRepository {
                                 .append("dataAtualizacao", Date.from(agora))));
                 if (resultado.getMatchedCount() != 1)
                     throw new IllegalStateException("A OS foi alterada. Consulte novamente antes de cancelar.");
+                ObjectId ocorrenciaId = documento.getObjectId("ocorrenciaId");
+                if (ocorrenciaId != null) {
+                    UpdateResult ocorrenciaAtualizada = ocorrencias.updateOne(sessao,
+                            and(eq("_id", ocorrenciaId), eq("municipioId", municipioId)),
+                            new Document("$set", new Document("status", "Cancelada")
+                                    .append("atualizadoEm", agora.toString())));
+                    if (ocorrenciaAtualizada.getMatchedCount() != 1)
+                        throw new NoSuchElementException("Ocorrência vinculada não encontrada nesse município.");
+                }
                 liberarEquipeSeSemOrdemAtiva(sessao, documento.getObjectId("equipeId"), municipioId);
                 return converterParaOrdemDeServico(buscarOrdemNaTransacao(sessao, id, municipioId));
             }, opcoesDaTransacao());

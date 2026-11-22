@@ -18,6 +18,7 @@ const occurrencePage = {
   count: document.getElementById("occurrencesResultCount"),
   search: document.getElementById("occurrencesSearch"),
   sort: document.getElementById("occurrencesSort"),
+  statusFilter: document.getElementById("occurrencesStatusFilter"),
   modal: document.getElementById("occurrenceModal"),
   modalContent: document.getElementById("occurrenceModalContent"),
   toast: document.getElementById("occurrencesToast")
@@ -52,8 +53,7 @@ function occurrenceRiskClass(risk) {
 
 function occurrenceStatusClass(status){
   const normalized = normalizeOccurrenceText(status);
-  if (normalized === "em atendimento") return "in-progress";
-  if (normalized === "em analise") return "under-review";
+  if (["em andamento", "em atendimento", "em analise"].includes(normalized)) return "in-progress";
   if (normalized === "concluida") return "completed";
   if (normalized === "cancelada") return "cancelled";
   return "received";
@@ -75,9 +75,14 @@ function sortOccurrences(records) {
 // Filtra as ocorrências conforme o texto digitado na busca (bairro, árvore, ID ou tipo)
 function getVisibleOccurrences() {
   const query = normalizeOccurrenceText(occurrencePage.search ? occurrencePage.search.value.trim() : "");
+  const selectedStatus = occurrencePage.statusFilter?.value || "all";
   const filtered = occurrenceData.occurrences.filter(item => {
     const searchableValues = [item.neighborhood, item.tree, item.treeId, item.type, item.id];
-    return !query || searchableValues.some(value => normalizeOccurrenceText(value).includes(query));
+    const matchesSearch = !query || searchableValues.some(value => normalizeOccurrenceText(value).includes(query));
+    const status = normalizeOccurrenceText(item.status);
+    const canonicalStatus = status === "em atendimento" || status === "em analise" ? "em andamento" : status;
+    const matchesStatus = selectedStatus === "all" || canonicalStatus === normalizeOccurrenceText(selectedStatus);
+    return matchesSearch && matchesStatus;
   });
   return sortOccurrences(filtered);
 }
@@ -171,7 +176,7 @@ async function updateOccurrenceRisk(occurrenceId, newRisk, select){
       method: "PATCH",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ urgencia: newRisk })
+      body: JSON.stringify({ prioridade: newRisk })
     });
     const responseText = await response.text();
     let body = {};
@@ -394,7 +399,7 @@ async function createOccurrenceOrder(teamId) {
       teamId: savedOrder.equipeId,
       teamName: team.name
     };
-    occurrence.status = "Em Atendimento";
+    occurrence.status = "Em andamento";
     occurrenceData.teams = occurrenceData.teams.filter(item => item.id !== team.id);
 
     renderOccurrencesTable();
@@ -469,7 +474,7 @@ async function carregarDadosDoBackend() {
         treeId: doc.arvoreId || "Não vinculada",
         neighborhood: doc.bairro || extrairBairro(doc.localizacao),
         address: doc.localizacao || "Endereço não informado",
-        risk: doc.urgencia || "Média",
+        risk: doc.prioridade || doc.urgencia || "Média",
         reporter: doc.nomeContato || (doc.cidadaoId === "cid_anonimo" ? "Portal Público (Anônimo)" : `Cidadão (${doc.cidadaoId || "Portal"})`),
         description: doc.descricao || "Sem descrição detalhada.",
         status: doc.status || "—",
@@ -495,6 +500,7 @@ async function carregarDadosDoBackend() {
 function setupOccurrencePageEvents() {
   occurrencePage.search?.addEventListener("input", renderOccurrencesTable);
   occurrencePage.sort?.addEventListener("change", renderOccurrencesTable);
+  occurrencePage.statusFilter?.addEventListener("change", renderOccurrencesTable);
 
   occurrencePage.tableBody?.addEventListener("click", event => {
     const riskButton = event.target.closest("[data-edit-occurrence-risk]");
