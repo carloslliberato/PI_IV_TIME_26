@@ -82,7 +82,17 @@ public class OrdemDeServicoService {
             }
             ObjectId ocorrenciaId = new ObjectId(dados.getOcorrenciaId().strip());
             ocorrencia = ordemRepository.buscarOcorrenciaParaOrdem(ocorrenciaId, municipioId);
-            dadosParaValidar = dadosCanonicosDaOcorrencia(ocorrencia, ocorrenciaId);
+            CadastroOrdemDeServicoDTO canonico = dadosCanonicosDaOcorrencia(ocorrencia, ocorrenciaId);
+            String arvoreSelecionada = dados.getArvoreId() == null || dados.getArvoreId().isBlank()
+                    ? canonico.getArvoreId() : dados.getArvoreId().strip();
+            if (canonico.getArvoreId() != null && arvoreSelecionada != null
+                    && !canonico.getArvoreId().equals(arvoreSelecionada)) {
+                throw new IllegalArgumentException(
+                        "A árvore selecionada deve ser a mesma já vinculada à ocorrência.");
+            }
+            dadosParaValidar = new CadastroOrdemDeServicoDTO(arvoreSelecionada,
+                    ocorrenciaId.toHexString(), null, canonico.getTitulo(), canonico.getDescricao(),
+                    canonico.getPrioridade(), null, canonico.getEndereco(), canonico.getBairro());
         }
         var cadastro = validador.prepararCadastro(dadosParaValidar);
         String endereco = cadastro.endereco();
@@ -134,7 +144,8 @@ public class OrdemDeServicoService {
                     "A ocorrência não possui tipo e descrição para criar a ordem de serviço.");
         }
         Object arvore = ocorrencia.get("arvoreId");
-        String arvoreId = arvore instanceof ObjectId id ? id.toHexString() : null;
+        String arvoreId = arvore instanceof ObjectId id ? id.toHexString()
+                : arvore instanceof String texto && ObjectId.isValid(texto) ? texto : null;
         String endereco = primeiroTexto(ocorrencia, "localizacao", "endereco");
         String numero = primeiroTexto(ocorrencia, "numero");
         if (endereco != null && numero != null && !endereco.endsWith(numero)) {
@@ -294,6 +305,14 @@ public class OrdemDeServicoService {
         }
 
         return ordemRepository.listarPorMunicipio(municipioId);
+    }
+
+    public List<Map<String, Object>> historicoPorArvore(ObjectId arvoreId){
+        return ordemRepository.historicoPorArvore(arvoreId);
+    }
+
+    public boolean existeOcorrenciaPorArvore(ObjectId arvoreId){
+        return ordemRepository.existeOcorrenciaPorArvore(arvoreId);
     }
 
     public Map<ObjectId, String> buscarNomesEquipes(

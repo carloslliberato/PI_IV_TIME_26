@@ -45,11 +45,20 @@
         </div>
 
         <!-- O alerta resume o risco alto e leva à lista de ocorrências do município. -->
-        <a class="risk-alert" id="riskAlert" href="/ocorrencias" aria-label="Ver ocorrências relacionadas a árvores com risco alto">
+        <a class="risk-alert" id="riskAlert" href="/ocorrencias" aria-label="Ver ocorrências com prioridade alta ou crítica">
           <div class="risk-alert-icon"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i></div>
           <div>
             <h2 id="riskAlertTitle">Verificando riscos altos</h2>
             <p id="riskAlertMessage">Carregando dados do município...</p>
+          </div>
+          <span class="risk-alert-more">Ver mais <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+        </a>
+
+        <a class="risk-alert" id="staleOrdersAlert" href="/ordens-servico" aria-label="Ver ordens de serviço abertas há mais de sete dias">
+          <div class="risk-alert-icon"><i class="bi bi-clock-history" aria-hidden="true"></i></div>
+          <div>
+            <h2 id="staleOrdersAlertTitle">Verificando ordens de serviço</h2>
+            <p id="staleOrdersAlertMessage">Carregando dados do município...</p>
           </div>
           <span class="risk-alert-more">Ver mais <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
         </a>

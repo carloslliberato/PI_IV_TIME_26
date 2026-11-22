@@ -407,6 +407,11 @@ body{
 .popup-card{min-width:220px}
 .popup-id{font-size:12px;color:#5e6d66}
 .popup-name{font-size:16px;font-weight:800;margin-top:5px}
+.popup-risk{margin-top:8px;font-size:12px;font-weight:800}
+.popup-risk.low{color:#328a3c}
+.popup-risk.medium{color:#ad7a00}
+.popup-risk.high{color:#bb3f31}
+.popup-risk.critical{color:#8d2018}
 .popup-species{font-style:italic;color:#64716b;font-size:12px;margin-top:2px}
 .popup-address{font-size:12px;color:#5d6863;margin-top:10px;line-height:1.45}
 .popup-link{margin-top:9px;color:#1a704c;font-weight:800;font-size:12px;cursor:pointer}
@@ -434,6 +439,13 @@ body{
 .tree-detail-field{min-width:0;padding:12px;border:1px solid #e7eeea;border-radius:10px;background:#fff}
 .tree-detail-field strong{display:block;overflow-wrap:anywhere;color:#303d36;font-size:13px;font-weight:650;line-height:1.45}
 .tree-detail-field-wide{grid-column:1/-1}
+.tree-detail-photo-label{display:block;margin:0 0 6px;color:#718078;font-size:13px;font-weight:650}
+.tree-detail-photo-select{max-width:320px;margin-bottom:12px}
+.tree-detail-photo{display:block;max-width:100%;max-height:420px;margin:0 auto;border-radius:11px;object-fit:contain}
+.tree-detail-empty{display:flex;align-items:center;gap:10px;padding:13px 15px;border:1px solid #e7eeea;border-radius:10px;background:#f7faf8;color:#718078;font-family:inherit;font-size:13px;font-weight:500;line-height:1.5}
+.tree-detail-empty i{flex:none;color:#56836b;font-size:17px}
+.tree-order-history-table{margin-bottom:0;font-size:13px}
+.tree-order-history-table th{color:#718078;font-size:12px;white-space:nowrap}
 .tree-detail-risk{color:#328a3c!important}
 .tree-detail-risk.medium{color:#ad7a00!important}
 .tree-detail-risk.high,.tree-detail-risk.critical{color:#bb3f31!important}

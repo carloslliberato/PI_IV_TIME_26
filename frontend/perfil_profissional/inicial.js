@@ -47,23 +47,62 @@ function atualizarCardsDashboard(indicadores) {
   });
 }
 
-// Atualiza o banner de alerta no topo conforme a quantidade real de árvores com risco alto
-function atualizarAlertaRisco(totalRiscoAlto) {
+// Atualiza o banner conforme ocorrências de prioridade alta ou crítica.
+function atualizarAlertaPrioridade(totalPrioridadeAlta) {
   const alerta = document.getElementById("riskAlert");
   const tituloAlerta = document.getElementById("riskAlertTitle");
   const mensagemAlerta = document.getElementById("riskAlertMessage");
 
   if (!alerta || !tituloAlerta || !mensagemAlerta) return;
 
-  if (totalRiscoAlto > 0) {
+  if (totalPrioridadeAlta === null) {
+    alerta.classList.add("risk-alert-clear");
+    tituloAlerta.textContent = "Não foi possível verificar os riscos";
+    mensagemAlerta.textContent = "Não foi possível consultar as ordens de serviço agora.";
+    alerta.setAttribute("aria-label", "Verificação de ocorrências indisponível");
+  } else if (totalPrioridadeAlta > 0) {
     alerta.classList.remove("risk-alert-clear");
-    tituloAlerta.textContent = `${totalRiscoAlto.toLocaleString("pt-BR")} ${totalRiscoAlto === 1 ? "árvore com risco alto" : "árvores com risco alto"}`;
-    mensagemAlerta.textContent = "Há árvores que necessitam de atenção imediata neste município.";
+    tituloAlerta.textContent = "Ocorrências com prioridade alta identificadas";
+    mensagemAlerta.textContent = "Existem ocorrências com prioridades altas que exigem atenção.";
+    alerta.setAttribute("aria-label", "Ver ocorrências com prioridade alta ou crítica");
   } else {
     alerta.classList.add("risk-alert-clear");
     tituloAlerta.textContent = "Nenhum risco alto identificado";
-    mensagemAlerta.textContent = "Não existem árvores em risco alto aguardando atenção imediata.";
+    mensagemAlerta.textContent = "Não existem ocorrências com alta prioridade.";
+    alerta.setAttribute("aria-label", "Ver ocorrências do município");
   }
+}
+
+function atualizarAlertaOrdensParadas(totalOrdensParadas) {
+  const alerta = document.getElementById("staleOrdersAlert");
+  const titulo = document.getElementById("staleOrdersAlertTitle");
+  const mensagem = document.getElementById("staleOrdersAlertMessage");
+  if (!alerta || !titulo || !mensagem) return;
+
+  if (totalOrdensParadas === null) {
+    alerta.classList.add("risk-alert-clear");
+    titulo.textContent = "Não foi possível verificar as ordens";
+    mensagem.textContent = "Não foi possível consultar as ordens de serviço agora.";
+    alerta.setAttribute("aria-label", "Verificação das ordens de serviço indisponível");
+  } else if (totalOrdensParadas > 0) {
+    alerta.classList.remove("risk-alert-clear");
+    titulo.textContent = "Ordens de serviço sem atualização";
+    mensagem.textContent = `${totalOrdensParadas} ordem(ns) aberta(s) há mais de 7 dias exigem atenção.`;
+    alerta.setAttribute("aria-label", "Ver ordens de serviço abertas há mais de sete dias");
+  } else {
+    alerta.classList.add("risk-alert-clear");
+    titulo.textContent = "Nenhuma ordem parada há mais de 7 dias";
+    mensagem.textContent = "Todas as ordens abertas tiveram atualização nos últimos 7 dias.";
+    alerta.setAttribute("aria-label", "Ver ordens de serviço do município");
+  }
+}
+
+function prioridadeExigeAtencao(valor) {
+  const prioridade = String(valor || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  return prioridade === "alta" || prioridade === "critica";
 }
 
 // Função auxiliar que faz GET em uma rota da API e devolve a lista JSON (ou lista vazia se falhar)
@@ -104,6 +143,23 @@ async function buscarTotalDeOrdens() {
   }
 }
 
+// Busca as OS para identificar ocorrências que já foram encaminhadas à equipe.
+async function buscarOrdensParaAlerta() {
+  try {
+    const resposta = await fetch("/api/ordens-servico", {
+      credentials: "same-origin",
+      cache: "no-store"
+    });
+    if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
+    const dados = await resposta.json();
+    if (!Array.isArray(dados.ordens)) throw new Error("A API não retornou a lista de ordens de serviço.");
+    return dados.ordens;
+  } catch (erro) {
+    console.error("Erro ao consultar ordens de serviço para o alerta:", erro);
+    return null;
+  }
+}
+
 // Busca os dados da sessão do profissional logado (nome e município) no back-end
 async function carregarDadosSessaoProfissional() {
   let nome = localStorage.getItem("nome")
@@ -139,10 +195,11 @@ async function carregarDashboardProfissional() {
   await carregarDadosSessaoProfissional();
 
   // Busca árvores e ocorrências em paralelo com o total municipal de OS.
-  const [arvores, ocorrencias, totalOrdens] = await Promise.all([
+  const [arvores, ocorrencias, totalOrdens, ordens] = await Promise.all([
     buscarListaDaApi("/api/arvores"),
     buscarListaDaApi("/api/ocorrencias"),
-    buscarTotalDeOrdens()
+    buscarTotalDeOrdens(),
+    buscarOrdensParaAlerta()
   ]);
 
   const arvoresDoMunicipio = arvores.filter(
@@ -152,10 +209,24 @@ async function carregarDashboardProfissional() {
     ocorrencia => String(ocorrencia.municipioId || "").toLowerCase() === municipioDashboardId
   );
 
-  // Conta quantas árvores estão classificadas com risco Alto ou Crítico
-  const totalRiscoAlto = arvoresDoMunicipio.filter(arvore => {
-    const risco = String(arvore.nivelRisco || arvore.risco || "").toLowerCase();
-    return risco.includes("alto") || risco.includes("crít") || risco.includes("crit");
+  const ocorrenciasComOrdem = new Set((ordens || [])
+    .map(ordem => String(ordem.ocorrenciaId || "").toLowerCase())
+    .filter(Boolean));
+
+  // Alerta apenas chamados prioritários que ainda estão recebidos e sem OS vinculada.
+  const totalPrioridadeAlta = ordens === null ? null : ocorrenciasDoMunicipio.filter(ocorrencia =>
+      String(ocorrencia.status || "").trim().toLocaleLowerCase("pt-BR") === "recebida"
+        && !ocorrenciasComOrdem.has(String(ocorrencia._id || "").toLowerCase())
+        && prioridadeExigeAtencao(ocorrencia.prioridade || ocorrencia.urgencia)
+    ).length;
+
+  const agora = Date.now();
+  const seteDiasEmMs = 7 * 24 * 60 * 60 * 1000;
+  const totalOrdensParadas = ordens === null ? null : ordens.filter(ordem => {
+    const status = String(ordem.status || "").trim().toLocaleLowerCase("pt-BR");
+    if (status !== "aberta" && status !== "em andamento") return false;
+    const dataReferencia = Date.parse(ordem.dataAtualizacao || ordem.dataCriacao || "");
+    return Number.isFinite(dataReferencia) && agora - dataReferencia > seteDiasEmMs;
   }).length;
 
   // Monta os indicadores apenas com os totais reais vindos do banco
@@ -166,7 +237,8 @@ async function carregarDashboardProfissional() {
   };
 
   atualizarCardsDashboard(indicadoresReais);
-  atualizarAlertaRisco(totalRiscoAlto);
+  atualizarAlertaPrioridade(totalPrioridadeAlta);
+  atualizarAlertaOrdensParadas(totalOrdensParadas);
 }
 
 // Encerra a sessão no back-end, limpa os dados locais e redireciona para o login

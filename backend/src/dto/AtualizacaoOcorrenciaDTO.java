@@ -9,8 +9,4 @@ public class AtualizacaoOcorrenciaDTO {
     public String prioridade;
     public String observacaoInterna;
     public String arvoreId;
-    public Boolean receberNotificacoes;
-    public String nomeContato;
-    public String emailContato;
-    public String telefoneContato;
 }

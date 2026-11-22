@@ -23,7 +23,7 @@
 <body>
 
   <div class="app-shell">
-    <div id="sidebar-container" data-script="/perfil_publico/script.js?v=20261121-ocorrencias-lateral" aria-live="polite"></div>
+    <div id="sidebar-container" data-script="/perfil_publico/script.js?v=20261122-map-search-13" aria-live="polite"></div>
 
 
     <!-- Main content, topbar = barra superior -->
@@ -44,35 +44,7 @@
         <!-- campo de pesquisa, com ícone de lupa e placeholder -->
         <div class="search-shell">
           <i class="bi bi-search"></i>
-          <input id="searchInput" type="search" placeholder="Buscar endereço, árvore, espécie ou ID...">
-        </div>
-        <div class="public-filter-wrap">
-          <button class="btn-filter" id="btnFilters" type="button" aria-expanded="false"
-            aria-controls="publicFilters"><i class="bi bi-sliders"></i><span>Filtros</span><i
-              class="bi bi-chevron-down filter-chevron"></i></button>
-          <div class="public-filters card shadow-sm d-none" id="publicFilters">
-            <div class="card-body">
-              <div class="filter-panel-heading"><strong>Filtrar árvores</strong><button class="plain-btn"
-                  id="clearFilters" type="button">Limpar</button></div>
-              <label class="public-filter-check"><input type="checkbox" id="filterFruitBearing"><span>Árvores
-                  frutíferas</span></label>
-              <label class="form-label mt-2 mb-1" for="filterRisk">Nível de risco</label><select
-                class="form-select form-select-sm" id="filterRisk">
-                <option value="">Todos os níveis</option>
-                <option>Baixo</option>
-                <option>Moderado</option>
-                <option>Alto</option>
-                <option>Crítico</option>
-              </select>
-              <label class="public-filter-check"><input type="checkbox" id="filterMaintenance"><span>Necessidade de
-                  manutenção</span></label>
-              <label class="public-filter-check"><input type="checkbox"
-                  id="filterFlowering"><span>Floração</span></label>
-              <label class="public-filter-check"><input type="checkbox" id="filterWeather"><span>Região afetada por
-                  condições meteorológicas</span></label>
-              <button class="btn btn-success w-100 mt-3" id="applyFilters" type="button">Aplicar filtros</button>
-            </div>
-          </div>
+          <input id="searchInput" type="search" placeholder="Buscar bairro, árvore, espécie...">
         </div>
 
         <div class="top-actions public-top-actions">

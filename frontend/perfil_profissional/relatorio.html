@@ -47,6 +47,13 @@
               <span>Equipe</span>
               <select id="reportTeamSelect"><option value="">Todas as equipes</option></select>
             </label>
+            <label class="report-sort-filter" id="reportCountSortFilter" for="reportCountSort" hidden>
+              <span>Ordenar por</span>
+              <select id="reportCountSort">
+                <option value="alphabetical">Ordem alfabética</option>
+                <option value="count">Maior quantidade primeiro</option>
+              </select>
+            </label>
             <button class="reports-export" id="exportReport" type="button">
               <i class="bi bi-download" aria-hidden="true"></i>
               <span>Exportar CSV</span>
@@ -84,8 +91,8 @@
           </div>
         </section>
 
-        <!-- Identifica dados reais de OS e dados de demonstração dos demais assuntos. -->
-        <p class="reports-source-note"><i class="bi bi-info-circle" aria-hidden="true"></i><span id="reportSourceNote" aria-live="polite">Os números desta visualização são fictícios.</span></p>
+        <!-- Identifica a origem dos dados consultados nos relatórios. -->
+        <p class="reports-source-note"><i class="bi bi-info-circle" aria-hidden="true"></i><span id="reportSourceNote" aria-live="polite">Os dados serão consultados no banco de dados do município da sua conta.</span></p>
       </section>
     </main>
   </div>

@@ -3,6 +3,7 @@
 package service;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -99,7 +100,10 @@ public class OcorrenciaService {
         }
         nova.setMunicipioId(municipioId);
         if (dto.cidadaoId != null && !dto.cidadaoId.isBlank()) {
-            nova.setCidadaoId(dto.cidadaoId);
+            nova.setCidadaoId(dto.cidadaoId.trim());
+        }
+        if (dto.emailCidadao != null && !dto.emailCidadao.isBlank()) {
+            nova.setEmailCidadao(dto.emailCidadao.trim().toLowerCase(Locale.ROOT));
         }
         nova.setArvoreId(dto.arvoreId);
 
@@ -123,15 +127,15 @@ public class OcorrenciaService {
 
     // Busca todas as ocorrências aplicando os filtros escolhidos na tela
     public List<Document> listarOcorrencias(String municipioId, String tipo, String status, String prioridade) {
-        return repository.listarComFiltros(municipioId, tipo, status, prioridade, null);
+        return repository.listarComFiltros(municipioId, tipo, status, prioridade, null, null);
     }
 
     // Busca as ocorrências de um cidadão específico
     public List<Document> listarMinhasOcorrencias(String cidadaoId) {
         if (cidadaoId == null || cidadaoId.isBlank()) {
-            cidadaoId = "cid_001";
+            return List.of();
         }
-        return repository.listarComFiltros(null, null, null, null, cidadaoId);
+        return repository.listarPorCidadaoId(cidadaoId);
     }
 
     public Document buscarPorId(String id) {
@@ -156,14 +160,6 @@ public class OcorrenciaService {
             throw new IllegalArgumentException("Prioridade inválida. Use: " + URGENCIAS_VALIDAS);
         }
         return repository.atualizarPrioridade(id, novaPrioridade);
-    }
-
-    public boolean alterarNotificacao(String id, AtualizacaoOcorrenciaDTO dto) {
-        boolean receber = dto != null && Boolean.TRUE.equals(dto.receberNotificacoes);
-        return repository.atualizarNotificacao(id, receber,
-                dto != null ? dto.nomeContato : null,
-                dto != null ? dto.emailContato : null,
-                dto != null ? dto.telefoneContato : null);
     }
 
 }

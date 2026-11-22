@@ -35,6 +35,7 @@ public class OcorrenciaRepository {
     private static final Pattern PADRAO_CODIGO_CANONICO = Pattern.compile("^OC-\\d{6,}$");
 
     private final MongoCollection<Document> colecao;
+    private final MongoCollection<Document> arvores;
     private final MongoCollection<Document> sequencias;
 
     // Conecta na coleção "ocorrencias" do banco de dados
@@ -45,10 +46,26 @@ public class OcorrenciaRepository {
     // Permite testar a geração usando um banco Mongo exclusivo.
     public OcorrenciaRepository(MongoDatabase banco) {
         this.colecao = banco.getCollection("ocorrencias");
+        this.arvores = banco.getCollection("arvores");
         this.sequencias = banco.getCollection("sequencias_ocorrencias");
         inicializarSequenciaCodigo();
         normalizarStatusLegados();
         migrarUrgenciaParaPrioridade();
+        removerCamposDeNotificacao();
+    }
+
+    private void removerCamposDeNotificacao() {
+        colecao.updateMany(
+                Filters.or(
+                        Filters.exists("receberNotificacoes", true),
+                        Filters.exists("nomeContato", true),
+                        Filters.exists("emailContato", true),
+                        Filters.exists("telefoneContato", true)),
+                Updates.combine(
+                        Updates.unset("receberNotificacoes"),
+                        Updates.unset("nomeContato"),
+                        Updates.unset("emailContato"),
+                        Updates.unset("telefoneContato")));
     }
 
     private void migrarUrgenciaParaPrioridade(){
@@ -66,13 +83,28 @@ public class OcorrenciaRepository {
     // Salva uma nova ocorrência no MongoDB
     public Document criar(Ocorrencia o) {
         // Gera o código na camada persistente para manter sequência e unicidade entre requisições.
+        ObjectId arvoreId = null;
+        if (o.getArvoreId() != null && !o.getArvoreId().isBlank()) {
+            if (!ObjectId.isValid(o.getArvoreId().trim())) {
+                throw new IllegalArgumentException("A árvore selecionada é inválida.");
+            }
+            arvoreId = new ObjectId(o.getArvoreId().trim());
+            Document arvore = arvores.find(Filters.and(
+                    Filters.eq("_id", arvoreId),
+                    Filters.eq("municipioId", o.getMunicipioId()),
+                    Filters.ne("ativa", false))).first();
+            if (arvore == null) {
+                throw new IllegalArgumentException("A árvore selecionada não está cadastrada ou ativa neste município.");
+            }
+        }
         o.setId(gerarProximoCodigo());
         Document doc = new Document("_id", o.getOcorrenciaId())
                 .append("id", o.getId())
                 .append("protocolo", o.getProtocolo())
                 .append("municipioId", o.getMunicipioId())
-                .append("cidadaoId", o.getCidadaoId())
-                .append("arvoreId", o.getArvoreId())
+                .append("cidadaoId", identificadorMongoCidadao(o.getCidadaoId()))
+                .append("emailCidadao", o.getEmailCidadao())
+                .append("arvoreId", arvoreId)
                 .append("tipoProblema", o.getTipoProblema())
                 .append("descricao", o.getDescricao())
                 .append("localizacao", o.getLocalizacao())
@@ -81,10 +113,6 @@ public class OcorrenciaRepository {
                 .append("latitude", o.getLatitude())
                 .append("longitude", o.getLongitude())
                 .append("imagem", o.getImagem())
-                .append("receberNotificacoes", o.isReceberNotificacoes())
-                .append("nomeContato", o.getNomeContato())
-                .append("emailContato", o.getEmailContato())
-                .append("telefoneContato", o.getTelefoneContato())
                 .append("prioridade", o.getUrgencia())
                 .append("status", o.getStatus())
                 .append("observacaoInterna", o.getObservacaoInterna())
@@ -200,8 +228,25 @@ public class OcorrenciaRepository {
         return String.format(Locale.ROOT, "OC-%06d", numero.longValue());
     }
 
+    private Object identificadorMongoCidadao(String cidadaoId) {
+        return ObjectId.isValid(cidadaoId)
+                ? new ObjectId(cidadaoId)
+                : cidadaoId;
+    }
+
+    public List<Document> listarPorCidadaoId(String cidadaoId) {
+        Object identificador = identificadorMongoCidadao(cidadaoId);
+        Bson filtro = Filters.or(
+                Filters.eq("cidadaoId", identificador),
+                Filters.eq("cidadaoId", cidadaoId));
+        return colecao.find(filtro)
+                .projection(new Document("emailCidadao", 0))
+                .sort(Sorts.descending("criadoEm"))
+                .into(new ArrayList<>());
+    }
+
     // Lista as ocorrências podendo filtrar por município, tipo, status, prioridade ou cidadão
-    public List<Document> listarComFiltros(String municipioId, String tipoProblema, String status, String urgencia, String cidadaoId) {
+    public List<Document> listarComFiltros(String municipioId, String tipoProblema, String status, String urgencia, String cidadaoId, String emailCidadao) {
         List<Bson> filtros = new ArrayList<>();
 
         if (municipioId != null && !municipioId.isBlank()) {
@@ -222,23 +267,37 @@ public class OcorrenciaRepository {
             filtros.add(Filters.regex("prioridade", "^" + urgencia + "$", "i"));
         }
         if (cidadaoId != null && !cidadaoId.isBlank()) {
-            filtros.add(Filters.eq("cidadaoId", cidadaoId));
+            if (ObjectId.isValid(cidadaoId)) {
+                filtros.add(Filters.or(
+                        Filters.eq("cidadaoId", new ObjectId(cidadaoId)),
+                        Filters.eq("cidadaoId", cidadaoId)));
+            } else {
+                filtros.add(Filters.eq("cidadaoId", cidadaoId));
+            }
+        }
+        if (emailCidadao != null && !emailCidadao.isBlank()) {
+            filtros.add(Filters.eq("emailCidadao", emailCidadao.trim().toLowerCase(Locale.ROOT)));
         }
 
         Bson query = filtros.isEmpty() ? new Document() : Filters.and(filtros);
         return colecao.find(query)
+                .projection(new Document("emailCidadao", 0))
                 .sort(Sorts.descending("criadoEm"))
                 .into(new ArrayList<>());
     }
 
     // Busca uma ocorrência específica pelo ID
     public Document buscarPorId(String id) {
-        return colecao.find(filtroPorId(id)).first();
+        return colecao.find(filtroPorId(id))
+                .projection(new Document("emailCidadao", 0))
+                .first();
     }
 
     // Busca uma ocorrência pelo número de protocolo (ex: CH-123456)
     public Document buscarPorProtocolo(String protocolo) {
-        return colecao.find(Filters.eq("protocolo", protocolo)).first();
+        return colecao.find(Filters.eq("protocolo", protocolo))
+                .projection(new Document("emailCidadao", 0))
+                .first();
     }
 
     // Atualiza o status do chamado no banco
@@ -262,19 +321,6 @@ public class OcorrenciaRepository {
                 Updates.combine(
                         Updates.set("prioridade", novaUrgencia),
                         Updates.unset("urgencia"),
-                        Updates.set("atualizadoEm", Instant.now().toString())
-                )
-        ).getModifiedCount() > 0;
-    }
-
-    public boolean atualizarNotificacao(String id, boolean receber, String nome, String email, String telefone) {
-        return colecao.updateOne(
-                filtroPorId(id),
-                Updates.combine(
-                        Updates.set("receberNotificacoes", receber),
-                        Updates.set("nomeContato", nome),
-                        Updates.set("emailContato", email),
-                        Updates.set("telefoneContato", telefone),
                         Updates.set("atualizadoEm", Instant.now().toString())
                 )
         ).getModifiedCount() > 0;

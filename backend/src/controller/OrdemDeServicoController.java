@@ -124,6 +124,22 @@ public class OrdemDeServicoController {
         }
     }
 
+    // Exibe ao público o histórico das ordens associadas a uma árvore específica.
+    public void listarHistoricoDaArvore(Context ctx){
+        try {
+            String id = ctx.pathParam("id");
+            if (!ObjectId.isValid(id)) {
+                ctx.status(400).json(Map.of("erro", "Identificador da árvore inválido."));
+                return;
+            }
+            List<Map<String, Object>> historico = ordemService.historicoPorArvore(new ObjectId(id));
+            boolean possuiOcorrencia = ordemService.existeOcorrenciaPorArvore(new ObjectId(id));
+            ctx.status(200).json(Map.of("ordens", historico, "possuiOcorrencia", possuiOcorrencia));
+        } catch (Exception erro) {
+            ctx.status(500).json(Map.of("erro", "Não foi possível consultar o histórico da árvore."));
+        }
+    }
+
     // Consulta uma OS pelo ID dentro do município do funcionário autenticado.
     public void consultar(Context ctx){
         HttpSession sessao = obterSessaoDeFuncionario(ctx);

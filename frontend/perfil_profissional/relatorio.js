@@ -35,9 +35,9 @@ const reportCatalog = {
         description: "Distribuição das ocorrências pelos bairros cadastrados."
       },
       urgency: {
-        label: "Urgência",
-        title: "Ocorrências por nível de urgência",
-        description: "Quantidade de ocorrências por classificação de urgência."
+        label: "Prioridade",
+        title: "Ocorrências por prioridade",
+        description: "Quantidade de ocorrências por classificação de prioridade."
       }
     }
   },
@@ -112,6 +112,8 @@ const reportElements = {
   groupingTabs: document.getElementById("reportGroupingTabs"),
   teamFilter: document.getElementById("reportTeamFilter"),
   teamSelect: document.getElementById("reportTeamSelect"),
+  countSortFilter: document.getElementById("reportCountSortFilter"),
+  countSort: document.getElementById("reportCountSort"),
   title: document.getElementById("reportTitle"),
   description: document.getElementById("reportDescription"),
   total: document.getElementById("reportTotal"),
@@ -299,6 +301,36 @@ function validateTreeReportResponse(payload) {
     risk: validateReportGroups(report, "porRisco", invalid)
   };
 
+  const normalizeTreeRisk = value => String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLocaleLowerCase("pt-BR");
+  const riskClassifications = ["Crítico", "Alto", "Moderado", "Baixo"];
+  const riskCounts = new Map();
+  const otherRisks = [];
+
+  groups.risk.forEach(group => {
+    const normalized = normalizeTreeRisk(group.group);
+    const canonicalRisk = normalized === "medio" ? "Moderado" :
+      riskClassifications.find(risk => normalizeTreeRisk(risk) === normalized);
+
+    if (canonicalRisk) {
+      const key = normalizeTreeRisk(canonicalRisk);
+      riskCounts.set(key, (riskCounts.get(key) || 0) + group.count);
+    } else {
+      otherRisks.push(group);
+    }
+  });
+
+  groups.risk = [
+    ...riskClassifications.map(risk => ({
+      group: risk,
+      count: riskCounts.get(normalizeTreeRisk(risk)) || 0
+    })),
+    ...otherRisks
+  ];
+
   for (const values of Object.values(groups)) {
     if (sumReportValues(values) !== report.totalArvores) {
       invalid();
@@ -332,6 +364,44 @@ function validateOccurrenceReportResponse(payload) {
     neighborhood: validateReportGroups(report, "porBairro", invalid),
     urgency: validateReportGroups(report, "porUrgencia", invalid)
   };
+
+  const statusNormalizado = valor => String(valor)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLocaleLowerCase("pt-BR");
+  const statusesOcorrencia = [
+    "Recebida",
+    "Em andamento",
+    "Cancelada",
+    "Concluída"
+  ];
+  const statusCount = new Map();
+  const statusExtras = [];
+
+  groups.status.forEach(grupo => {
+    const normalized = statusNormalizado(grupo.group);
+    const statusCanonico = normalized === "em atendimento"
+      ? "Em andamento"
+      : statusesOcorrencia.find(status =>
+        statusNormalizado(status) === normalized
+      );
+
+    if (statusCanonico) {
+      const key = statusNormalizado(statusCanonico);
+      statusCount.set(key, (statusCount.get(key) || 0) + grupo.count);
+    } else {
+      statusExtras.push(grupo);
+    }
+  });
+
+  groups.status = [
+    ...statusesOcorrencia.map(status => ({
+      group: status,
+      count: statusCount.get(statusNormalizado(status)) || 0
+    })),
+    ...statusExtras
+  ];
 
   for (const values of Object.values(groups)) {
     if (sumReportValues(values) !== report.totalOcorrencias) {
@@ -761,14 +831,54 @@ function getSelectedReportValues() {
     return [];
   }
 
+  let values;
+
   if (activeReportSubject === "teams" &&
       isTeamPeriodReport() &&
       reportElements.teamSelect.value) {
-    return state.report.teamValues[activeReportGrouping]
+    values = state.report.teamValues[activeReportGrouping]
       [reportElements.teamSelect.value] || [];
+  } else {
+    values = state.report.groups[activeReportGrouping] || [];
   }
 
-  return state.report.groups[activeReportGrouping] || [];
+  if (activeReportSubject === "occurrences" &&
+      activeReportGrouping === "urgency") {
+    const priorityOrder = new Map([
+      ["critica", 0],
+      ["alta", 1],
+      ["media", 2],
+      ["baixa", 3]
+    ]);
+    const normalizePriority = value => String(value)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toLocaleLowerCase("pt-BR");
+
+    return [...values].sort((a, b) =>
+      (priorityOrder.get(normalizePriority(a.group)) ?? Number.MAX_SAFE_INTEGER) -
+      (priorityOrder.get(normalizePriority(b.group)) ?? Number.MAX_SAFE_INTEGER)
+    );
+  }
+
+  const supportsCountSort =
+    (activeReportSubject === "trees" &&
+      ["neighborhood", "species"].includes(activeReportGrouping)) ||
+    (activeReportSubject === "occurrences" &&
+      activeReportGrouping === "neighborhood");
+
+  if (supportsCountSort) {
+    const compareNames = (a, b) =>
+      String(a.group).localeCompare(String(b.group), "pt-BR", { sensitivity: "base" });
+
+    return [...values].sort(reportElements.countSort.value === "count"
+      ? (a, b) => b.count - a.count || compareNames(a, b)
+      : compareNames
+    );
+  }
+
+  return values;
 }
 
 function getReportSourceNote() {
@@ -850,6 +960,12 @@ function renderSelectedReport() {
   const failed = state.status === "error";
 
   reportElements.teamFilter.hidden = !isTeamPeriodReport();
+  reportElements.countSortFilter.hidden = !(
+    (activeReportSubject === "trees" &&
+      ["neighborhood", "species"].includes(activeReportGrouping)) ||
+    (activeReportSubject === "occurrences" &&
+      activeReportGrouping === "neighborhood")
+  );
 
   reportElements.card.setAttribute("aria-busy", String(loading));
 
@@ -1137,6 +1253,11 @@ function initializeReportsPage() {
   });
 
   reportElements.teamSelect.addEventListener(
+    "change",
+    renderSelectedReport
+  );
+
+  reportElements.countSort.addEventListener(
     "change",
     renderSelectedReport
   );

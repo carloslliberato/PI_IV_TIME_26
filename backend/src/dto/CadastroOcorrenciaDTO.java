@@ -17,6 +17,7 @@ public class CadastroOcorrenciaDTO {
     // Recebe o nome do município, resolvido para ObjectId pelo MunicipioRepository.
     public String municipioId;
     public String cidadaoId;
+    public String emailCidadao;
     public String arvoreId;
     public Double latitude;
     public Double longitude;

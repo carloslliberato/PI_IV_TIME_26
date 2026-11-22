@@ -120,6 +120,8 @@
 .tree-form-grid textarea { resize: vertical; }
 .tree-form-grid small { color: #849189; font-size: 10px; font-weight: 450; }
 .form-field-wide { grid-column: 1 / -1; }
+.tree-location-note { display: flex; align-items: flex-start; gap: 9px; margin: 2px 0 4px; padding: 11px 13px; border: 1px solid #e1ebe5; border-radius: 9px; background: #f6faf7; color: #718078; font-size: 11px; line-height: 1.5; font-weight: 450; }
+.tree-location-note::before { content: "ⓘ"; flex: 0 0 auto; color: #4d8968; font-size: 14px; line-height: 1.4; }
 .tree-form-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 9px; padding-top: 7px; }
 .tree-edit-actions { justify-content: space-between; }
 .intervention-form { margin-top: 21px; padding: 17px; border: 1px solid #e0ebe4; border-radius: 11px; background: #f8fbf9; }

@@ -276,48 +276,12 @@
   line-height: 1.45;
 }
 
-.professional-map-search-label {
-  display: block;
-  margin-bottom: 7px;
-  color: #435149;
-  font-size: 12px;
-  font-weight: 750;
-}
-
-.professional-map-search {
-  display: flex;
-  height: 42px;
-  align-items: center;
-  gap: 9px;
-  padding: 0 12px;
-  border: 1px solid #dfe8e2;
-  border-radius: 9px;
-  background: #fff;
-  color: #849089;
-}
-
-.professional-map-search:focus-within {
-  border-color: #9bbba8;
-  box-shadow: 0 0 0 3px rgba(29, 118, 81, .08);
-}
-
-.professional-map-search input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: #2d3932;
-  font: inherit;
-  font-size: 12px;
-}
-
 .professional-map-list-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin: 20px 0 11px;
+  margin: 14px 0 11px;
 }
 
 .professional-map-list-heading h2 {
@@ -531,6 +495,15 @@
 .professional-tree-history time { color: #4b7d30; font-size: 11px; font-weight: 800; }
 .professional-tree-history strong { display: block; margin-top: 3px; color: #344239; font-size: 12px; }
 .professional-tree-history p { margin: 3px 0 0; color: #718078; font-size: 11px; line-height: 1.4; }
+.professional-tree-photo-label { display: block; margin-bottom: 7px; color: #718078; font-size: 12px; font-weight: 650; }
+.professional-tree-photo-select { width: min(320px, 100%); min-height: 40px; margin-bottom: 12px; padding: 8px 11px; border: 1px solid #e1e9e4; border-radius: 9px; background: #fff; color: #34423a; font: inherit; font-size: 13px; }
+.professional-tree-photo { display: block; max-width: 100%; max-height: 400px; margin: 0 auto; border-radius: 11px; object-fit: contain; }
+.professional-tree-empty-state { display: flex; align-items: center; gap: 10px; padding: 13px 15px; border: 1px solid #e7eeea; border-radius: 10px; background: #f7faf8; color: #718078; font-size: 12px; font-weight: 500; line-height: 1.5; }
+.professional-tree-empty-state i { flex: none; color: #56836b; font-size: 17px; }
+.professional-tree-history-table { width: 100%; margin: 0; border-collapse: collapse; font-size: 12px; text-align: left; }
+.professional-tree-history-table th { padding: 10px 9px; border-bottom: 1px solid #e7eeea; background: #f7faf8; color: #718078; font-size: 11px; font-weight: 750; white-space: nowrap; }
+.professional-tree-history-table td { padding: 10px 9px; border-bottom: 1px solid #edf1ee; color: #526158; vertical-align: middle; }
+.professional-tree-history-table tr:last-child td { border-bottom: 0; }
 
 /* Marcadores circulares usam a mesma paleta de risco do mapa público. */
 .professional-tree-pin {
@@ -562,7 +535,6 @@
   #professionalMap { min-height: 620px; }
   .professional-map-rail { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
   .professional-map-info-card { grid-column: 1 / -1; margin-bottom: 0; }
-  .professional-map-search-label { grid-column: 1 / -1; margin-bottom: -8px; }
   .professional-map-list-heading, .professional-tree-list { grid-column: 1 / -1; }
 }
 
@@ -575,5 +547,4 @@
   .professional-map-layers { top: 10px; right: 10px; width: 195px; padding: 12px; }
   .professional-map-toast { right: 10px; bottom: 10px; left: 10px; max-width: none; }
   .professional-map-rail { display: block; }
-  .professional-map-search-label { margin: 14px 0 7px; }
 }

@@ -13,28 +13,83 @@ function initializeReportForm() {
   const imageFileSize = document.getElementById("imageFileSize");
   const imageError = document.getElementById("imageError");
   const uploadArea = document.getElementById("uploadArea");
+  const treeSelect = document.getElementById("reportTree");
+  const addressInput = document.getElementById("reportAddress");
+  const neighborhoodInput = document.getElementById("reportNeighborhood");
+  const municipalitySelect = document.getElementById("reportMunicipality");
 
   if (!form) return;
 
-  // Guarda o ID do cidadão caso ele esteja logado na sessão
-  let cidadaoLogadoId = null;
+  const municipalityIds = {
+    campinas: "6ae666a7680e8a4330a1ab66",
+    hortolandia: "6ae7854cb9962492d01e6af6",
+    sumare: "6ae7856ab9962492d01e6af7"
+  };
+  const treeCache = new Map();
+  let treeLookupRequest = 0;
 
-  // Consulta o back-end para associar o chamado ao cidadão logado.
-  async function carregarDadosDaSessao() {
+  function normalizeTreeAddress(value) {
+    return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase().replace(/[.,;#]/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  function streetKey(value) {
+    return normalizeTreeAddress(value)
+      .replace(/\s*,?\s*\d+[a-z]?\s*$/i, "")
+      .replace(/\s+/g, " ").trim();
+  }
+
+  async function loadTreesForAddress() {
+    if (!treeSelect) return;
+    const request = ++treeLookupRequest;
+    const street = streetKey(addressInput?.value);
+    const neighborhood = normalizeTreeAddress(neighborhoodInput?.value);
+    const municipalityId = municipalityIds[normalizeTreeAddress(municipalitySelect?.value).replace(/\s+/g, "")];
+    treeSelect.innerHTML = "";
+    if (!street || !neighborhood || !municipalityId) {
+      treeSelect.add(new Option("Preencha rua e bairro para buscar árvores", ""));
+      return;
+    }
+
+    treeSelect.add(new Option("Buscando árvores neste endereço...", ""));
     try {
-      const response = await fetch("/api/contas/sessao");
-      if (!response.ok) return;
-
-      const sessao = await response.json();
-      if (sessao && (sessao.nome || sessao.email)) {
-        cidadaoLogadoId = sessao.id || sessao._id || null;
+      let trees = treeCache.get(municipalityId);
+      if (!trees) {
+        const response = await fetch(`/api/arvores?municipioId=${encodeURIComponent(municipalityId)}`, {
+          credentials: "same-origin", cache: "no-store"
+        });
+        if (!response.ok) throw new Error("Falha ao consultar árvores.");
+        trees = await response.json();
+        if (!Array.isArray(trees)) throw new Error("Resposta inválida da API de árvores.");
+        treeCache.set(municipalityId, trees);
       }
-    } catch (erro) {
-      // Se não estiver logado, continua normalmente como cidadão anônimo
+      if (request !== treeLookupRequest) return;
+
+      const matches = trees.filter(tree => streetKey(tree.endereco) === street
+        && normalizeTreeAddress(tree.bairro) === neighborhood);
+      treeSelect.innerHTML = "";
+      treeSelect.add(new Option("Não vincular uma árvore", ""));
+      if (!matches.length) {
+        treeSelect.options[0].textContent = "Não existem árvores cadastradas nessa rua e bairro";
+        return;
+      }
+      for (const tree of matches) {
+        const name = tree.nomePopular || tree.especie || "Árvore";
+        const code = tree.codigoArv || tree.id;
+        treeSelect.add(new Option(`${name} — ${code}`, tree.id));
+      }
+    } catch (error) {
+      if (request !== treeLookupRequest) return;
+      console.warn("Não foi possível buscar árvores para o endereço:", error);
+      treeSelect.innerHTML = "";
+      treeSelect.add(new Option("Não foi possível buscar árvores; continue sem vincular", ""));
     }
   }
 
-  carregarDadosDaSessao();
+  [addressInput, neighborhoodInput, municipalitySelect].forEach(field => {
+    field?.addEventListener("input", loadTreesForAddress);
+    field?.addEventListener("change", loadTreesForAddress);
+  });
 
   // Formata o tamanho da imagem anexada em KB ou MB
   function formatBytes(bytes) {
@@ -127,7 +182,7 @@ function initializeReportForm() {
       prioridade: obterValorDoCampo("#reportPriority", 'select[name="prioridade"]'),
       // O nome enviado é resolvido para ObjectId pelo MunicipioRepository, como no cadastro de conta.
       municipioId: municipioSelecionado,
-      cidadaoId: cidadaoLogadoId,
+      arvoreId: treeSelect?.value || null,
       imagem: imagemBase64
     };
 

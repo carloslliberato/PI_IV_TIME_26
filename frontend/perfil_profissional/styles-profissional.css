@@ -325,6 +325,8 @@ body {
   box-shadow: 0 4px 15px rgba(135, 47, 37, .05);
 }
 
+.risk-alert + .risk-alert { margin-top: 12px; }
+
 .risk-alert:hover,
 .risk-alert:focus-visible {
   color: inherit;

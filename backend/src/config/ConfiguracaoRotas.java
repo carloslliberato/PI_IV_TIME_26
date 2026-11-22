@@ -200,6 +200,10 @@ public class ConfiguracaoRotas {
                 ctx -> arvoreController.proximas(ctx));
 
         servidorHttp.get(
+                "/api/arvores/{id}/ordens-servico",
+                ctx -> ordemDeServicoController.listarHistoricoDaArvore(ctx));
+
+        servidorHttp.get(
                 "/api/arvores/codigo/{codigoArv}",
                 ctx -> arvoreController.consultarPorCodigo(ctx));
 
@@ -276,9 +280,6 @@ public class ConfiguracaoRotas {
                 "/api/ocorrencias/{id}/prioridade",
                 ctx -> ocorrenciaController.atualizarPrioridade(ctx));
 
-        servidorHttp.patch(
-                "/api/ocorrencias/{id}/notificacoes",
-                ctx -> ocorrenciaController.atualizarNotificacao(ctx));
         servidorHttp.get(
                 "/api/ordens-servico",
                 ctx -> ordemDeServicoController.listar(ctx));

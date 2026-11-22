@@ -146,6 +146,11 @@
         <label class="service-order-create-wide" for="createServiceOrderNeighborhood">Bairro
           <input id="createServiceOrderNeighborhood" name="bairro" maxlength="120" required autocomplete="address-level3" placeholder="Informe o bairro">
         </label>
+        <label class="service-order-create-wide" for="createServiceOrderTree">Árvore vinculada <span>(opcional)</span>
+          <select id="createServiceOrderTree" name="arvoreId">
+            <option value="">Preencha rua e bairro para buscar árvores</option>
+          </select>
+        </label>
         <label for="createServiceOrderPriority">Prioridade <span>(opcional)</span>
           <input id="createServiceOrderPriority" name="prioridade" list="createServiceOrderPriorities" maxlength="40" placeholder="Ex.: Baixa">
           <datalist id="createServiceOrderPriorities"><option value="Baixa"><option value="Média"><option value="Alta"><option value="Crítica"></datalist>

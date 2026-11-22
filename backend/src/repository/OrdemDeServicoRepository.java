@@ -133,8 +133,9 @@ public class OrdemDeServicoRepository {
                 arvoresDisponiveis.add(id);
                 Map<String, Object> item = new HashMap<>();
                 item.put("id", id.toHexString());
-                String nome = primeiroTexto(documento, "nome", "nomePopular", "especie", "nomeCientifico");
+                String nome = primeiroTexto(documento, "nomePopular", "nome", "especie", "nomeCientifico");
                 item.put("nome", nome == null ? "Árvore " + id.toHexString() : nome);
+                item.put("codigoArv", primeiroTexto(documento, "codigoArv"));
                 item.put("endereco", primeiroTexto(documento, "endereco"));
                 item.put("bairro", primeiroTexto(documento, "bairro"));
                 opcoesArvores.add(item);
@@ -240,8 +241,12 @@ public class OrdemDeServicoRepository {
                     if (!referenciaCanonica(ocorrencia, municipioId))
                         throw new NoSuchElementException("Ocorrência não encontrada nesse município.");
                     Object arvoreDaOcorrencia = ocorrencia.get("arvoreId");
-                    if (arvoreDaOcorrencia instanceof ObjectId idArvore
-                            && !idArvore.equals(ordem.getArvoreId()))
+                    ObjectId idArvoreDaOcorrencia = arvoreDaOcorrencia instanceof ObjectId id
+                            ? id
+                            : arvoreDaOcorrencia instanceof String texto && ObjectId.isValid(texto)
+                                ? new ObjectId(texto) : null;
+                    if (idArvoreDaOcorrencia != null
+                            && !idArvoreDaOcorrencia.equals(ordem.getArvoreId()))
                         throw new IllegalStateException("A árvore da OS não corresponde à ocorrência vinculada.");
                 }
                 colecao.insertOne(sessao, converterParaDocumento(ordem));
@@ -465,6 +470,36 @@ public class OrdemDeServicoRepository {
             }
 
         return ordens;
+    }
+
+    public List<Map<String, Object>> historicoPorArvore(ObjectId arvoreId){
+        if (arvoreId == null) throw new IllegalArgumentException("O identificador da árvore não pode ser nulo.");
+        List<Map<String, Object>> ordens = new ArrayList<>();
+        Bson filtro = or(eq("arvoreId", arvoreId), eq("arvoreId", arvoreId.toHexString()));
+        Bson campos = new Document("codigo", 1).append("id", 1).append("titulo", 1).append("dataCriacao", 1);
+        try (MongoCursor<Document> cursor = colecao.find(filtro).projection(campos)
+                .sort(ascending("dataCriacao")).iterator()) {
+            while (cursor.hasNext()) {
+                Document documento = cursor.next();
+                Map<String, Object> item = new HashMap<>();
+                Object codigo = documento.get("codigo");
+                if (!(codigo instanceof String texto) || texto.isBlank()) codigo = documento.get("id");
+                item.put("codigo", codigo);
+                item.put("tipo", documento.getString("titulo"));
+                Object data = documento.get("dataCriacao");
+                item.put("data", data instanceof Date dataDate ? dataDate.toInstant().toString()
+                        : data instanceof Instant dataInstant ? dataInstant.toString()
+                        : data instanceof String dataTexto ? dataTexto : null);
+                ordens.add(item);
+            }
+        }
+        return ordens;
+    }
+
+    public boolean existeOcorrenciaPorArvore(ObjectId arvoreId){
+        if (arvoreId == null) return false;
+        Bson filtro = or(eq("arvoreId", arvoreId), eq("arvoreId", arvoreId.toHexString()));
+        return ocorrencias.countDocuments(filtro) > 0;
     }
 
     public void atualizar(OrdemDeServico ordem){
@@ -804,7 +839,7 @@ public class OrdemDeServicoRepository {
         return new OrdemDeServico(
             documento.getObjectId("_id"),
             documento.getObjectId("municipioId"),
-            documento.getObjectId("arvoreId"),
+            objectIdPersistido(documento.get("arvoreId")),
             documento.getObjectId("ocorrenciaId"),
             documento.getObjectId("equipeId"),
             documento.getString("titulo"),
@@ -826,6 +861,12 @@ public class OrdemDeServicoRepository {
 
     private Double coordenadaPersistida(Object valor) {
         return valor instanceof Number numero ? numero.doubleValue() : null;
+    }
+
+    private ObjectId objectIdPersistido(Object valor) {
+        if (valor instanceof ObjectId id) return id;
+        if (valor instanceof String texto && ObjectId.isValid(texto)) return new ObjectId(texto);
+        return null;
     }
 
 }

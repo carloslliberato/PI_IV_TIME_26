@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.bson.Document;
 import org.bson.types.ObjectId;
+import jakarta.servlet.http.HttpSession;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -39,6 +40,16 @@ public class OcorrenciaController {
         try {
             // Etapa 2: converte o corpo da requisição para o DTO usado pelo cadastro.
             CadastroOcorrenciaDTO dto = gson.fromJson(ctx.body(), CadastroOcorrenciaDTO.class);
+            if (dto != null) {
+                dto.cidadaoId = null;
+                dto.emailCidadao = null;
+                HttpSession sessao = ctx.req().getSession(false);
+                if (sessao != null && sessao.getAttribute("usuarioId") != null) {
+                    dto.cidadaoId = sessao.getAttribute("usuarioId").toString();
+                    Object email = sessao.getAttribute("email");
+                    dto.emailCidadao = email == null ? null : email.toString();
+                }
+            }
 
             // Etapa 3: delega a validação e a persistência da ocorrência ao serviço.
             Document criada = service.abrirChamado(dto);
@@ -94,7 +105,12 @@ public class OcorrenciaController {
     // GET /api/ocorrencias/minhas -> Lista os chamados do cidadão logado
     public void listarMinhasOcorrencias(Context ctx) {
         ctx.contentType("application/json; charset=utf-8");
-        String cidadaoId = ctx.queryParam("cidadaoId");
+        HttpSession sessao = ctx.req().getSession(false);
+        if (sessao == null || sessao.getAttribute("usuarioId") == null) {
+            ctx.status(401).result(gson.toJson(Map.of("erro", "Entre na sua conta para ver seus chamados.")));
+            return;
+        }
+        String cidadaoId = sessao.getAttribute("usuarioId").toString();
         List<Document> lista = service.listarMinhasOcorrencias(cidadaoId);
         ctx.status(200).result(gson.toJson(lista));
     }
@@ -151,18 +167,6 @@ public class OcorrenciaController {
             }
         } catch (IllegalArgumentException e) {
             ctx.status(400).result(gson.toJson(Map.of("erro", e.getMessage())));
-        }
-    }
-
-    // PATCH /api/ocorrencias/{id}/notificacoes -> Salva se o cidadão quer receber notificações
-    public void atualizarNotificacao(Context ctx) {
-        ctx.contentType("application/json; charset=utf-8");
-        AtualizacaoOcorrenciaDTO dto = gson.fromJson(ctx.body(), AtualizacaoOcorrenciaDTO.class);
-        boolean ok = service.alterarNotificacao(ctx.pathParam("id"), dto);
-        if (ok) {
-            ctx.status(200).result(gson.toJson(Map.of("mensagem", "Preferência atualizada!")));
-        } else {
-            ctx.status(404).result(gson.toJson(Map.of("erro", "Chamado não encontrado.")));
         }
     }
 }

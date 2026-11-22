@@ -13,6 +13,7 @@ public class Ocorrencia {
     private String protocolo;
     private ObjectId municipioId;
     private String cidadaoId;
+    private String emailCidadao;
     private String arvoreId;
     private String tipoProblema;
     private String descricao;
@@ -22,10 +23,6 @@ public class Ocorrencia {
     private Double latitude;
     private Double longitude;
     private String imagem;
-    private boolean receberNotificacoes;
-    private String nomeContato;
-    private String emailContato;
-    private String telefoneContato;
     private String urgencia; // Baixa, Média, Alta, Crítica
     private String status;   // Recebida, Em andamento, Cancelada, Concluída
     private String observacaoInterna;
@@ -62,6 +59,9 @@ public class Ocorrencia {
     public String getCidadaoId() { return cidadaoId; }
     public void setCidadaoId(String cidadaoId) { this.cidadaoId = cidadaoId; }
 
+    public String getEmailCidadao() { return emailCidadao; }
+    public void setEmailCidadao(String emailCidadao) { this.emailCidadao = emailCidadao; }
+
     public String getArvoreId() { return arvoreId; }
     public void setArvoreId(String arvoreId) { this.arvoreId = arvoreId; }
 
@@ -88,18 +88,6 @@ public class Ocorrencia {
 
     public String getImagem() { return imagem; }
     public void setImagem(String imagem) { this.imagem = imagem; }
-
-    public boolean isReceberNotificacoes() { return receberNotificacoes; }
-    public void setReceberNotificacoes(boolean receberNotificacoes) { this.receberNotificacoes = receberNotificacoes; }
-
-    public String getNomeContato() { return nomeContato; }
-    public void setNomeContato(String nomeContato) { this.nomeContato = nomeContato; }
-
-    public String getEmailContato() { return emailContato; }
-    public void setEmailContato(String emailContato) { this.emailContato = emailContato; }
-
-    public String getTelefoneContato() { return telefoneContato; }
-    public void setTelefoneContato(String telefoneContato) { this.telefoneContato = telefoneContato; }
 
     public String getUrgencia() { return urgencia; }
     public void setUrgencia(String urgencia) { this.urgencia = urgencia; }

@@ -40,10 +40,10 @@ const serviceOrdersPage ={
 // O cadastro conserva seus dados ao fechar a janela ou perder a resposta do envio.
 const serviceOrderCreationState = {
   phase: "idle", options: null, optionsLoading: false, optionsError: "", optionsRequest: 0,
-  draft: { titulo: "", descricao: "", endereco: "", bairro: "", ocorrenciaId: "", prioridade: "" },
+  draft: { titulo: "", descricao: "", endereco: "", bairro: "", arvoreId: "", ocorrenciaId: "", prioridade: "" },
   feedback: "", feedbackError: false, previousFocus: null, createdOrder: null, reviewing: false
 };
-const serviceOrderCreationFields = ["titulo", "descricao", "endereco", "bairro", "ocorrenciaId", "prioridade"];
+const serviceOrderCreationFields = ["titulo", "descricao", "endereco", "bairro", "arvoreId", "ocorrenciaId", "prioridade"];
 const serviceOrderTitleOptions = ["Galho quebrado", "Árvore caída", "Árvore em risco", "Necessidade de poda", "Outro"];
 const isServiceOrderObjectId = value => typeof value === "string" && /^[a-f0-9]{24}$/.test(value);
 
@@ -75,7 +75,43 @@ function formatServiceOrderTitle(title){
   return canonicalTitles[normalized] || title.trim();
 }
 
+function normalizeServiceOrderTreeAddress(value){
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[.,;#]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function serviceOrderTreeStreetKey(value){
+  return normalizeServiceOrderTreeAddress(value)
+    .replace(/\s*,?\s*\d+[a-z]?\s*$/i, "")
+    .replace(/\s+/g, " ").trim();
+}
+
 // Atualiza opções e controles sem preencher campos a partir de uma consulta tardia.
+function refreshServiceOrderTreeOptions(){
+  const state = serviceOrderCreationState;
+  const field = serviceOrdersPage.createForm.elements.namedItem("arvoreId");
+  const linkedOccurrence = (state.options?.ocorrencias || [])
+    .find(item => item.id === state.draft.ocorrenciaId);
+  const trees = (state.options?.arvores || []).filter(tree =>
+    serviceOrderTreeStreetKey(tree.endereco) === serviceOrderTreeStreetKey(state.draft.endereco)
+    && normalizeServiceOrderTreeAddress(tree.bairro) === normalizeServiceOrderTreeAddress(state.draft.bairro));
+  field.replaceChildren(new Option(state.draft.endereco.trim() && state.draft.bairro.trim()
+    ? "N\u00e3o existem \u00e1rvores cadastradas nessa rua e bairro"
+    : "Preencha rua e bairro para buscar \u00e1rvores", ""));
+  if (trees.length){
+    field.options[0].textContent = "N\u00e3o vincular uma \u00e1rvore";
+    trees.forEach(tree => field.add(new Option(
+      `${tree.nome || "\u00c1rvore"} \u2014 ${tree.codigoArv || tree.id}`, tree.id)));
+  }
+  if (state.draft.arvoreId && !trees.some(tree => tree.id === state.draft.arvoreId)
+      && !linkedOccurrence?.arvoreId) {
+    state.draft.arvoreId = "";
+  }
+  field.value = state.draft.arvoreId || "";
+  field.disabled = state.phase !== "idle" || state.optionsLoading || Boolean(linkedOccurrence?.arvoreId)
+    || !state.draft.endereco.trim() || !state.draft.bairro.trim();
+}
+
 function renderServiceOrderCreation(){
   const state = serviceOrderCreationState;
   const form = serviceOrdersPage.createForm;
@@ -97,6 +133,20 @@ function renderServiceOrderCreation(){
     field.disabled = locked || state.optionsLoading
       || Boolean(linkedOccurrence && fieldsFromOccurrence.has(name));
   }
+  const treeField = form.elements.namedItem("arvoreId");
+  const trees = (options?.arvores || []).filter(tree =>
+    serviceOrderTreeStreetKey(tree.endereco) === serviceOrderTreeStreetKey(state.draft.endereco)
+    && normalizeServiceOrderTreeAddress(tree.bairro) === normalizeServiceOrderTreeAddress(state.draft.bairro));
+  treeField.innerHTML = option("", state.draft.endereco.trim() && state.draft.bairro.trim()
+    ? "Não existem árvores cadastradas nessa rua e bairro" : "Preencha rua e bairro para buscar árvores");
+  if (trees.length){
+    treeField.options[0].textContent = "Não vincular uma árvore";
+    trees.forEach(tree => treeField.add(option(tree.id,
+      `${tree.nome || "Árvore"} — ${tree.codigoArv || tree.id}`)));
+  }
+  treeField.value = state.draft.arvoreId || "";
+  treeField.disabled = locked || state.optionsLoading || Boolean(linkedOccurrence?.arvoreId)
+    || !state.draft.endereco.trim() || !state.draft.bairro.trim();
   occurrence.disabled = locked || state.optionsLoading || !options;
   document.getElementById("saveCreateServiceOrder").disabled = locked || state.optionsLoading || !options;
   document.getElementById("saveCreateServiceOrder").textContent = state.phase === "sending" ? "Salvando..." : "Salvar ordem";
@@ -129,6 +179,10 @@ async function loadServiceOrderCreationOptions(){
     const response = await fetch("/api/ordens-servico/opcoes-cadastro", { credentials: "same-origin", cache: "no-store" });
     const body = await readServiceOrderResponse(response, "Não foi possível carregar as opções de cadastro.");
     if (!isServiceOrderObjectId(body?.municipioId) || !Array.isArray(body.ocorrencias)
+        || !Array.isArray(body.arvores)
+        || body.arvores.some(item => !item || !isServiceOrderObjectId(item.id)
+          || (item.endereco != null && typeof item.endereco !== "string")
+          || (item.bairro != null && typeof item.bairro !== "string"))
         || body.ocorrencias.some(item => !item || !isServiceOrderObjectId(item.id)
           || (item.endereco != null && typeof item.endereco !== "string")
           || (item.bairro != null && typeof item.bairro !== "string"))){
@@ -193,6 +247,7 @@ function fillServiceOrderFromOccurrence(){
   state.draft.descricao = typeof occurrence.descricao === "string" ? occurrence.descricao : "";
   state.draft.endereco = typeof occurrence.endereco === "string" ? occurrence.endereco : "";
   state.draft.bairro = typeof occurrence.bairro === "string" ? occurrence.bairro : "";
+  state.draft.arvoreId = typeof occurrence.arvoreId === "string" ? occurrence.arvoreId : "";
   const priority = typeof occurrence.prioridade === "string" ? occurrence.prioridade.trim() : "";
   state.draft.prioridade = priority.length <= 40 ? priority : "";
   state.feedback = "Os dados da ocorrência foram preenchidos e serão usados para gerar a ordem.";
@@ -208,6 +263,12 @@ function validateServiceOrderCreationDraft(){
   const descricao = draft.descricao.trim();
   const endereco = draft.endereco.trim();
   const bairro = draft.bairro.trim();
+  if (draft.arvoreId && (!isServiceOrderObjectId(draft.arvoreId)
+      || !state.options?.arvores.some(tree => tree.id === draft.arvoreId
+        && serviceOrderTreeStreetKey(tree.endereco) === serviceOrderTreeStreetKey(endereco)
+        && normalizeServiceOrderTreeAddress(tree.bairro) === normalizeServiceOrderTreeAddress(bairro)))) {
+    throw new Error("Selecione uma árvore localizada na mesma rua e bairro da ordem.");
+  }
   const prioridade = draft.prioridade.trim();
   if (!serviceOrderTitleOptions.includes(titulo)) throw new Error("Selecione um tipo de ocorrência para o título.");
   if (!descricao || descricao.length > 4000) throw new Error("Informe a descrição do serviço com até 4.000 caracteres.");
@@ -221,6 +282,7 @@ function validateServiceOrderCreationDraft(){
   if (bairro.length > 120) throw new Error("O bairro deve ter até 120 caracteres.");
   if (prioridade.length > 40) throw new Error("A prioridade deve ter até 40 caracteres.");
   return { titulo, descricao, endereco: endereco || null, bairro: bairro || null,
+    arvoreId: draft.arvoreId || null,
     ocorrenciaId: draft.ocorrenciaId || null,
     prioridade: prioridade || null };
 }
@@ -261,7 +323,7 @@ async function submitServiceOrderCreation(){
     state.phase = "idle";
     state.feedback = "";
     closeCreateServiceOrderModal();
-    state.draft = { titulo: "", descricao: "", endereco: "", bairro: "", ocorrenciaId: "", prioridade: "" };
+    state.draft = { titulo: "", descricao: "", endereco: "", bairro: "", arvoreId: "", ocorrenciaId: "", prioridade: "" };
   } catch (error){
     const rejected = !error.invalidResponse && [400, 401, 403, 404, 409, 422].includes(error.status);
     state.phase = rejected ? "idle" : "unknown";
@@ -724,11 +786,11 @@ function renderServiceOrderCompletionForm(order, blocked){
         <fieldset ${blocked ? "disabled" : ""}>
           <legend class="visually-hidden">Dados da execução</legend>
           <label for="serviceOrderCompletionType">Tipo de serviço
-            <input id="serviceOrderCompletionType" name="tipo" list="serviceOrderCompletionTypes"
-              maxlength="80" required value="${escapeServiceOrderText(draft.tipo)}"
-              placeholder="Ex.: Poda ou inspeção">
+            <select id="serviceOrderCompletionType" name="tipo" required>
+              <option value="" disabled ${draft.tipo ? "" : "selected"}>Selecione o tipo de serviço</option>
+              ${["Poda", "Inspeção", "Outro"].map(tipo => `<option value="${tipo}" ${draft.tipo === tipo ? "selected" : ""}>${tipo}</option>`).join("")}
+            </select>
           </label>
-          <datalist id="serviceOrderCompletionTypes"><option value="Poda"><option value="Inspeção"><option value="Outro"></datalist>
           <label for="serviceOrderCompletionDate">Data e horário da execução
             <input id="serviceOrderCompletionDate" name="dataExecucao" type="datetime-local"
               required value="${escapeServiceOrderText(draft.dataExecucao)}" aria-describedby="serviceOrderExecutionHint">
@@ -957,7 +1019,7 @@ function renderServiceOrderDetails(order){
           data-open-team-form="${escapeServiceOrderText(order.id)}" ${blocked ? "disabled" : ""}>
           ${order.equipeId ? "Trocar equipe" : "Atribuir equipe"}
         </button>
-        <button class="service-order-cancel-button" type="button"
+        <button class="service-order-cancel-button service-order-danger-button" type="button"
           data-cancel-service-order="${escapeServiceOrderText(order.id)}" ${blocked ? "disabled" : ""}>
           ${operation?.kind === "cancel" && operation.phase === "sending" ? "Cancelando..." : "Cancelar ordem de serviço"}
         </button>
@@ -1149,6 +1211,8 @@ async function submitServiceOrderCancellation(form){
     document.getElementById("serviceOrderCancellationReason")?.focus();
     return;
   }
+  const order = serviceOrdersState.details.get(orderId);
+  if (!window.confirm(`Cancelar a ordem ${order.codigo || order.id}?\n\nO cancelamento não poderá ser desfeito após a confirmação.`)) return;
   await runServiceOrderOperation(orderId, "cancel", () => cancelarOrdemDeServico(orderId, motivoCancelamento), { motivoCancelamento });
 }
 
@@ -1370,10 +1434,14 @@ function setupServiceOrdersEvents(){
   serviceOrdersPage.createModal.addEventListener("click", event => {
     if (event.target === serviceOrdersPage.createModal) closeCreateServiceOrderModal();
   });
-  serviceOrdersPage.createForm.addEventListener("input", saveServiceOrderCreationDraft);
+  serviceOrdersPage.createForm.addEventListener("input", event => {
+    saveServiceOrderCreationDraft();
+    if (event.target.name === "endereco" || event.target.name === "bairro") refreshServiceOrderTreeOptions();
+  });
   serviceOrdersPage.createForm.addEventListener("change", event => {
     saveServiceOrderCreationDraft();
     if (event.target.name === "ocorrenciaId") fillServiceOrderFromOccurrence();
+    else if (event.target.name === "endereco" || event.target.name === "bairro") refreshServiceOrderTreeOptions();
   });
   serviceOrdersPage.createForm.addEventListener("submit", event => {
     event.preventDefault(); submitServiceOrderCreation();

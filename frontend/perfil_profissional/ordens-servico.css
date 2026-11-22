@@ -86,6 +86,8 @@
 .service-order-create-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 9px; }
 .service-order-cancel-button { min-height: 44px; padding: 0 16px; border: 1px solid #dce6df; border-radius: 10px; background: #fff; color: #536258; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 .service-order-cancel-button:hover { background: #f5f8f6; }
+.service-order-danger-button { border-color: #e7b8b2; background: #fff; color: #a83e32; }
+.service-order-danger-button:hover { border-color: #d9a09b; background: #fff5f4; }
 
 /* Adapta a apresentação do cabeçalho, filtros e modais para telas menores. */
 @media (max-width: 900px) {
@@ -119,9 +121,9 @@
 .service-order-completion-form fieldset { min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; border: 0; }
 .service-order-completion-form label { display: flex; flex-direction: column; gap: 7px; color: #42594b; font-size: 12px; font-weight: 700; }
 .service-order-completion-form label span, .service-order-completion-form small { color: #708276; font-size: 11px; font-weight: 400; line-height: 1.5; }
-.service-order-completion-form input, .service-order-completion-form textarea { width: 100%; min-width: 0; box-sizing: border-box; padding: 11px; border: 1px solid #d4e2d9; border-radius: 8px; background: #fff; color: #34443a; font: inherit; font-size: 13px; }
+.service-order-completion-form input, .service-order-completion-form select, .service-order-completion-form textarea { width: 100%; min-width: 0; box-sizing: border-box; padding: 11px; border: 1px solid #d4e2d9; border-radius: 8px; background: #fff; color: #34443a; font: inherit; font-size: 13px; }
 .service-order-completion-form textarea { resize: vertical; }
-.service-order-completion-form input:focus, .service-order-completion-form textarea:focus { outline: 2px solid #8db69d; outline-offset: 2px; }
+.service-order-completion-form input:focus, .service-order-completion-form select:focus, .service-order-completion-form textarea:focus { outline: 2px solid #8db69d; outline-offset: 2px; }
 .service-order-completion-form input[type="file"] { padding: 9px; }
 .service-order-photo-selection { color: #53675b; font-size: 11px; font-weight: 500; overflow-wrap: anywhere; }
 .service-order-photo-clear { align-self: flex-start; }

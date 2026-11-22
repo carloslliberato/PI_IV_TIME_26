@@ -12,6 +12,8 @@ const MUNICIPIO_IDS_PARA_CHAVE = {
 let trees = [];
 let publicOccurrences = [];
 let publicOccurrencesLoaded = false; // Indica se a primeira consulta de ocorrências terminou.
+let publicLayerTransition = 0;
+let activePublicLayer = "trees";
 
 // Converte o risco vindo da API de árvores para texto legível
 function riscoPublico(valor) {
@@ -21,6 +23,23 @@ function riscoPublico(valor) {
 // Retorna o município selecionado no filtro do topo
 function municipioPublicoAtual() {
   return document.getElementById("municipioSelect").value;
+}
+
+function temCoordenadasValidas(arvore) {
+  return Number.isFinite(arvore.lat) && Number.isFinite(arvore.lng)
+    && Math.abs(arvore.lat) <= 90 && Math.abs(arvore.lng) <= 180;
+}
+
+function normalizarBuscaPublica(valor) {
+  return String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function correspondeBuscaPublica(termo, valores) {
+  return !termo || valores.some(valor => normalizarBuscaPublica(valor).includes(termo));
 }
 
 // Retorna as árvores do município selecionado
@@ -42,18 +61,20 @@ async function carregarArvoresPublicas() {
   const dados = await resposta.json();
   if (!Array.isArray(dados)) throw new Error("Resposta inesperada da API de árvores");
   trees = dados
-    .filter(a => a.ativa !== false && MUNICIPIO_IDS_PARA_CHAVE[a.municipioId])
-    .filter(a => Number.isFinite(a.latitude) && Number.isFinite(a.longitude)
-      && Math.abs(a.latitude) <= 90 && Math.abs(a.longitude) <= 180)
     .map(a => ({
-      id: String(a.id), nome: a.nomePopular || a.especie || "Árvore",
-      especie: a.nomeCientifico || a.especie || "Não informado",
+      id: String(a.id), codigoArv: a.codigoArv || "", nome: a.nomePopular || a.especie || "Árvore",
+      nomePopular: a.nomePopular || "",
+      especie: a.especie || "",
+      nomeCientifico: a.nomeCientifico || "",
       bairro: a.bairro || "Não informado", endereco: a.endereco || "Não informado",
-      lat: a.latitude, lng: a.longitude, risco: riscoPublico(a.risco),
-      municipioId: MUNICIPIO_IDS_PARA_CHAVE[a.municipioId],
+      lat: a.latitude == null ? null : Number(a.latitude),
+      lng: a.longitude == null ? null : Number(a.longitude),
+      risco: riscoPublico(a.risco),
+      municipioId: MUNICIPIO_IDS_PARA_CHAVE[String(a.municipioId || "").toLowerCase()],
       frutifera: Boolean(a.frutifera), manutencao: Boolean(a.manutencao),
       floracao: Boolean(a.floracao), clima: Boolean(a.alertaClimatico)
-    }));
+    }))
+    .filter(arvore => Boolean(arvore.municipioId));
   applyPublicFilters();
 }
 
@@ -76,18 +97,23 @@ async function carregarOcorrenciasPublicas() {
       return {
         id: String(oco.protocolo || oco.id || oco._id),
         municipioId,
+        arvoreId: String(oco.arvoreId || ""),
+        nomePopular: oco.nomePopular || "",
+        especie: oco.especie || oco.nomeCientifico || "",
+        nomeCientifico: oco.nomeCientifico || "",
         lat: oco.latitude,
         lng: oco.longitude,
         tipo: oco.tipoProblema || "Ocorrência arbórea",
         descricao: oco.descricao || "Sem descrição informada.",
         bairro: bairro,
         endereco: [oco.localizacao, oco.numero].filter(Boolean).join(", ") || "Endereço não informado",
-        status: oco.status || "Recebida"
+        status: oco.status || "Recebida",
+        prioridade: oco.prioridade || oco.urgencia || "Média"
       };
     });
     // Libera a lista lateral e a atualiza se a camada estiver selecionada.
     publicOccurrencesLoaded = true;
-    if (document.getElementById("occurrencesLayer").checked) {
+    if (activePublicLayer === "occurrences") {
       applyPublicFilters();
     }
   } catch (erro) {
@@ -95,7 +121,7 @@ async function carregarOcorrenciasPublicas() {
     publicOccurrences = [];
     // Finaliza o estado de carregamento para a lista mostrar o estado vazio, em vez de ficar presa.
     publicOccurrencesLoaded = true;
-    if (document.getElementById("occurrencesLayer").checked) {
+    if (activePublicLayer === "occurrences") {
       applyPublicFilters();
     }
   }
@@ -122,9 +148,11 @@ async function carregarMunicipioDaSessao() {
     const dadosMunicipio = municipalityCenters[municipio];
     if (map) map.flyTo([dadosMunicipio.lat, dadosMunicipio.lng], dadosMunicipio.zoom, { duration: 0.8 });
     updateHeaderForMunicipality(dadosMunicipio.name);
-    applyPublicFilters();
-    if (document.getElementById("occurrencesLayer").checked) {
+    if (activePublicLayer === "occurrences") {
+      applyPublicFilters();
       renderPublicOccurrencesOnMap();
+    } else {
+      await carregarArvoresPublicas();
     }
   } catch (erro) {
     console.warn("Não foi possível carregar o município da sessão:", erro);
@@ -143,7 +171,6 @@ function initializePublicMap() {
   initMap();
   renderTreeList([]);
   setupEvents();
-  carregarMunicipioDaSessao();
   carregarOcorrenciasPublicas();
   carregarArvoresPublicas().catch(erro => {
     console.error("Não foi possível carregar o mapa público:", erro);
@@ -202,14 +229,12 @@ function initMap() {
 
 // Converte o nível de risco em classe CSS para colorir o pino
 function riskClass(risco) {
-  const mapClass = {
-    "Baixo": "low",
-    "Médio": "medium",
-    "Moderado": "medium",
-    "Alto": "high",
-    "Crítico": "critical"
-  };
-  return mapClass[risco] || "unknown";
+  const normalized = String(risco || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+  if (["baixo", "baixa"].includes(normalized)) return "low";
+  if (["medio", "media", "moderado", "moderada"].includes(normalized)) return "medium";
+  if (["alto", "alta"].includes(normalized)) return "high";
+  if (["critico", "critica"].includes(normalized)) return "critical";
+  return "unknown";
 }
 
 // Cria o ícone circular colorido da árvore no mapa
@@ -230,19 +255,21 @@ function buildTreeMarkers(source = trees) {
   markersById.clear();
 
   source.forEach(tree => {
+    if (!temCoordenadasValidas(tree)) return;
     const marker = L.marker([tree.lat, tree.lng], {
       icon: makeTreeIcon(tree.risco)
     });
 
     marker.bindPopup(`
       <div class="popup-card">
-        <div class="popup-id">ID: ${escapeTreeDetail(tree.id)}</div>
+        <div class="popup-id">${escapeTreeDetail(codigoArvorePublico(tree))}</div>
         <div class="popup-name">${escapeTreeDetail(tree.nome)}</div>
         <div class="popup-species">${escapeTreeDetail(tree.especie)}</div>
         <div class="popup-address">
           ${escapeTreeDetail(tree.endereco)}<br>
           ${escapeTreeDetail(tree.bairro)} - ${escapeTreeDetail(municipalityCenters[municipioPublicoAtual()].name)}
         </div>
+        <div class="popup-risk ${riskClass(tree.risco)}">Risco ${escapeTreeDetail(tree.risco)}</div>
         <div class="popup-link" data-tree-id="${escapeTreeDetail(tree.id)}">
           Ver detalhes <span aria-hidden="true">→</span>
         </div>
@@ -284,7 +311,7 @@ function renderTreeList(list) {
             <i class="bi bi-tree-fill me-1"></i>${escapeTreeDetail(tree.risco)}
           </span>
         </div>
-        <div class="tree-meta">ID: ${escapeTreeDetail(tree.id)}</div>
+        <div class="tree-meta">${escapeTreeDetail(codigoArvorePublico(tree))}</div>
         <div class="tree-address">${escapeTreeDetail(tree.endereco)}</div>
         <div class="tree-distance">${escapeTreeDetail(tree.distancia || "")}</div>
       </div>
@@ -295,6 +322,11 @@ function renderTreeList(list) {
     card.addEventListener("click", () => {
       const tree = trees.find(t => t.id === card.dataset.treeCard);
       if (!tree) return;
+      if (!temCoordenadasValidas(tree)) {
+        const aviso = document.querySelector("#mapToast span");
+        if (aviso) aviso.textContent = "Esta árvore não possui localização disponível no mapa.";
+        return;
+      }
       if (map) map.flyTo([tree.lat, tree.lng], 16, { duration: 0.8 });
       const marker = markersById.get(tree.id);
       if (marker) marker.openPopup();
@@ -333,9 +365,9 @@ function renderOccurrenceList(list, carregando = false) {
       <div class="tree-info">
         <div class="tree-top">
           <h3 class="tree-name">${escapeTreeDetail(ocorrencia.tipo)}</h3>
-          <span class="occurrence-status-badge">${escapeTreeDetail(ocorrencia.status)}</span>
+          <span class="tree-badge badge-${riskClass(ocorrencia.prioridade)}">${escapeTreeDetail(ocorrencia.prioridade)}</span>
         </div>
-        <div class="tree-meta">Identificação: ${escapeTreeDetail(ocorrencia.id)}</div>
+        <div class="tree-meta">${escapeTreeDetail(ocorrencia.status)} · Identificação: ${escapeTreeDetail(ocorrencia.id)}</div>
         <div class="tree-address">${escapeTreeDetail(ocorrencia.endereco)} · ${escapeTreeDetail(ocorrencia.bairro)}</div>
         <div class="tree-distance">${escapeTreeDetail(ocorrencia.descricao)}</div>
       </div>
@@ -362,6 +394,13 @@ function setupEvents() {
     if (!selected) return;
     if (map) map.flyTo([selected.lat, selected.lng], selected.zoom, { duration: 0.8 });
     updateHeaderForMunicipality(selected.name);
+    if (activePublicLayer === "trees") {
+      carregarArvoresPublicas().catch(erro => {
+        console.error("Não foi possível carregar as árvores do município:", erro);
+        renderTreeList([]);
+      });
+      return;
+    }
     applyPublicFilters();
     if (document.getElementById("occurrencesLayer").checked) {
       renderPublicOccurrencesOnMap();
@@ -374,7 +413,7 @@ function setupEvents() {
     document.getElementById("searchInput").value = "";
     clearFilterInputs();
     applyPublicFilters();
-    if (document.getElementById("occurrencesLayer").checked) {
+    if (activePublicLayer === "occurrences") {
       // Na camada de ocorrências, enquadra todos os pinos localizáveis do município.
       const registros = ocorrenciasDoMunicipio()
         .filter(oco => Number.isFinite(oco.lat) && Number.isFinite(oco.lng));
@@ -385,36 +424,59 @@ function setupEvents() {
     }
 
     // Na camada de árvores, mantém o enquadramento de todas as árvores do município.
-    const registros = arvoresDoMunicipio();
+    const registros = arvoresDoMunicipio().filter(temCoordenadasValidas);
     if (map && registros.length) {
       map.fitBounds(registros.map(tree => [tree.lat, tree.lng]), { padding: [50, 50], maxZoom: 16 });
     }
   });
 
   document.getElementById("treesLayer").addEventListener("change", event => {
-    if (!event.target.checked || !map || !markerLayer) return;
-    map.removeLayer(occurrenceLayer);
-    occurrenceLayer.clearLayers();
-    markerLayer.addTo(map);
+    if (!event.target.checked) return;
+    activePublicLayer = "trees";
+    publicLayerTransition += 1;
+    // Atualiza primeiro a lateral: ela não depende do mapa nem da resposta da API.
+    document.getElementById("ocorrencias").textContent = "Árvores em destaque";
+    try {
+      renderTreeLayer();
+    } catch (erro) {
+      console.error("Falha ao aplicar filtros às árvores; exibindo a lista do município:", erro);
+      renderTreeList(arvoresDoMunicipio());
+    }
+
+    // Mantém o estado real dos rádios alinhado com a camada selecionada.
+    document.getElementById("occurrencesLayer").checked = false;
+    if (map && markerLayer && occurrenceLayer) {
+      map.removeLayer(occurrenceLayer);
+      occurrenceLayer.clearLayers();
+      markerLayer.addTo(map);
+    }
     document.getElementById("treeLegend").classList.remove("d-none");
-    document.getElementById("occurrenceLegend").classList.add("d-none");
-    document.querySelector("#mapToast span").textContent = "Clique em um marcador para ver as informações da árvore.";
-    applyPublicFilters();
+    const occurrenceLegend = document.getElementById("occurrenceLegend");
+    if (occurrenceLegend) occurrenceLegend.classList.add("d-none");
+    const avisoMapa = document.querySelector("#mapToast span");
+    if (avisoMapa) avisoMapa.textContent = "Clique em um marcador para ver as informações da árvore.";
+    carregarArvoresPublicas().catch(erro => {
+      console.error("Não foi possível atualizar as árvores do município:", erro);
+      renderTreeList([]);
+    });
   });
 
   // A seleção por rádio garante que somente uma camada fique ativa por vez.
   document.getElementById("occurrencesLayer").addEventListener("change", async event => {
     if (!event.target.checked) return;
+    activePublicLayer = "occurrences";
+    const transition = ++publicLayerTransition;
+    document.getElementById("treesLayer").checked = false;
 
     // Atualiza o painel imediatamente, sem esperar a resposta da API.
     document.getElementById("ocorrencias").textContent = "Ocorrências no município";
     renderOccurrenceList(
       ocorrenciasDoMunicipio(),
       !publicOccurrencesLoaded && publicOccurrences.length === 0);
-    if (!map || !occurrenceLayer) return;
-
-    map.removeLayer(markerLayer);
+    if (map && markerLayer) map.removeLayer(markerLayer);
     await carregarOcorrenciasPublicas();
+    if (transition !== publicLayerTransition || activePublicLayer !== "occurrences") return;
+    if (!map || !occurrenceLayer) return;
     occurrenceLayer.addTo(map);
     renderPublicOccurrencesOnMap();
     document.getElementById("treeLegend").classList.add("d-none");
@@ -430,28 +492,35 @@ function setupEvents() {
   });
 
   const filters = document.getElementById("publicFilters"), filterButton = document.getElementById("btnFilters");
-  filterButton.addEventListener("click", () => {
-    const open = filters.classList.contains("d-none");
-    filters.classList.toggle("d-none", !open);
-    filterButton.setAttribute("aria-expanded", String(open));
-    document.querySelector(".filter-chevron").className = open ? "bi bi-chevron-up filter-chevron" : "bi bi-chevron-down filter-chevron";
-  });
+  if (filters && filterButton) {
+    filterButton.addEventListener("click", () => {
+      const open = filters.classList.contains("d-none");
+      filters.classList.toggle("d-none", !open);
+      filterButton.setAttribute("aria-expanded", String(open));
+      const chevron = document.querySelector(".filter-chevron");
+      if (chevron) chevron.className = open ? "bi bi-chevron-up filter-chevron" : "bi bi-chevron-down filter-chevron";
+    });
+  }
 
-  document.getElementById("applyFilters").addEventListener("click", () => {
+  const applyFiltersButton = document.getElementById("applyFilters");
+  if (applyFiltersButton && filters && filterButton) applyFiltersButton.addEventListener("click", () => {
     applyPublicFilters();
     filters.classList.add("d-none");
     filterButton.setAttribute("aria-expanded", "false");
-    document.querySelector(".filter-chevron").className = "bi bi-chevron-down filter-chevron";
+    const chevron = document.querySelector(".filter-chevron");
+    if (chevron) chevron.className = "bi bi-chevron-down filter-chevron";
   });
 
-  document.getElementById("clearFilters").addEventListener("click", () => {
+  const clearFiltersButton = document.getElementById("clearFilters");
+  if (clearFiltersButton) clearFiltersButton.addEventListener("click", () => {
     clearFilterInputs();
     applyPublicFilters();
   });
 
-  ["filterFruitBearing", "filterRisk", "filterMaintenance", "filterFlowering", "filterWeather"].forEach(id =>
-    document.getElementById(id).addEventListener("change", applyPublicFilters)
-  );
+  ["filterFruitBearing", "filterRisk", "filterMaintenance", "filterFlowering", "filterWeather"].forEach(id => {
+    const input = document.getElementById(id);
+    if (input) input.addEventListener("change", applyPublicFilters);
+  });
 
   const modal = new bootstrap.Modal(document.getElementById("publicActionModal"));
   const title = document.getElementById("publicActionTitle"), body = document.getElementById("publicActionBody"), submit = document.getElementById("publicActionSubmit");
@@ -473,52 +542,87 @@ function setupEvents() {
 
 // Limpa os filtros de características das árvores
 function clearFilterInputs() {
-  document.getElementById("filterFruitBearing").checked = false;
-  document.getElementById("filterRisk").value = "";
-  document.getElementById("filterMaintenance").checked = false;
-  document.getElementById("filterFlowering").checked = false;
-  document.getElementById("filterWeather").checked = false;
+  const fruit = document.getElementById("filterFruitBearing");
+  const risk = document.getElementById("filterRisk");
+  const maintenance = document.getElementById("filterMaintenance");
+  const flowering = document.getElementById("filterFlowering");
+  const weather = document.getElementById("filterWeather");
+  if (fruit) fruit.checked = false;
+  if (risk) risk.value = "";
+  if (maintenance) maintenance.checked = false;
+  if (flowering) flowering.checked = false;
+  if (weather) weather.checked = false;
 }
 
-// Filtra as árvores na lista e no mapa
-function applyPublicFilters() {
-  const term = document.getElementById("searchInput").value.trim().toLowerCase(),
-    fruit = document.getElementById("filterFruitBearing").checked,
-    risk = document.getElementById("filterRisk").value,
-    maintenance = document.getElementById("filterMaintenance").checked,
-    flowering = document.getElementById("filterFlowering").checked,
-    weather = document.getElementById("filterWeather").checked;
+// Aplica os filtros atuais às árvores do município selecionado.
+function arvoresPublicasFiltradas() {
+  const term = normalizarBuscaPublica(document.getElementById("searchInput").value),
+    fruit = document.getElementById("filterFruitBearing")?.checked || false,
+    risk = document.getElementById("filterRisk")?.value || "",
+    maintenance = document.getElementById("filterMaintenance")?.checked || false,
+    flowering = document.getElementById("filterFlowering")?.checked || false,
+    weather = document.getElementById("filterWeather")?.checked || false;
   const filtered = arvoresDoMunicipio().filter(tree => {
-    const textMatch = !term || [tree.nome, tree.especie, tree.id, tree.bairro, tree.endereco].some(v => v.toLowerCase().includes(term));
+    const textMatch = correspondeBuscaPublica(term, [
+      tree.nomePopular, tree.nome, tree.especie, tree.nomeCientifico,
+      tree.bairro, tree.endereco, tree.id
+    ]);
     return textMatch && (!fruit || tree.frutifera) && (!risk || tree.risco === risk) && (!maintenance || tree.manutencao) && (!flowering || tree.floracao) && (!weather || tree.clima);
   });
-  const ocorrenciasAtivas = document.getElementById("occurrencesLayer").checked;
+  return filtered;
+}
+
+function ocorrenciasPublicasFiltradas() {
+  const term = normalizarBuscaPublica(document.getElementById("searchInput").value);
+  return ocorrenciasDoMunicipio().filter(ocorrencia => {
+    const arvoreVinculada = trees.find(arvore => arvore.id === ocorrencia.arvoreId);
+    return correspondeBuscaPublica(term, [
+      ocorrencia.bairro, ocorrencia.tipo, ocorrencia.descricao,
+      ocorrencia.endereco, ocorrencia.id, ocorrencia.nomePopular,
+      ocorrencia.especie, ocorrencia.nomeCientifico,
+      arvoreVinculada?.nomePopular, arvoreVinculada?.nome,
+      arvoreVinculada?.especie, arvoreVinculada?.nomeCientifico
+    ]);
+  });
+}
+
+// Atualiza juntos o título, os cartões e os marcadores da camada de árvores.
+function renderTreeLayer(treesToShow = arvoresPublicasFiltradas()) {
+  const filtered = treesToShow;
+  document.getElementById("ocorrencias").textContent = "Árvores em destaque";
+  renderTreeList(filtered);
+  buildTreeMarkers(filtered);
+  if (map && filtered.length === 1) {
+    map.flyTo([filtered[0].lat, filtered[0].lng], 16, { duration: 0.8 });
+  }
+}
+
+// Filtra a lista e o mapa de acordo com a camada ativa.
+function applyPublicFilters() {
+  const ocorrenciasAtivas = activePublicLayer === "occurrences";
   // Alterna o título e o conteúdo da lateral conforme a camada escolhida.
   document.getElementById("ocorrencias").textContent = ocorrenciasAtivas
     ? "Ocorrências no município"
     : "Árvores em destaque";
   if (ocorrenciasAtivas) {
     renderOccurrenceList(
-      ocorrenciasDoMunicipio(),
+      ocorrenciasPublicasFiltradas(),
       !publicOccurrencesLoaded && publicOccurrences.length === 0);
-  } else {
-    renderTreeList(filtered);
+    renderPublicOccurrencesOnMap();
+    return;
   }
-  buildTreeMarkers(filtered);
-  if (map && filtered.length === 1 && !ocorrenciasAtivas) {
-    map.flyTo([filtered[0].lat, filtered[0].lng], 16, { duration: 0.8 });
-  }
+  renderTreeLayer();
 }
 
 // Desenha no mapa público os marcadores vermelhos das ocorrências reais do banco de dados
-function renderPublicOccurrencesOnMap() {
+function renderPublicOccurrencesOnMap(source = ocorrenciasPublicasFiltradas()) {
   if (!occurrenceLayer) return;
   occurrenceLayer.clearLayers();
   occurrenceMarkersById.clear();
 
   // O mapa recebe somente ocorrências do município atual que possuem coordenadas válidas.
   const municipioSelecionado = municipioPublicoAtual();
-  const ocorrenciasFiltradas = publicOccurrences.filter(
+  const ocorrenciasFiltradas = source.filter(
     oco => (!municipioSelecionado || oco.municipioId === municipioSelecionado)
       && Number.isFinite(oco.lat) && Number.isFinite(oco.lng)
   );
@@ -531,11 +635,12 @@ function renderPublicOccurrencesOnMap() {
       fillColor: "#d84836",
       fillOpacity: 0.82
     }).bindPopup(`
-      <strong>Ocorrência #${escapeTreeDetail(oco.id)}</strong><br>
-      <b>Tipo:</b> ${escapeTreeDetail(oco.tipo)}<br>
-      ${escapeTreeDetail(oco.descricao)}<br>
-      <b>Local:</b> ${escapeTreeDetail(oco.endereco)} (${escapeTreeDetail(oco.bairro)})<br>
-      <b>Status:</b> ${escapeTreeDetail(oco.status)}
+      <div class="popup-id">${escapeTreeDetail(oco.id)}</div>
+      <div class="popup-name">${escapeTreeDetail(oco.tipo)}</div>
+      <div class="popup-species">${escapeTreeDetail(oco.descricao)}</div>
+      <div class="popup-address">${escapeTreeDetail(oco.endereco)}<br>${escapeTreeDetail(oco.bairro)}</div>
+      <div class="popup-risk"><span class="tree-badge badge-${riskClass(oco.prioridade)}">${escapeTreeDetail(oco.prioridade)}</span></div>
+      <div class="popup-address">Status: ${escapeTreeDetail(oco.status)}</div>
     `);
 
     occurrenceMarker.addTo(occurrenceLayer);
@@ -548,7 +653,7 @@ function updateHeaderForMunicipality(name) {
   const toast = document.getElementById("mapToast");
   toast.innerHTML = `<i class="bi bi-geo-alt"></i><span>Mapa atualizado para <strong>${name}</strong>.</span>`;
   setTimeout(() => {
-    const texto = document.getElementById("occurrencesLayer").checked
+    const texto = activePublicLayer === "occurrences"
       ? "Ocorrências registradas neste município."
       : "Clique em um marcador para ver as informações da árvore.";
     toast.innerHTML = `<i class="bi bi-info-circle"></i><span>${texto}</span>`;
@@ -562,12 +667,28 @@ function escapeTreeDetail(value) {
   })[character]);
 }
 
+function codigoArvorePublico(tree) {
+  return tree?.codigoArv || "Codigo nao informado";
+}
+
+function safeTreePhotoUrl(value){
+  if (typeof value !== "string") return "";
+  const source = value.trim();
+  if (/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(source)) return source;
+  try {
+    const url = new URL(source, window.location.href);
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
 // Abre o modal com a ficha detalhada de uma árvore ao clicar no pop-up
 async function showTreeDetails(tree) {
   const modalElement = document.getElementById("treeDetailsModal");
   const body = document.getElementById("treeDetailsBody");
-  document.getElementById("treeDetailsId").textContent = `ID ${tree.id}`;
-  document.getElementById("treeDetailsTitle").textContent = `Ficha da árvore — ${tree.nome}`;
+  document.getElementById("treeDetailsId").textContent = tree.codigoArv || tree.id;
+  document.getElementById("treeDetailsTitle").textContent = tree.nomePopular || tree.nome;
   body.textContent = "Carregando ficha...";
   bootstrap.Modal.getOrCreateInstance(modalElement).show();
 
@@ -585,8 +706,10 @@ async function showTreeDetails(tree) {
       <div class="tree-detail-field ${amplo ? "tree-detail-field-wide" : ""}">
         <span>${t(nome)}</span><strong>${t(valor ?? "Não informado")}</strong>
       </div>`;
-    document.getElementById("treeDetailsTitle").textContent =
-      `Ficha da árvore — ${arvore.nomePopular || arvore.especie || "Árvore"}`;
+    const fotos = (Array.isArray(arvore.fotos) ? arvore.fotos : [])
+      .map(safeTreePhotoUrl).filter(Boolean);
+    document.getElementById("treeDetailsId").textContent = arvore.codigoArv || tree.codigoArv || tree.id;
+    document.getElementById("treeDetailsTitle").textContent = arvore.nomePopular || tree.nomePopular || "Árvore";
     body.innerHTML = `
       <section class="tree-details-identity" aria-label="Identificação da árvore">
         <div><span>Nome popular</span><strong>${t(arvore.nomePopular)}</strong></div>
@@ -605,11 +728,54 @@ async function showTreeDetails(tree) {
         ${campo("Última poda", data(arvore.ultimaPoda))}
         ${campo("Próxima manutenção", data(arvore.proximaManutencao), true)}
       </div>
-      <h3 class="tree-details-section-title">Fotos e histórico</h3>
-      <p>Fotos e histórico individual aguardam integração com a API.</p>
+      <h3 class="tree-details-section-title">Fotos</h3>
+      ${fotos.length ? `
+        <label class="tree-detail-photo-label" for="treeDetailPhotoSelect">Visualizar foto</label>
+        <select class="form-select tree-detail-photo-select" id="treeDetailPhotoSelect" data-photos="${t(JSON.stringify(fotos))}">
+          ${fotos.map((foto, indice) => `<option value="${indice}">Foto ${indice + 1}</option>`).join("")}
+        </select>
+        <img class="tree-detail-photo" id="treeDetailPhoto" src="${t(fotos[0])}" alt="Foto anexada à árvore">
+      ` : `<div class="tree-detail-empty"><i class="bi bi-images" aria-hidden="true"></i><span>Nenhuma foto foi anexada a esta árvore.</span></div>`}
     `;
+    body.insertAdjacentHTML("beforeend", '<h3 class="tree-details-section-title">Histórico de ordens de serviço</h3><div id="treeOrderHistory"><p>Carregando histórico...</p></div>');
+    carregarHistoricoOrdensDaArvore(tree.id, body);
   } catch (erro) {
     console.error("Falha ao abrir ficha pública:", erro);
     body.textContent = "Não foi possível consultar esta ficha.";
   }
 }
+
+async function carregarHistoricoOrdensDaArvore(treeId, body){
+  const container = body.querySelector("#treeOrderHistory");
+  try {
+    const resposta = await fetch(`/api/arvores/${encodeURIComponent(treeId)}/ordens-servico`, { cache: "no-store" });
+    if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
+    const dados = await resposta.json();
+    const ordens = Array.isArray(dados.ordens) ? dados.ordens : [];
+    if (!ordens.length) {
+      const mensagem = dados.possuiOcorrencia
+        ? "Há uma ocorrência vinculada a esta árvore, mas ainda não há ordens de serviço registradas."
+        : "Esta árvore não possui um histórico salvo.";
+      container.innerHTML = `<div class="tree-detail-empty"><i class="bi bi-clock-history" aria-hidden="true"></i><span>${escapeTreeDetail(mensagem)}</span></div>`;
+      return;
+    }
+    const t = escapeTreeDetail;
+    container.innerHTML = `<div class="table-responsive"><table class="table tree-order-history-table">
+      <thead><tr><th>Identificação</th><th>Tipo da ocorrência</th><th>Data</th></tr></thead>
+      <tbody>${ordens.map(ordem => {
+        const instante = ordem.data ? new Date(ordem.data) : null;
+        const data = instante && !Number.isNaN(instante.getTime()) ? instante.toLocaleDateString("pt-BR") : "Não informada";
+        return `<tr><td>${t(ordem.codigo || "OS sem código")}</td><td>${t(ordem.tipo || "Não informado")}</td><td>${t(data)}</td></tr>`;
+      }).join("")}</tbody></table></div>`;
+  } catch (erro) {
+    console.warn("Falha ao consultar histórico de OS da árvore:", erro);
+    container.innerHTML = `<div class="tree-detail-empty"><i class="bi bi-info-circle" aria-hidden="true"></i><span>Não foi possível carregar o histórico agora.</span></div>`;
+  }
+}
+
+document.addEventListener("change", event => {
+  if (event.target?.id !== "treeDetailPhotoSelect") return;
+  const photos = JSON.parse(event.target.dataset.photos || "[]");
+  const image = document.getElementById("treeDetailPhoto");
+  if (image) image.src = photos[Number(event.target.value)] || photos[0] || "";
+});
