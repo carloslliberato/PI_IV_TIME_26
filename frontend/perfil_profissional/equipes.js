@@ -1,17 +1,9 @@
 // Autor: Gabrielle Mota
 
-// Mantém as equipes retornadas pela API; ordens ainda pertencem ao fluxo demonstrativo.
+// Mantém os registros retornados pela API para as telas de equipes e direcionamento.
 const teamsData = {
-  municipality: { id: "campinas-demo", name: "Campinas - SP" },
   teams: [],
-  // Apenas ordens abertas sem equipe podem ser escolhidas no fluxo de direcionamento.
-  // FUTURO API/BD: consultar GET /api/municipios/{id}/ordens-servico?status=aberta&semEquipe=true.
-  serviceOrders: [
-    { id: "OS-2026-0390", municipalityId: "campinas-demo", occurrenceType: "Galho quebrado", neighborhood: "Jardim Chapadão", status: "Aguardando equipe", teamId: null, description: "Remover galho quebrado e desobstruir a passagem de pedestres." },
-    { id: "OS-2026-0388", municipalityId: "campinas-demo", occurrenceType: "Árvore inclinada", neighborhood: "Centro", status: "Pendente", teamId: null, description: "Avaliar estabilidade do tronco e sinalizar a área durante a vistoria." },
-    { id: "OS-2026-0386", municipalityId: "campinas-demo", occurrenceType: "Poda preventiva", neighborhood: "Taquaral", status: "Em andamento", teamId: "EQ-001", description: "Executar poda preventiva de galhos próximos à rede." },
-    { id: "OS-2026-0370", municipalityId: "campinas-demo", occurrenceType: "Raiz danificando calçada", neighborhood: "Cambuí", status: "Concluída", teamId: "EQ-003", description: "Reparar o trecho de calçada sem comprometer as raízes." }
-  ]
+  serviceOrders: []
 };
 
 // Guarda os elementos estáticos que são atualizados durante a navegação pela tela.
@@ -36,8 +28,10 @@ let selectedTeamId = null;
 let teamsToastTimer = null;
 let employeeRequestInProgress = false;
 let teamRequestInProgress = false;
+let teamOrderAssignmentInProgress = false;
 let teamsSearchTimer = null;
 let teamsLoadRequest = 0;
+let teamOrdersRequest = 0;
 const teamDeletionsInProgress = new Set();
 
 // Escapa os dados da API antes de inseri-los como HTML.
@@ -57,12 +51,12 @@ function renderTeamsTable() {
   const teams = teamsData.teams;
   teamsPage.tableBody.innerHTML = teams.map(team => `
     <tr>
-      <td><button class="team-name-link" type="button" data-open-team="${escapeTeamText(team.id)}">${escapeTeamText(team.name)}</button></td>
+      <td><button class="team-name-link" type="button" data-open-team="${escapeTeamText(team.id)}" aria-label="Ver detalhes da equipe ${escapeTeamText(team.code)}">${escapeTeamText(team.code)}</button></td>
+      <td>${escapeTeamText(team.name)}</td>
       <td>${escapeTeamText(team.region)}</td>
       <td><span class="team-status-badge ${team.status === "Disponível" ? "available" : "unavailable"}">${escapeTeamText(team.status)}</span></td>
       <td>${escapeTeamText(team.manager)}</td>
       <td>${team.employees.length}</td>
-      <td><button class="team-delete-button" type="button" data-delete-team="${escapeTeamText(team.id)}" aria-label="Excluir equipe ${escapeTeamText(team.name)}" title="Excluir equipe"><i class="bi bi-trash3" aria-hidden="true"></i></button></td>
     </tr>
   `).join("");
 
@@ -117,6 +111,7 @@ async function loadTeams() {
     // Adapta o formato da API aos campos consumidos pela tabela e pelos detalhes.
     teamsData.teams = responseData.equipes.map(equipe => ({
       id: String(equipe.id),
+      code: equipe.codigo || equipe.code || "—",
       name: equipe.nome,
       region: equipe.regiaoAtuacao,
       status: equipe.status,
@@ -176,14 +171,15 @@ async function submitTeamCreation(form) {
   const teamPayload = {
     nome: String(formData.get("name") || "").trim(),
     regiaoAtuacao: String(formData.get("region") || "").trim(),
+    gestorNome: String(formData.get("managerName") || "").trim(),
     gestor: String(formData.get("manager") || "").trim()
   };
   const feedback = teamsPage.createFeedback;
   const saveButton = form.querySelector("button[type='submit']");
 
   // Verifica campos após trim para não aceitar valores compostos apenas por espaços.
-  if (!teamPayload.nome || !teamPayload.regiaoAtuacao || !teamPayload.gestor) {
-    feedback.textContent = "Preencha o nome, a região de atuação e o e-mail do gestor.";
+  if (!teamPayload.nome || !teamPayload.regiaoAtuacao || !teamPayload.gestorNome || !teamPayload.gestor) {
+    feedback.textContent = "Preencha o nome, a região e o nome e e-mail do gestor.";
     feedback.classList.add("is-error");
     return;
   }
@@ -278,6 +274,7 @@ function renderTeamDetails(team) {
     <header class="team-detail-heading">
       <span class="team-detail-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
       <div><span class="team-detail-eyebrow">${escapeTeamText(team.region)}</span><h2 id="teamDetailsTitle">${escapeTeamText(team.name)}</h2></div>
+      <button class="team-delete-button team-detail-delete" type="button" data-delete-team="${escapeTeamText(team.id)}" aria-label="Excluir equipe ${escapeTeamText(team.name)}" title="Excluir equipe"><i class="bi bi-trash3" aria-hidden="true"></i><span>Excluir equipe</span></button>
     </header>
     <div class="team-detail-summary">
       <div><span>Status</span><strong><span class="team-status-badge ${team.status === "Disponível" ? "available" : "unavailable"}">${escapeTeamText(team.status)}</span></strong></div>
@@ -290,8 +287,8 @@ function renderTeamDetails(team) {
       <div class="team-members-table-wrap"><table class="team-members-table"><thead><tr><th>Nome</th><th>Cargo/função</th><th>Disponibilidade</th><th>E-mail</th><th>Ações</th></tr></thead><tbody>${employeeRows}</tbody></table></div>
     </section>
     <section class="team-orders-action">
-      <div><h3>Ordens de serviço</h3><p>Direcione uma ordem aberta e ainda sem equipe.</p></div>
-      <button class="team-secondary-button" type="button" data-assign-order><i class="bi bi-arrow-left-right" aria-hidden="true"></i>Direcionar ordem de serviço</button>
+      <div><h3>Ordens de serviço</h3><p>${team.status === "Disponível" ? "Direcione uma ordem aberta e ainda sem equipe." : "A equipe precisa estar disponível para receber uma nova ordem."}</p></div>
+      <button class="team-secondary-button" type="button" data-assign-order ${team.status !== "Disponível" ? "disabled" : ""}><i class="bi bi-arrow-left-right" aria-hidden="true"></i>Direcionar ordem de serviço</button>
     </section>
   `;
 }
@@ -483,7 +480,7 @@ async function removeTeam(teamId) {
   if (!window.confirm(`Deseja realmente excluir a equipe "${team.name}"?`)) return;
 
   const deleteButton = Array.from(
-    teamsPage.tableBody.querySelectorAll("[data-delete-team]")
+    teamsPage.detailsContent.querySelectorAll("[data-delete-team]")
   ).find(button => button.dataset.deleteTeam === teamId);
   teamDeletionsInProgress.add(teamId);
   if (deleteButton) deleteButton.disabled = true;
@@ -516,6 +513,7 @@ async function removeTeam(teamId) {
 
     teamsData.teams = teamsData.teams.filter(item => item.id !== teamId);
     renderTeamsTable();
+    if (selectedTeamId === teamId) closeTeamDetails();
     showTeamsToast("Equipe excluída com sucesso.");
   } catch (error) {
     showTeamsToast(`Não foi possível excluir a equipe. ${error.message}`);
@@ -525,49 +523,137 @@ async function removeTeam(teamId) {
   }
 }
 
-// Lista as ordens abertas do município que ainda aguardam equipe para a equipe atual.
-function openTeamOrdersSelector() {
+// Busca as OS abertas do município autenticado e mostra somente as que ainda não têm equipe.
+async function openTeamOrdersSelector() {
   const team = getSelectedTeam();
   if (!team) return;
-  const openOrders = teamsData.serviceOrders.filter(order =>
-    order.municipalityId === teamsData.municipality.id &&
-    !order.teamId && ["Pendente", "Aguardando equipe"].includes(order.status)
-  );
-
-  const orderChoices = openOrders.length
-    ? openOrders.map(order => `
-      <label class="team-order-choice">
-        <input type="radio" name="serviceOrderId" value="${escapeTeamText(order.id)}" required>
-        <span class="team-order-choice-copy"><strong>${escapeTeamText(order.id)} · ${escapeTeamText(order.occurrenceType)}</strong><small>${escapeTeamText(order.neighborhood)} · ${escapeTeamText(order.status)}</small><span>${escapeTeamText(order.description)}</span></span>
-      </label>
-    `).join("")
-    : '<div class="team-orders-empty"><i class="bi bi-check2-circle" aria-hidden="true"></i><strong>Não há ordens abertas aguardando equipe.</strong></div>';
-
-  teamsPage.ordersContent.innerHTML = `
+  const requestId = ++teamOrdersRequest;
+  const renderHeading = () => `
     <header class="team-orders-heading"><span class="team-detail-icon"><i class="bi bi-clipboard2-plus" aria-hidden="true"></i></span><div><span class="team-detail-eyebrow">${escapeTeamText(team.name)}</span><h2 id="teamOrdersTitle">Direcionar ordem de serviço</h2></div></header>
-    <p class="team-orders-intro">Selecione uma ordem municipal pendente ou aguardando abertura de atendimento.</p>
-    ${openOrders.length ? `<form id="assignTeamOrderForm"><div class="team-order-choices">${orderChoices}</div><button class="team-primary-button team-assign-order-button" type="submit"><i class="bi bi-arrow-left-right" aria-hidden="true"></i>Direcionar para esta equipe</button></form>` : orderChoices}
   `;
   teamsPage.ordersModal.hidden = false;
-  teamsPage.ordersContent.querySelector("input[type='radio']")?.focus();
+  if (team.status !== "Disponível") {
+    teamsPage.ordersContent.innerHTML = `${renderHeading()}<div class="team-orders-empty"><strong>Esta equipe está indisponível e não pode receber outra ordem.</strong></div>`;
+    return;
+  }
+  teamsPage.ordersContent.innerHTML = `${renderHeading()}<p class="team-orders-intro">Carregando as ordens sem equipe do seu município...</p>`;
+
+  try {
+    const response = await fetch("/api/ordens-servico", {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store"
+    });
+    const responseText = await response.text();
+    let responseData;
+    try {
+      responseData = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      throw new Error("O servidor retornou uma resposta inválida ao consultar as ordens.");
+    }
+    if (!response.ok) {
+      throw new Error(responseData.erro || `O servidor respondeu com status ${response.status}.`);
+    }
+    if (!Array.isArray(responseData.ordens)) {
+      throw new Error("A resposta do servidor não contém uma lista de ordens de serviço.");
+    }
+    if (requestId !== teamOrdersRequest || selectedTeamId !== team.id) return;
+
+    teamsData.serviceOrders = responseData.ordens.map(order => ({
+      id: String(order.id),
+      code: String(order.codigo || order.id),
+      title: order.titulo || "Ordem de serviço",
+      occurrenceId: order.ocorrenciaId ? String(order.ocorrenciaId) : null,
+      teamId: order.equipeId ? String(order.equipeId) : null,
+      status: order.status,
+      description: order.descricao || ""
+    })).filter(order =>
+      !order.teamId && ["Aberta", "Em andamento"].includes(order.status)
+    );
+
+    const openOrders = teamsData.serviceOrders;
+    const orderChoices = openOrders.length
+      ? openOrders.map(order => `
+        <label class="team-order-choice">
+          <input type="radio" name="serviceOrderId" value="${escapeTeamText(order.id)}" required>
+          <span class="team-order-choice-copy">
+            <strong>${escapeTeamText(order.code)} · ${escapeTeamText(order.title)}</strong>
+            <small>${order.occurrenceId ? `Ocorrência vinculada: ${escapeTeamText(order.occurrenceId)}` : "Sem ocorrência vinculada"} · ${escapeTeamText(order.status)}</small>
+            <span>${escapeTeamText(order.description)}</span>
+          </span>
+        </label>
+      `).join("")
+      : '<div class="team-orders-empty"><i class="bi bi-check2-circle" aria-hidden="true"></i><strong>Não há ordens abertas sem equipe neste município.</strong></div>';
+
+    teamsPage.ordersContent.innerHTML = `
+      ${renderHeading()}
+      <p class="team-orders-intro">Selecione uma ordem aberta, sem equipe, do município da sua conta.</p>
+      ${openOrders.length ? `<form id="assignTeamOrderForm"><div class="team-order-choices">${orderChoices}</div><button class="team-primary-button team-assign-order-button" type="submit"><i class="bi bi-arrow-left-right" aria-hidden="true"></i>Direcionar para esta equipe</button></form>` : orderChoices}
+    `;
+    teamsPage.ordersContent.querySelector("input[type='radio']")?.focus();
+  } catch (error) {
+    if (requestId !== teamOrdersRequest || selectedTeamId !== team.id) return;
+    console.error("Erro ao carregar ordens sem equipe:", error);
+    teamsPage.ordersContent.innerHTML = `${renderHeading()}<div class="team-orders-empty"><strong>Não foi possível carregar as ordens de serviço.</strong><span>${escapeTeamText(error.message)}</span></div>`;
+  }
 }
 
-// Atualiza a ordem escolhida e marca a equipe como indisponível enquanto atende o serviço.
-// FUTURO API/BD: PATCH /api/ordens-servico/{id}/equipe com equipeId; atualizar status e auditoria da atribuição.
-function assignServiceOrder(orderId) {
+// Persiste a equipe na OS; o backend atualiza o status da equipe e preserva a ocorrência vinculada.
+async function assignServiceOrder(orderId) {
   const team = getSelectedTeam();
   const order = teamsData.serviceOrders.find(item => item.id === orderId);
-  if (!team || !order || order.teamId || !["Pendente", "Aguardando equipe"].includes(order.status)) return;
+  if (!team || team.status !== "Disponível" || !order || order.teamId
+      || !["Aberta", "Em andamento"].includes(order.status) || teamOrderAssignmentInProgress) return;
 
-  order.teamId = team.id;
-  order.teamName = team.name;
-  order.status = "Em andamento";
-  team.status = "Indisponível";
-  team.employees.forEach(employee => { employee.available = false; });
-  teamsPage.ordersModal.hidden = true;
-  renderTeamDetails(team);
-  renderTeamsTable();
-  showTeamsToast(`${order.id} direcionada para ${team.name}.`);
+  const submitButton = teamsPage.ordersContent.querySelector("button[type='submit']");
+  teamOrderAssignmentInProgress = true;
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = "Salvando atribuição...";
+  }
+
+  try {
+    const response = await fetch(`/api/ordens-servico/${encodeURIComponent(order.id)}/equipe`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ equipeId: team.id })
+    });
+    const responseText = await response.text();
+    let responseData;
+    try {
+      responseData = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      throw new Error("O servidor retornou uma resposta inválida ao atribuir a equipe.");
+    }
+    if (!response.ok) {
+      throw new Error(responseData.erro || `O servidor respondeu com status ${response.status}.`);
+    }
+
+    const savedOrder = responseData.ordem;
+    if (!savedOrder || String(savedOrder.equipeId || "") !== team.id
+        || String(savedOrder.ocorrenciaId || "") !== String(order.occurrenceId || "")) {
+      throw new Error("A resposta não confirmou a equipe e a ocorrência vinculadas à ordem.");
+    }
+
+    team.status = "Indisponível";
+    team.employees.forEach(employee => { employee.available = false; });
+    teamsPage.ordersModal.hidden = true;
+    teamsPage.search.value = "";
+    teamsPage.statusFilter.value = "";
+    await loadTeams();
+    const refreshedTeam = getSelectedTeam();
+    if (refreshedTeam) renderTeamDetails(refreshedTeam);
+    showTeamsToast(`${order.code} direcionada para ${team.name}.`);
+  } catch (error) {
+    showTeamsToast(`Não foi possível atribuir a equipe. ${error.message}`);
+  } finally {
+    teamOrderAssignmentInProgress = false;
+    if (submitButton && submitButton.isConnected) {
+      submitButton.disabled = false;
+      submitButton.innerHTML = '<i class="bi bi-arrow-left-right" aria-hidden="true"></i>Direcionar para esta equipe';
+    }
+  }
 }
 
 // Mostra uma confirmação breve depois de um cadastro ou direcionamento local.
@@ -603,6 +689,8 @@ function setupTeamsPageEvents() {
   teamsPage.detailsContent.addEventListener("click", event => {
     if (event.target.closest("[data-add-employee]")) openEmployeeForm();
     if (event.target.closest("[data-assign-order]")) openTeamOrdersSelector();
+    const deleteTeamButton = event.target.closest("[data-delete-team]");
+    if (deleteTeamButton) removeTeam(deleteTeamButton.dataset.deleteTeam);
     const deleteButton = event.target.closest("[data-remove-collaborator]");
     if (deleteButton) removeCollaborator(deleteButton.dataset.removeCollaborator);
   });

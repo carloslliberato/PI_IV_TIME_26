@@ -44,6 +44,12 @@ public class ConfiguracaoPaginas {
             ctx.html(Files.readString(arquivo));
         });
 
+        // Disponibiliza o portal público em uma rota que não redireciona funcionários.
+        servidorHttp.get("/perfil-publico", ctx -> {
+            Path arquivo = pastaFrontend.resolve("perfil_publico").resolve("index.html");
+            ctx.html(Files.readString(arquivo));
+        });
+
         servidorHttp.get("/abrir-chamado", ctx -> {
             Path arquivo = pastaFrontend.resolve("perfil_publico").resolve("abrir-chamado.html");
             ctx.html(Files.readString(arquivo));

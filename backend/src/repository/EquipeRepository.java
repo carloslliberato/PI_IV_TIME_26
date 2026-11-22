@@ -139,7 +139,8 @@ public class EquipeRepository {
                 .append("municipioNome", equipe.getMunicipioNome())
                 .append("usuarioId", equipe.getUsuarioId())
                 .append("usuarioNome", equipe.getUsuarioNome())
-                .append("gestor", new Document("email", equipe.getGestor()))
+                .append("gestor", new Document("nome", equipe.getGestor())
+                        .append("email", equipe.getGestorEmail()))
                 .append("dataCadastro", Date.from(equipe.getDataCadastro()))
                 .append("colaboradores", new ArrayList<Document>());
 
@@ -226,6 +227,7 @@ public class EquipeRepository {
         correspondencias.add(regex("regiao", regexLiteral, "i"));
         correspondencias.add(regex("regiaoAtuacao", regexLiteral, "i"));
         correspondencias.add(regex("gestor.nome", regexLiteral, "i"));
+        correspondencias.add(regex("gestor.email", regexLiteral, "i"));
         correspondencias.add(regex("gestor", regexLiteral, "i"));
         correspondencias.add(regex("gestorEquipe.nome", regexLiteral, "i"));
         correspondencias.add(regex("gestorEquipe", regexLiteral, "i"));
@@ -531,14 +533,23 @@ public class EquipeRepository {
     private Equipe converterParaEquipe(Document documento) {
 
         Object gestorArmazenado = documento.get("gestor");
-        String emailGestor = gestorArmazenado instanceof Document gestor
-                ? gestor.getString("email") == null
-                        ? gestor.getString("nome")
-                        : gestor.getString("email")
-                : gestorArmazenado instanceof String gestor
-                        ? gestor
-                        : null;
-
+        Object gestorAlternativo = documento.get("gestorEquipe");
+        String nomeGestor = documento.getString("gestorNome");
+        String emailGestor = documento.getString("gestorEmail");
+        if (gestorArmazenado instanceof Document gestor) {
+            if (nomeGestor == null) nomeGestor = gestor.getString("nome");
+            if (emailGestor == null) emailGestor = gestor.getString("email");
+        } else if (gestorArmazenado instanceof String gestor) {
+            if (gestor.contains("@")) emailGestor = emailGestor == null ? gestor : emailGestor;
+            else if (nomeGestor == null) nomeGestor = gestor;
+        }
+        if (gestorAlternativo instanceof Document gestor) {
+            if (nomeGestor == null) nomeGestor = gestor.getString("nome");
+            if (emailGestor == null) emailGestor = gestor.getString("email");
+        } else if (gestorAlternativo instanceof String gestor && nomeGestor == null && !gestor.contains("@")) {
+            nomeGestor = gestor;
+        }
+        if (nomeGestor == null || nomeGestor.isBlank()) nomeGestor = "Nome não cadastrado";
         Date dataCadastro = documento.getDate("dataCadastro");
         return new Equipe(
                 documento.getObjectId("_id"),
@@ -547,6 +558,7 @@ public class EquipeRepository {
                 documento.getString("regiao") == null
                         ? documento.getString("regiaoAtuacao")
                         : documento.getString("regiao"),
+                nomeGestor,
                 emailGestor,
                 documento.getString("status"),
                 documento.getObjectId("municipioId"),

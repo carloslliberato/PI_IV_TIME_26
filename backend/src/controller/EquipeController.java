@@ -2,6 +2,7 @@
 
 package controller;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -99,17 +100,18 @@ public class EquipeController {
             Equipe equipe = equipeService.criarEquipe(dados, usuarioId);
 
             // Retorna os dados necessários à tela, incluindo o ID persistido.
-            ctx.status(201).json(Map.of(
-                    "equipe", Map.of(
-                            "id", equipe.getId().toHexString(),
-                            "nome", equipe.getNome(),
-                            "regiaoAtuacao", equipe.getRegiaoAtuacao(),
-                            "status", equipe.getStatus(),
-                            "gestor", equipe.getGestor(),
-                            "municipioId", equipe.getMunicipioId().toHexString(),
-                            "municipioNome", equipe.getMunicipioNome(),
-                            "usuarioId", equipe.getUsuarioId().toHexString(),
-                            "usuarioNome", equipe.getUsuarioNome())));
+            ctx.status(201).json(Map.of("equipe", Map.ofEntries(
+                    Map.entry("id", equipe.getId().toHexString()),
+                    Map.entry("codigo", equipe.getCodigo()),
+                    Map.entry("nome", equipe.getNome()),
+                    Map.entry("regiaoAtuacao", equipe.getRegiaoAtuacao()),
+                    Map.entry("status", equipe.getStatus()),
+                    Map.entry("gestor", equipe.getGestor()),
+                    Map.entry("gestorEmail", equipe.getGestorEmail()),
+                    Map.entry("municipioId", equipe.getMunicipioId().toHexString()),
+                    Map.entry("municipioNome", equipe.getMunicipioNome()),
+                    Map.entry("usuarioId", equipe.getUsuarioId().toHexString()),
+                    Map.entry("usuarioNome", equipe.getUsuarioNome()))));
 
         } catch (JsonParseException erro) {
             ctx.status(400).json(Map.of(
@@ -251,24 +253,23 @@ public class EquipeController {
 
     // Formata os IDs BSON como strings para a resposta JSON da tela.
     private Map<String, Object> paraResposta(Equipe equipe) {
-        return Map.of(
-                "id", equipe.getId().toHexString(),
-                "nome", equipe.getNome(),
-                "regiaoAtuacao", equipe.getRegiaoAtuacao(),
-                "status", equipe.getStatus(),
-                "gestor", equipe.getGestor(),
-                "municipioId", equipe.getMunicipioId().toHexString(),
-                "municipioNome", equipe.getMunicipioNome() == null
-                        ? ""
-                        : equipe.getMunicipioNome(),
-                "usuarioId", equipe.getUsuarioId().toHexString(),
-                "usuarioNome", equipe.getUsuarioNome() == null
-                        ? ""
-                        : equipe.getUsuarioNome(),
-                "colaboradores", equipe.getColaboradores()
-                        .stream()
-                        .map(this::paraRespostaColaborador)
-                        .toList());
+        Map<String, Object> resposta = new LinkedHashMap<>();
+        resposta.put("id", equipe.getId().toHexString());
+        resposta.put("codigo", equipe.getCodigo());
+        resposta.put("nome", equipe.getNome());
+        resposta.put("regiaoAtuacao", equipe.getRegiaoAtuacao());
+        resposta.put("status", equipe.getStatus());
+        resposta.put("gestor", equipeService.nomeDoGestor(equipe.getGestor(), equipe.getGestorEmail()));
+        resposta.put("gestorEmail", equipe.getGestorEmail() == null ? "" : equipe.getGestorEmail());
+        resposta.put("municipioId", equipe.getMunicipioId().toHexString());
+        resposta.put("municipioNome", equipe.getMunicipioNome() == null ? "" : equipe.getMunicipioNome());
+        resposta.put("usuarioId", equipe.getUsuarioId().toHexString());
+        resposta.put("usuarioNome", equipe.getUsuarioNome() == null ? "" : equipe.getUsuarioNome());
+        resposta.put("colaboradores", equipe.getColaboradores()
+                .stream()
+                .map(this::paraRespostaColaborador)
+                .toList());
+        return resposta;
     }
 
     // Converte um colaborador embutido para os tipos simples do JSON da API.

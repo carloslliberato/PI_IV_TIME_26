@@ -87,9 +87,15 @@ public final class ResultadoValidacaoOrdemDeServico extends Comunicado {
     public String getMotivoCancelamento() { return motivoCancelamento; }
 
     public static record CadastroValidado(String arvoreId, String ocorrenciaId,
-            String titulo, String descricao, String prioridade, String observacoes)
-            implements Serializable {
+            String titulo, String descricao, String prioridade, String observacoes,
+            String endereco, String bairro) implements Serializable {
         private static final long serialVersionUID = 1L;
+
+        public CadastroValidado(String arvoreId, String ocorrenciaId, String titulo,
+                String descricao, String prioridade, String observacoes) {
+            this(arvoreId, ocorrenciaId, titulo, descricao, prioridade, observacoes,
+                    null, null);
+        }
     }
 
     public static record ConclusaoValidada(String tipo, String descricao,

@@ -11,6 +11,7 @@ const MUNICIPIO_IDS_PARA_CHAVE = {
 };
 let trees = [];
 let publicOccurrences = [];
+let publicOccurrencesLoaded = false; // Indica se a primeira consulta de ocorrências terminou.
 
 // Converte o risco vindo da API de árvores para texto legível
 function riscoPublico(valor) {
@@ -26,6 +27,12 @@ function municipioPublicoAtual() {
 function arvoresDoMunicipio() {
   const municipioId = municipioPublicoAtual();
   return trees.filter(arvore => arvore.municipioId === municipioId);
+}
+
+// Retorna as ocorrências do município selecionado, com ou sem coordenadas para o mapa.
+function ocorrenciasDoMunicipio() {
+  const municipioId = municipioPublicoAtual();
+  return publicOccurrences.filter(ocorrencia => ocorrencia.municipioId === municipioId);
 }
 
 // Busca as árvores reais cadastradas no MongoDB via GET /api/arvores
@@ -50,20 +57,6 @@ async function carregarArvoresPublicas() {
   applyPublicFilters();
 }
 
-// Caso uma ocorrência antiga não tenha latitude/longitude, posiciona pelo bairro em Campinas
-function coordenadasFallbackPublico(bairro, municipioId) {
-  const b = String(bairro || "").toLowerCase();
-  if (municipioId === "campinas") {
-    if (b.includes("taquaral")) return { lat: -22.8754, lng: -47.0475 };
-    if (b.includes("cambu")) return { lat: -22.8942, lng: -47.0531 };
-    if (b.includes("chapad")) return { lat: -22.8895, lng: -47.0742 };
-    if (b.includes("barao") || b.includes("barão")) return { lat: -22.8228, lng: -47.0805 };
-  }
-  if (municipioId === "sumare") return { lat: -22.8214, lng: -47.2660 };
-  if (municipioId === "hortolandia") return { lat: -22.8583, lng: -47.2200 };
-  return { lat: -22.9056, lng: -47.0608 };
-}
-
 // Busca as ocorrências reais cadastradas no MongoDB via GET /api/ocorrencias
 async function carregarOcorrenciasPublicas() {
   try {
@@ -71,29 +64,40 @@ async function carregarOcorrenciasPublicas() {
     if (!resposta.ok) throw new Error(`Falha ao consultar ocorrências (HTTP ${resposta.status})`);
 
     const dados = await resposta.json();
-    if (!Array.isArray(dados)) return;
+    if (!Array.isArray(dados)) {
+      throw new Error("Resposta inesperada da API de ocorrências");
+    }
 
+    // Mantém todas as ocorrências para a lista; coordenadas serão exigidas apenas para os pinos.
     publicOccurrences = dados.map(oco => {
       const bairro = oco.bairro || "Centro";
       const municipioId = MUNICIPIO_IDS_PARA_CHAVE[oco.municipioId] || String(oco.municipioId || "campinas").toLowerCase();
-      const fallback = coordenadasFallbackPublico(bairro, municipioId);
-      const temCoords = Number.isFinite(oco.latitude) && Number.isFinite(oco.longitude);
 
       return {
         id: String(oco.protocolo || oco.id || oco._id),
         municipioId,
-        lat: temCoords ? oco.latitude : fallback.lat,
-        lng: temCoords ? oco.longitude : fallback.lng,
+        lat: oco.latitude,
+        lng: oco.longitude,
         tipo: oco.tipoProblema || "Ocorrência arbórea",
         descricao: oco.descricao || "Sem descrição informada.",
         bairro: bairro,
-        endereco: oco.localizacao || "Endereço não informado",
+        endereco: [oco.localizacao, oco.numero].filter(Boolean).join(", ") || "Endereço não informado",
         status: oco.status || "Recebida"
       };
     });
+    // Libera a lista lateral e a atualiza se a camada estiver selecionada.
+    publicOccurrencesLoaded = true;
+    if (document.getElementById("occurrencesLayer").checked) {
+      applyPublicFilters();
+    }
   } catch (erro) {
     console.error("Erro ao carregar ocorrências públicas:", erro);
     publicOccurrences = [];
+    // Finaliza o estado de carregamento para a lista mostrar o estado vazio, em vez de ficar presa.
+    publicOccurrencesLoaded = true;
+    if (document.getElementById("occurrencesLayer").checked) {
+      applyPublicFilters();
+    }
   }
 }
 
@@ -132,6 +136,7 @@ let map;
 let markerLayer;
 let occurrenceLayer;
 let markersById = new Map();
+let occurrenceMarkersById = new Map();
 
 // Inicializa o mapa, os eventos e carrega árvores e ocorrências reais
 function initializePublicMap() {
@@ -184,7 +189,7 @@ function initMap() {
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
     {
       attribution:
-        "Tiles © Esri — Sources: Esri, OpenStreetMap contributors",
+        "Tiles © Esri — Sources: Esri, <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap contributors</a>; geocoding © OpenStreetMap contributors",
       maxZoom: 19
     }
   ).addTo(map);
@@ -297,6 +302,58 @@ function renderTreeList(list) {
   });
 }
 
+// Desenha na lateral as ocorrências do município, inclusive as que ainda não têm pino no mapa.
+function renderOccurrenceList(list, carregando = false) {
+  const container = document.getElementById("treeList");
+
+  // Informa que a API está sendo consultada sem voltar a exibir os cartões de árvores.
+  if (carregando) {
+    container.innerHTML = `
+      <div class="alert alert-light border">Carregando ocorrências do município...</div>
+    `;
+    return;
+  }
+
+  // Mostra um estado vazio claro quando o município não possui ocorrências.
+  if (!list.length) {
+    container.innerHTML = `
+      <div class="alert alert-light border">
+        Nenhuma ocorrência registrada para este município.
+      </div>
+    `;
+    return;
+  }
+
+  // Monta cartões com os dados principais de cada ocorrência.
+  container.innerHTML = list.map(ocorrencia => `
+    <article class="tree-card occurrence-card" data-occurrence-card="${escapeTreeDetail(ocorrencia.id)}">
+      <div class="tree-photo occurrence-photo d-flex align-items-center justify-content-center" aria-hidden="true">
+        <i class="bi bi-exclamation-triangle-fill fs-3"></i>
+      </div>
+      <div class="tree-info">
+        <div class="tree-top">
+          <h3 class="tree-name">${escapeTreeDetail(ocorrencia.tipo)}</h3>
+          <span class="occurrence-status-badge">${escapeTreeDetail(ocorrencia.status)}</span>
+        </div>
+        <div class="tree-meta">Identificação: ${escapeTreeDetail(ocorrencia.id)}</div>
+        <div class="tree-address">${escapeTreeDetail(ocorrencia.endereco)} · ${escapeTreeDetail(ocorrencia.bairro)}</div>
+        <div class="tree-distance">${escapeTreeDetail(ocorrencia.descricao)}</div>
+      </div>
+    </article>
+  `).join("");
+
+  // Ao clicar em uma ocorrência com coordenadas, leva o mapa ao marcador correspondente.
+  container.querySelectorAll("[data-occurrence-card]").forEach(card => {
+    card.addEventListener("click", () => {
+      const ocorrencia = publicOccurrences.find(
+        item => item.id === card.dataset.occurrenceCard);
+      if (!ocorrencia || !Number.isFinite(ocorrencia.lat) || !Number.isFinite(ocorrencia.lng)) return;
+      if (map) map.flyTo([ocorrencia.lat, ocorrencia.lng], 16, { duration: 0.8 });
+      occurrenceMarkersById.get(ocorrencia.id)?.openPopup();
+    });
+  });
+}
+
 // Configura os eventos de busca, troca de município, camadas e filtros do mapa público
 function setupEvents() {
   document.getElementById("municipioSelect").addEventListener("change", event => {
@@ -317,6 +374,17 @@ function setupEvents() {
     document.getElementById("searchInput").value = "";
     clearFilterInputs();
     applyPublicFilters();
+    if (document.getElementById("occurrencesLayer").checked) {
+      // Na camada de ocorrências, enquadra todos os pinos localizáveis do município.
+      const registros = ocorrenciasDoMunicipio()
+        .filter(oco => Number.isFinite(oco.lat) && Number.isFinite(oco.lng));
+      if (map && registros.length) {
+        map.fitBounds(registros.map(oco => [oco.lat, oco.lng]), { padding: [50, 50], maxZoom: 16 });
+      }
+      return;
+    }
+
+    // Na camada de árvores, mantém o enquadramento de todas as árvores do município.
     const registros = arvoresDoMunicipio();
     if (map && registros.length) {
       map.fitBounds(registros.map(tree => [tree.lat, tree.lng]), { padding: [50, 50], maxZoom: 16 });
@@ -331,11 +399,20 @@ function setupEvents() {
     document.getElementById("treeLegend").classList.remove("d-none");
     document.getElementById("occurrenceLegend").classList.add("d-none");
     document.querySelector("#mapToast span").textContent = "Clique em um marcador para ver as informações da árvore.";
+    applyPublicFilters();
   });
 
   // A seleção por rádio garante que somente uma camada fique ativa por vez.
   document.getElementById("occurrencesLayer").addEventListener("change", async event => {
-    if (!event.target.checked || !map || !occurrenceLayer) return;
+    if (!event.target.checked) return;
+
+    // Atualiza o painel imediatamente, sem esperar a resposta da API.
+    document.getElementById("ocorrencias").textContent = "Ocorrências no município";
+    renderOccurrenceList(
+      ocorrenciasDoMunicipio(),
+      !publicOccurrencesLoaded && publicOccurrences.length === 0);
+    if (!map || !occurrenceLayer) return;
+
     map.removeLayer(markerLayer);
     await carregarOcorrenciasPublicas();
     occurrenceLayer.addTo(map);
@@ -343,6 +420,7 @@ function setupEvents() {
     document.getElementById("treeLegend").classList.add("d-none");
     document.getElementById("occurrenceLegend").classList.remove("d-none");
     document.querySelector("#mapToast span").textContent = "Ocorrências registradas neste município.";
+    applyPublicFilters();
   });
 
   document.getElementById("toggleLayers").addEventListener("click", () => {
@@ -414,19 +492,35 @@ function applyPublicFilters() {
     const textMatch = !term || [tree.nome, tree.especie, tree.id, tree.bairro, tree.endereco].some(v => v.toLowerCase().includes(term));
     return textMatch && (!fruit || tree.frutifera) && (!risk || tree.risco === risk) && (!maintenance || tree.manutencao) && (!flowering || tree.floracao) && (!weather || tree.clima);
   });
-  renderTreeList(filtered);
+  const ocorrenciasAtivas = document.getElementById("occurrencesLayer").checked;
+  // Alterna o título e o conteúdo da lateral conforme a camada escolhida.
+  document.getElementById("ocorrencias").textContent = ocorrenciasAtivas
+    ? "Ocorrências no município"
+    : "Árvores em destaque";
+  if (ocorrenciasAtivas) {
+    renderOccurrenceList(
+      ocorrenciasDoMunicipio(),
+      !publicOccurrencesLoaded && publicOccurrences.length === 0);
+  } else {
+    renderTreeList(filtered);
+  }
   buildTreeMarkers(filtered);
-  if (map && filtered.length === 1) map.flyTo([filtered[0].lat, filtered[0].lng], 16, { duration: 0.8 });
+  if (map && filtered.length === 1 && !ocorrenciasAtivas) {
+    map.flyTo([filtered[0].lat, filtered[0].lng], 16, { duration: 0.8 });
+  }
 }
 
 // Desenha no mapa público os marcadores vermelhos das ocorrências reais do banco de dados
 function renderPublicOccurrencesOnMap() {
   if (!occurrenceLayer) return;
   occurrenceLayer.clearLayers();
+  occurrenceMarkersById.clear();
 
+  // O mapa recebe somente ocorrências do município atual que possuem coordenadas válidas.
   const municipioSelecionado = municipioPublicoAtual();
   const ocorrenciasFiltradas = publicOccurrences.filter(
-    oco => !municipioSelecionado || oco.municipioId === municipioSelecionado
+    oco => (!municipioSelecionado || oco.municipioId === municipioSelecionado)
+      && Number.isFinite(oco.lat) && Number.isFinite(oco.lng)
   );
 
   ocorrenciasFiltradas.forEach(oco => {
@@ -445,6 +539,7 @@ function renderPublicOccurrencesOnMap() {
     `);
 
     occurrenceMarker.addTo(occurrenceLayer);
+    occurrenceMarkersById.set(oco.id, occurrenceMarker);
   });
 }
 
@@ -453,7 +548,10 @@ function updateHeaderForMunicipality(name) {
   const toast = document.getElementById("mapToast");
   toast.innerHTML = `<i class="bi bi-geo-alt"></i><span>Mapa atualizado para <strong>${name}</strong>.</span>`;
   setTimeout(() => {
-    toast.innerHTML = `<i class="bi bi-info-circle"></i><span>Clique em um marcador para ver as informações da árvore.</span>`;
+    const texto = document.getElementById("occurrencesLayer").checked
+      ? "Ocorrências registradas neste município."
+      : "Clique em um marcador para ver as informações da árvore.";
+    toast.innerHTML = `<i class="bi bi-info-circle"></i><span>${texto}</span>`;
   }, 2500);
 }
 

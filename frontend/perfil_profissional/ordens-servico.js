@@ -40,10 +40,11 @@ const serviceOrdersPage ={
 // O cadastro conserva seus dados ao fechar a janela ou perder a resposta do envio.
 const serviceOrderCreationState = {
   phase: "idle", options: null, optionsLoading: false, optionsError: "", optionsRequest: 0,
-  draft: { titulo: "", descricao: "", arvoreId: "", ocorrenciaId: "", prioridade: "", observacoes: "" },
+  draft: { titulo: "", descricao: "", endereco: "", bairro: "", ocorrenciaId: "", prioridade: "" },
   feedback: "", feedbackError: false, previousFocus: null, createdOrder: null, reviewing: false
 };
-const serviceOrderCreationFields = ["titulo", "descricao", "arvoreId", "ocorrenciaId", "prioridade", "observacoes"];
+const serviceOrderCreationFields = ["titulo", "descricao", "endereco", "bairro", "ocorrenciaId", "prioridade"];
+const serviceOrderTitleOptions = ["Galho quebrado", "Árvore caída", "Árvore em risco", "Necessidade de poda", "Outro"];
 const isServiceOrderObjectId = value => typeof value === "string" && /^[a-f0-9]{24}$/.test(value);
 
 function saveServiceOrderCreationDraft(){
@@ -59,43 +60,50 @@ function showServiceOrderCreationFeedback(message, error = false){
   serviceOrdersPage.createFeedback.classList.toggle("is-error", error);
 }
 
+// Apresenta títulos antigos em formato de slug com a mesma grafia dos novos registros.
+function formatServiceOrderTitle(title){
+  if (typeof title !== "string") return "";
+  const normalized = title.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[\s_]+/g, "-");
+  const canonicalTitles = {
+    "galho-quebrado": "Galho quebrado",
+    "arvore-caida": "Árvore caída",
+    "arvore-em-risco": "Árvore em risco",
+    "necessidade-de-poda": "Necessidade de poda",
+    "outro": "Outro"
+  };
+  return canonicalTitles[normalized] || title.trim();
+}
+
 // Atualiza opções e controles sem preencher campos a partir de uma consulta tardia.
 function renderServiceOrderCreation(){
   const state = serviceOrderCreationState;
   const form = serviceOrdersPage.createForm;
   const locked = state.phase !== "idle";
   const options = state.options;
-  const trees = options?.arvores || [];
   const occurrences = options?.ocorrencias || [];
-  const tree = form.elements.namedItem("arvoreId");
   const occurrence = form.elements.namedItem("ocorrenciaId");
+  const linkedOccurrence = occurrences.find(item => item.id === state.draft.ocorrenciaId);
+  const fieldsFromOccurrence = new Set(["titulo", "descricao", "endereco", "bairro", "prioridade"]);
   const option = (id, label) => `<option value="${escapeServiceOrderText(id)}">${escapeServiceOrderText(label)}</option>`;
-  tree.innerHTML = option("", "Selecione uma árvore") + trees.map(item => option(item.id,
-    [item.nome || "Árvore", item.endereco, item.bairro].filter(Boolean).join(" — "))).join("");
   occurrence.innerHTML = option("", "Sem ocorrência vinculada") + occurrences.map(item => option(item.id,
     [item.codigo || item.id, item.titulo].filter(Boolean).join(" — "))).join("");
-  if (state.draft.arvoreId && !trees.some(item => item.id === state.draft.arvoreId)){
-    tree.insertAdjacentHTML("beforeend", option(state.draft.arvoreId, "Árvore selecionada indisponível — selecione novamente"));
-  }
   if (state.draft.ocorrenciaId && !occurrences.some(item => item.id === state.draft.ocorrenciaId)){
     occurrence.insertAdjacentHTML("beforeend", option(state.draft.ocorrenciaId, "Ocorrência selecionada indisponível — revise o vínculo"));
   }
   for (const name of serviceOrderCreationFields){
     const field = form.elements.namedItem(name);
     field.value = state.draft[name];
-    field.disabled = locked;
+    field.disabled = locked || state.optionsLoading
+      || Boolean(linkedOccurrence && fieldsFromOccurrence.has(name));
   }
-  tree.disabled = locked || state.optionsLoading || !options || !trees.length;
   occurrence.disabled = locked || state.optionsLoading || !options;
-  document.getElementById("saveCreateServiceOrder").disabled = locked || state.optionsLoading || !options || !trees.length;
+  document.getElementById("saveCreateServiceOrder").disabled = locked || state.optionsLoading || !options;
   document.getElementById("saveCreateServiceOrder").textContent = state.phase === "sending" ? "Salvando..." : "Salvar ordem";
-  document.getElementById("refreshCreateServiceOrderOptions").disabled = locked || state.optionsLoading;
-  document.getElementById("prefillCreateServiceOrder").disabled = locked || state.optionsLoading
-    || !occurrences.some(item => item.id === state.draft.ocorrenciaId);
   const status = document.getElementById("createServiceOrderOptionsStatus");
-  status.textContent = state.optionsLoading ? "Carregando árvores e ocorrências..."
-    : state.optionsError || (options && !trees.length
-      ? "Nenhuma árvore disponível para criar a ordem. Verifique o cadastro de árvores do município." : "");
+  status.textContent = state.optionsLoading ? "Carregando ocorrências do município..."
+    : state.optionsError || (options && !occurrences.length
+      ? "Não há ocorrências para vincular. Você ainda pode criar uma OS informando o local." : "");
   status.classList.toggle("is-error", Boolean(state.optionsError));
   const warnings = document.getElementById("createServiceOrderWarnings");
   const messages = Array.isArray(options?.avisos) ? options.avisos.filter(item => typeof item === "string" && item.trim()) : [];
@@ -120,10 +128,10 @@ async function loadServiceOrderCreationOptions(){
   try {
     const response = await fetch("/api/ordens-servico/opcoes-cadastro", { credentials: "same-origin", cache: "no-store" });
     const body = await readServiceOrderResponse(response, "Não foi possível carregar as opções de cadastro.");
-    if (!isServiceOrderObjectId(body?.municipioId) || !Array.isArray(body.arvores)
-        || !Array.isArray(body.ocorrencias) || body.arvores.some(item => !item || !isServiceOrderObjectId(item.id))
+    if (!isServiceOrderObjectId(body?.municipioId) || !Array.isArray(body.ocorrencias)
         || body.ocorrencias.some(item => !item || !isServiceOrderObjectId(item.id)
-          || (item.arvoreId != null && !isServiceOrderObjectId(item.arvoreId)))){
+          || (item.endereco != null && typeof item.endereco !== "string")
+          || (item.bairro != null && typeof item.bairro !== "string"))){
       throw new Error("Não foi possível confirmar as opções de cadastro.");
     }
     if (request !== state.optionsRequest) return;
@@ -134,7 +142,7 @@ async function loadServiceOrderCreationOptions(){
     if (!serviceOrdersPage.createModal.hidden) saveServiceOrderCreationDraft();
     state.options = null;
     state.optionsError = getServiceOrdersErrorMessage(error,
-      "Não foi possível carregar as opções. Use Atualizar opções para tentar novamente.");
+      "Não foi possível carregar as opções de cadastro.");
   } finally {
     if (request === state.optionsRequest){
       state.optionsLoading = false;
@@ -167,22 +175,27 @@ function closeCreateServiceOrderModal(){
   serviceOrderCreationState.previousFocus = null;
 }
 
-function prefillServiceOrderFromOccurrence(){
+// Preenche o formulário com os dados da ocorrência selecionada.
+function fillServiceOrderFromOccurrence(){
   const state = serviceOrderCreationState;
   if (state.phase !== "idle" || state.optionsLoading) return;
   saveServiceOrderCreationDraft();
   const occurrence = state.options?.ocorrencias.find(item => item.id === state.draft.ocorrenciaId);
-  if (!occurrence) return;
-  if (["titulo", "descricao", "arvoreId", "prioridade"].some(name => state.draft[name].trim())
-      && !window.confirm("Substituir título, descrição, árvore e prioridade pelos dados desta ocorrência? Você poderá editar esses campos antes de salvar.")) return;
-  state.draft.titulo = typeof occurrence.titulo === "string" ? occurrence.titulo : "";
+  if (!occurrence) {
+    state.feedback = "";
+    state.feedbackError = false;
+    renderServiceOrderCreation();
+    return;
+  }
+
+  state.draft.titulo = serviceOrderTitleOptions.includes(occurrence.titulo)
+    ? occurrence.titulo : "Outro";
   state.draft.descricao = typeof occurrence.descricao === "string" ? occurrence.descricao : "";
-  state.draft.arvoreId = state.options.arvores.some(item => item.id === occurrence.arvoreId) ? occurrence.arvoreId : "";
+  state.draft.endereco = typeof occurrence.endereco === "string" ? occurrence.endereco : "";
+  state.draft.bairro = typeof occurrence.bairro === "string" ? occurrence.bairro : "";
   const priority = typeof occurrence.prioridade === "string" ? occurrence.prioridade.trim() : "";
   state.draft.prioridade = priority.length <= 40 ? priority : "";
-  state.feedback = state.draft.arvoreId
-    ? "Dados preenchidos. Revise e edite o que for necessário antes de salvar."
-    : "Dados preenchidos. Selecione uma árvore e revise os campos antes de salvar.";
+  state.feedback = "Os dados da ocorrência foram preenchidos e serão usados para gerar a ordem.";
   state.feedbackError = false;
   renderServiceOrderCreation();
   document.getElementById("createServiceOrderTitle").focus();
@@ -193,21 +206,23 @@ function validateServiceOrderCreationDraft(){
   const draft = state.draft;
   const titulo = draft.titulo.trim();
   const descricao = draft.descricao.trim();
+  const endereco = draft.endereco.trim();
+  const bairro = draft.bairro.trim();
   const prioridade = draft.prioridade.trim();
-  const observacoes = draft.observacoes.trim();
-  if (!titulo || titulo.length > 160) throw new Error("Informe um título com até 160 caracteres.");
+  if (!serviceOrderTitleOptions.includes(titulo)) throw new Error("Selecione um tipo de ocorrência para o título.");
   if (!descricao || descricao.length > 4000) throw new Error("Informe a descrição do serviço com até 4.000 caracteres.");
-  if (!isServiceOrderObjectId(draft.arvoreId) || !state.options?.arvores.some(item => item.id === draft.arvoreId)){
-    throw new Error("Selecione uma árvore disponível para esta ordem.");
-  }
   if (draft.ocorrenciaId && (!isServiceOrderObjectId(draft.ocorrenciaId)
       || !state.options?.ocorrencias.some(item => item.id === draft.ocorrenciaId))){
     throw new Error("Revise a ocorrência vinculada ou selecione Sem ocorrência vinculada.");
   }
+  if (!draft.ocorrenciaId && !endereco) throw new Error("Informe o endereço local da ordem.");
+  if (!draft.ocorrenciaId && !bairro) throw new Error("Informe o bairro da ordem.");
+  if (endereco.length > 300) throw new Error("O endereço deve ter até 300 caracteres.");
+  if (bairro.length > 120) throw new Error("O bairro deve ter até 120 caracteres.");
   if (prioridade.length > 40) throw new Error("A prioridade deve ter até 40 caracteres.");
-  if (observacoes.length > 4000) throw new Error("As observações devem ter até 4.000 caracteres.");
-  return { titulo, descricao, arvoreId: draft.arvoreId, ocorrenciaId: draft.ocorrenciaId || null,
-    prioridade: prioridade || null, observacoes: observacoes || null };
+  return { titulo, descricao, endereco: endereco || null, bairro: bairro || null,
+    ocorrenciaId: draft.ocorrenciaId || null,
+    prioridade: prioridade || null };
 }
 
 async function submitServiceOrderCreation(){
@@ -242,6 +257,11 @@ async function submitServiceOrderCreation(){
     renderServiceOrdersTable();
     state.feedback = `Ordem ${order.codigo} criada com sucesso. A equipe pode ser atribuída nos detalhes.`;
     state.feedbackError = false;
+    showServiceOrderToast(`Ordem ${order.codigo} criada com sucesso.`);
+    state.phase = "idle";
+    state.feedback = "";
+    closeCreateServiceOrderModal();
+    state.draft = { titulo: "", descricao: "", endereco: "", bairro: "", ocorrenciaId: "", prioridade: "" };
   } catch (error){
     const rejected = !error.invalidResponse && [400, 401, 403, 404, 409, 422].includes(error.status);
     state.phase = rejected ? "idle" : "unknown";
@@ -252,6 +272,15 @@ async function submitServiceOrderCreation(){
     renderServiceOrderCreation();
     if (!serviceOrdersPage.createModal.hidden) serviceOrdersPage.createFeedback.focus();
   }
+}
+
+let serviceOrderToastTimer = null;
+function showServiceOrderToast(message){
+  const toast = document.getElementById("serviceOrderToast");
+  toast.textContent = message;
+  toast.hidden = false;
+  window.clearTimeout(serviceOrderToastTimer);
+  serviceOrderToastTimer = window.setTimeout(() => { toast.hidden = true; }, 3600);
 }
 
 // Sem um ID confirmado, a listagem precisa ser conferida antes de liberar outro envio.
@@ -468,6 +497,8 @@ function getVisibleServiceOrders(){
       order.id,
       order.titulo,
       order.descricao,
+      order.endereco,
+      order.bairro,
       order.arvoreId,
       order.ocorrenciaId,
       order.equipeNome,
@@ -512,7 +543,7 @@ function renderServiceOrdersTable(){
           ${escapeServiceOrderText(order.codigo || order.id)}
         </button>
       </td>
-      <td>${escapeServiceOrderText(order.titulo)}</td>
+      <td>${escapeServiceOrderText(formatServiceOrderTitle(order.titulo))}</td>
       <td>${escapeServiceOrderText(order.equipeNome || "Não atribuída")}</td>
       <td><span class="service-order-status ${serviceOrderStatusClass(order.status)}">${escapeServiceOrderText(order.status)}</span></td>
     </tr>
@@ -563,7 +594,7 @@ function getServiceOrderCompletionDraft(orderId){
     const localDate = `${now.getFullYear()}-${part(now.getMonth() + 1)}-${part(now.getDate())}`
       + `T${part(now.getHours())}:${part(now.getMinutes())}`;
     serviceOrdersState.completionDrafts.set(orderId, {
-      tipo: "", descricao: "", dataExecucao: localDate, fotos: ""
+      tipo: "", descricao: "", dataExecucao: localDate, arquivosFotos: []
     });
   }
   return serviceOrdersState.completionDrafts.get(orderId);
@@ -571,10 +602,9 @@ function getServiceOrderCompletionDraft(orderId){
 
 function saveServiceOrderCompletionDraft(form){
   const orderId = form.dataset.completeServiceOrder;
-  const draft = {};
-  for (const name of ["tipo", "descricao", "dataExecucao", "fotos"]){
-    draft[name] = form.elements.namedItem(name).value;
-  }
+  const draft = serviceOrdersState.completionDrafts.get(orderId) || { arquivosFotos: [] };
+  for (const name of ["tipo", "descricao", "dataExecucao"]) draft[name] = form.elements.namedItem(name).value;
+  if (!Array.isArray(draft.arquivosFotos)) draft.arquivosFotos = [];
   serviceOrdersState.completionDrafts.set(orderId, draft);
   return draft;
 }
@@ -630,8 +660,10 @@ function renderServiceOrderCancellationReason(order){
 }
 
 // Aceita somente links de fotos que o usuário escolhe abrir, sem carregar imagens.
-function normalizeServiceOrderPhotoLink(value){
-  if (typeof value !== "string" || value.trim().length > 2048) return null;
+function normalizeServiceOrderPhoto(value){
+  if (typeof value !== "string") return null;
+  if (/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(value)) return value;
+  if (value.trim().length > 2048) return null;
   try {
     const url = new URL(value.trim());
     if (!["http:", "https:"].includes(url.protocol) || !url.hostname
@@ -645,30 +677,32 @@ function normalizeServiceOrderPhotoLink(value){
 function validateServiceOrderCompletionDraft(draft){
   const tipo = draft.tipo.trim();
   const descricao = draft.descricao.trim();
-  if (!tipo || tipo.length > 80){
-    throw new Error("Informe o tipo de serviço com até 80 caracteres.");
-  }
-  if (!descricao || descricao.length > 4000){
-    throw new Error("Descreva o serviço realizado com até 4.000 caracteres.");
-  }
+  if (!tipo || tipo.length > 80) throw new Error("Informe o tipo de serviço com até 80 caracteres.");
+  if (!descricao || descricao.length > 4000) throw new Error("Descreva o serviço realizado com até 4.000 caracteres.");
   const executionDate = new Date(draft.dataExecucao);
-  if (!draft.dataExecucao || Number.isNaN(executionDate.getTime())){
-    throw new Error("Informe a data e o horário da execução.");
+  if (!draft.dataExecucao || Number.isNaN(executionDate.getTime())) throw new Error("Informe a data e o horário da execução.");
+  if (executionDate.getTime() > Date.now()) throw new Error("A execução não pode estar no futuro.");
+  const files = Array.isArray(draft.arquivosFotos) ? draft.arquivosFotos : [];
+  if (files.length > 5) throw new Error("Anexe no máximo 5 fotos.");
+  const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+  let totalBytes = 0;
+  for (const file of files){
+    if (!allowedTypes.has(file.type)) throw new Error("Anexe fotos JPG, PNG ou WebP.");
+    if (file.size > 2 * 1024 * 1024) throw new Error("Cada foto deve ter no máximo 2 MB.");
+    totalBytes += file.size;
   }
-  if (executionDate.getTime() > Date.now()){
-    throw new Error("A execução não pode estar no futuro.");
-  }
-  const lines = draft.fotos.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-  if (lines.length > 10){
-    throw new Error("Informe no máximo 10 links de fotos, um por linha.");
-  }
-  const fotos = lines.map(normalizeServiceOrderPhotoLink);
-  if (fotos.some(link => !link)){
-    throw new Error("Use links http ou https, sem usuário ou senha e com até 2.048 caracteres.");
-  }
-  return { tipo, descricao, dataExecucao: executionDate.toISOString(), fotos };
+  if (totalBytes > 7 * 1024 * 1024) throw new Error("O tamanho total das fotos deve ser de até 7 MB.");
+  return { tipo, descricao, dataExecucao: executionDate.toISOString(), arquivosFotos: files };
 }
 
+function readServiceOrderPhoto(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Não foi possível ler uma das fotos."));
+    reader.onerror = () => reject(new Error("Não foi possível ler uma das fotos."));
+    reader.readAsDataURL(file);
+  });
+}
 function renderServiceOrderCompletionForm(order, blocked){
   const draft = getServiceOrderCompletionDraft(order.id);
   return `
@@ -693,10 +727,11 @@ function renderServiceOrderCompletionForm(order, blocked){
             <textarea id="serviceOrderCompletionDescription" name="descricao" rows="5"
               maxlength="4000" required placeholder="Descreva a execução e o resultado do serviço">${escapeServiceOrderText(draft.descricao)}</textarea>
           </label>
-          <label class="service-order-create-wide" for="serviceOrderCompletionPhotos">Links de fotos <span>(opcional)</span>
-            <textarea id="serviceOrderCompletionPhotos" name="fotos" rows="3" maxlength="20510"
-              placeholder="https://exemplo.com/foto.jpg" aria-describedby="serviceOrderPhotosHint">${escapeServiceOrderText(draft.fotos)}</textarea>
-            <small id="serviceOrderPhotosHint">Até 10 links http ou https, um por linha. As fotos devem estar publicadas em outro local.</small>
+          <label class="service-order-create-wide" for="serviceOrderCompletionPhotos">Anexar fotos <span>(opcional)</span>
+            <input id="serviceOrderCompletionPhotos" name="arquivosFotos" type="file" accept="image/jpeg,image/png,image/webp" multiple aria-describedby="serviceOrderPhotosHint">
+            <small id="serviceOrderPhotosHint">JPG, PNG ou WebP. Até 5 fotos, 2 MB cada e 7 MB no total.</small>
+            <span class="service-order-photo-selection" id="serviceOrderPhotoSelection">${(draft.arquivosFotos || []).map(file => escapeServiceOrderText(file.name)).join(", ") || "Nenhuma foto selecionada."}</span>
+            <button class="service-order-cancel-button service-order-photo-clear" type="button" data-clear-completion-photos="${escapeServiceOrderText(order.id)}" ${(draft.arquivosFotos || []).length ? "" : "hidden"}>Remover fotos selecionadas</button>
           </label>
           <div class="service-order-create-actions">
             <button class="service-order-cancel-button" type="button" data-close-completion-form="${escapeServiceOrderText(order.id)}">Voltar aos detalhes</button>
@@ -714,7 +749,7 @@ function renderServiceOrderCompletionReport(order){
     return `<p class="service-order-not-completed">Esta ordem está concluída. Não há relatório de execução disponível para consulta.</p>`;
   }
   const photos = (Array.isArray(report.fotos) ? report.fotos : [])
-    .map(normalizeServiceOrderPhotoLink).filter(Boolean);
+    .map(normalizeServiceOrderPhoto).filter(Boolean);
   return `
     <section class="service-order-completion" aria-labelledby="serviceOrderReportTitle">
       <h3 id="serviceOrderReportTitle"><i class="bi bi-check2-circle" aria-hidden="true"></i>Registro de conclusão</h3>
@@ -726,9 +761,9 @@ function renderServiceOrderCompletionReport(order){
       </dl>
       <h4>Serviço realizado</h4>
       <p class="service-order-preserve-lines">${escapeServiceOrderText(report.descricao)}</p>
-      ${photos.length ? `<h4>Fotos</h4><ul class="service-order-photo-links">${photos.map((url, index) => `
-        <li><a href="${escapeServiceOrderText(url)}" target="_blank" rel="noopener noreferrer">Ver foto ${index + 1}<span class="visually-hidden"> (abre em outra aba)</span></a></li>
-      `).join("")}</ul>` : "<p>Nenhum link de foto informado.</p>"}
+      ${photos.length ? `<h4>Fotos</h4><div class="service-order-photo-gallery">${photos.map((url, index) => url.startsWith("data:image/")
+        ? `<img src="${escapeServiceOrderText(url)}" alt="Foto ${index + 1} do serviço">`
+        : `<a href="${escapeServiceOrderText(url)}" target="_blank" rel="noopener noreferrer">Ver foto ${index + 1}<span class="visually-hidden"> (abre em outra aba)</span></a>`).join("")}</div>` : "<p>Nenhuma foto anexada.</p>"}
       <span>Registro finalizado, disponível somente para consulta.</span>
     </section>`;
 }
@@ -755,7 +790,9 @@ async function atribuirEquipeDaOrdem(orderId, equipeId){
   });
   const body = await readServiceOrderResponse(response, "Não foi possível atribuir a equipe.");
   const order = validateServiceOrderResponse(body, orderId);
-  if (order.status !== "Em andamento" || order.equipeId !== equipeId){
+  const previousOrder = serviceOrdersState.details.get(orderId);
+  if (order.status !== "Em andamento" || order.equipeId !== equipeId
+      || order.ocorrenciaId !== previousOrder?.ocorrenciaId){
     const error = new Error("Não foi possível confirmar a equipe da ordem.");
     error.invalidResponse = true;
     throw error;
@@ -774,7 +811,7 @@ function renderServiceOrderTeamForm(order, blocked){
     ${state?.loading ? '<p role="status">Consultando equipes...</p>' : ""}
     ${state?.error ? `<p class="service-order-team-error" role="status">${escapeServiceOrderText(state.error)}</p>` : ""}
     ${state && !state.loading && !state.error && !teams.length ? `
-      <p>Nenhuma equipe cadastrada para este município. <a href="/equipes">Abra a página Equipes</a> para cadastrar e depois atualize a lista.</p>` : ""}
+      <p>Nenhuma equipe disponível para esta ordem. <a href="/equipes">Abra a página Equipes</a> para consultar o status ou cadastrar uma equipe e depois atualize a lista.</p>` : ""}
     <form data-assign-service-order="${escapeServiceOrderText(order.id)}">
       <label for="serviceOrderTeamSelect">Equipe
         <select id="serviceOrderTeamSelect" name="equipeId" required ${disabled || !teams.length ? "disabled" : ""}>
@@ -865,6 +902,8 @@ function renderServiceOrderDetails(order){
   const message = operation?.message || feedback?.message || "";
   const fields = [
     ["Título da OS", order.titulo],
+    ["Endereço local", order.endereco || "Não informado"],
+    ["Bairro", order.bairro || "Não informado"],
     ["Prioridade", order.prioridade],
     ["ID da equipe", order.equipeId ?? "Não atribuída"],
     ["ID da árvore", order.arvoreId],
@@ -895,10 +934,7 @@ function renderServiceOrderDetails(order){
       <h3>Descrição do serviço</h3>
       <p class="service-order-preserve-lines">${escapeServiceOrderText(order.descricao)}</p>
     </section>
-    <section class="service-order-description">
-      <h3>Observações</h3>
-      <p class="service-order-preserve-lines">${escapeServiceOrderText(order.observacoes)}</p>
-    </section>
+
     ${renderServiceOrderCompletionReport(order)}
     ${renderServiceOrderCancellationReason(order)}
     ${formOpen ? renderServiceOrderCompletionForm(order, blocked) : ""}
@@ -1134,6 +1170,8 @@ async function completeServiceOrderFromDetails(form){
   let data;
   try {
     data = validateServiceOrderCompletionDraft(draft);
+    const fotos = await Promise.all(data.arquivosFotos.map(readServiceOrderPhoto));
+    data = { tipo: data.tipo, descricao: data.descricao, dataExecucao: data.dataExecucao, fotos };
   } catch (error){
     showServiceOrderStatusFeedback(orderId, error.message, true);
     document.getElementById("serviceOrderStatusFeedback")?.focus();
@@ -1231,6 +1269,15 @@ function setupServiceOrdersEvents(){
   serviceOrdersPage.modalContent.addEventListener("click", event => {
     const trigger = event.target.closest("button");
     if (!trigger || trigger.disabled) return;
+    if (trigger.dataset.clearCompletionPhotos){
+      const draft = serviceOrdersState.completionDrafts.get(trigger.dataset.clearCompletionPhotos);
+      if (draft) draft.arquivosFotos = [];
+      const input = serviceOrdersPage.modalContent.querySelector("[name='arquivosFotos']");
+      if (input) input.value = "";
+      document.getElementById("serviceOrderPhotoSelection").textContent = "Nenhuma foto selecionada.";
+      trigger.hidden = true;
+      return;
+    }
     if (trigger.dataset.cancelServiceOrder) cancelServiceOrderFromDetails(trigger.dataset.cancelServiceOrder);
     if (trigger.dataset.closeCancellationForm) closeServiceOrderCancellationForm(trigger.dataset.closeCancellationForm);
     if (trigger.dataset.openCompletionForm) openServiceOrderCompletionForm(trigger.dataset.openCompletionForm);
@@ -1252,6 +1299,16 @@ function setupServiceOrdersEvents(){
   });
 
   serviceOrdersPage.modalContent.addEventListener("change", event => {
+    const photoInput = event.target.closest("[name='arquivosFotos']");
+    if (photoInput){
+      const form = photoInput.closest("[data-complete-service-order]");
+      const draft = saveServiceOrderCompletionDraft(form);
+      draft.arquivosFotos = Array.from(photoInput.files || []);
+      const names = draft.arquivosFotos.map(file => file.name).join(", ");
+      document.getElementById("serviceOrderPhotoSelection").textContent = names || "Nenhuma foto selecionada.";
+      serviceOrdersPage.modalContent.querySelector("[data-clear-completion-photos]").hidden = !draft.arquivosFotos.length;
+      return;
+    }
     const form = event.target.closest("[data-assign-service-order]");
     if (form) serviceOrdersState.teamDrafts.set(form.dataset.assignServiceOrder, form.elements.namedItem("equipeId").value);
   });
@@ -1292,10 +1349,6 @@ function setupServiceOrdersEvents(){
   document.getElementById("openCreateServiceOrderModal").addEventListener("click", openCreateServiceOrderModal);
   document.getElementById("closeCreateServiceOrderModal").addEventListener("click", closeCreateServiceOrderModal);
   document.getElementById("cancelCreateServiceOrder").addEventListener("click", closeCreateServiceOrderModal);
-  document.getElementById("refreshCreateServiceOrderOptions").addEventListener("click", () => {
-    saveServiceOrderCreationDraft(); loadServiceOrderCreationOptions();
-  });
-  document.getElementById("prefillCreateServiceOrder").addEventListener("click", prefillServiceOrderFromOccurrence);
   document.getElementById("reviewCreateServiceOrder").addEventListener("click", reviewUncertainServiceOrderCreation);
   document.getElementById("retryCreateServiceOrder").addEventListener("click", allowServiceOrderCreationRetry);
   document.getElementById("newCreateServiceOrder").addEventListener("click", startAnotherServiceOrderCreation);
@@ -1307,11 +1360,9 @@ function setupServiceOrdersEvents(){
     if (event.target === serviceOrdersPage.createModal) closeCreateServiceOrderModal();
   });
   serviceOrdersPage.createForm.addEventListener("input", saveServiceOrderCreationDraft);
-  serviceOrdersPage.createForm.addEventListener("change", () => {
+  serviceOrdersPage.createForm.addEventListener("change", event => {
     saveServiceOrderCreationDraft();
-    document.getElementById("prefillCreateServiceOrder").disabled = serviceOrderCreationState.phase !== "idle"
-      || serviceOrderCreationState.optionsLoading
-      || !serviceOrderCreationState.options?.ocorrencias.some(item => item.id === serviceOrderCreationState.draft.ocorrenciaId);
+    if (event.target.name === "ocorrenciaId") fillServiceOrderFromOccurrence();
   });
   serviceOrdersPage.createForm.addEventListener("submit", event => {
     event.preventDefault(); submitServiceOrderCreation();

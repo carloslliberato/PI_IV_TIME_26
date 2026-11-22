@@ -11,12 +11,12 @@
   <!-- Carrega os ícones, o estilo compartilhado e a folha própria desta tela. -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <link rel="stylesheet" href="/perfil_profissional/styles-profissional.css" data-professional-sidebar-styles="true">
-  <link rel="stylesheet" href="/perfil_profissional/ordens-servico.css">
+  <link rel="stylesheet" href="/perfil_profissional/ordens-servico.css?v=service-order-completion-photos-v1">
 </head>
 <body>
   <div class="app-shell">
     <!-- O sidebar valida login e setor, destaca Ordens de serviço e carrega o script da página. -->
-    <div id="sidebar-profissional" data-script="/perfil_profissional/ordens-servico.js"></div>
+  <div id="sidebar-profissional" data-script="/perfil_profissional/ordens-servico.js?v=20261121-conclusao-fotos-v1"></div>
 
     <main class="main professional-main">
       <!-- Apresenta a finalidade da tela e o município relacionado aos registros. -->
@@ -119,23 +119,31 @@
         <span class="service-order-detail-icon"><i class="bi bi-clipboard-plus" aria-hidden="true"></i></span>
         <div><span class="service-order-detail-eyebrow">NOVA ORDEM · <span id="createServiceOrderMunicipality"></span></span><h2 id="createServiceOrderModalTitle">Criar ordem de serviço</h2></div>
       </header>
-      <p class="service-order-create-intro">Informe o serviço a executar. O código será gerado ao salvar; a equipe poderá ser atribuída depois.</p>
+      <p class="service-order-create-intro">Informe o tipo de ocorrência e o local. O código será gerado ao salvar; a equipe poderá ser atribuída depois.</p>
       <p id="createServiceOrderOptionsStatus" class="service-order-create-intro" role="status" aria-live="polite"></p>
       <ul id="createServiceOrderWarnings" class="service-order-create-warnings" hidden></ul>
-      <button class="service-order-cancel-button service-order-refresh-options" id="refreshCreateServiceOrderOptions" type="button">Atualizar opções</button>
       <form class="service-order-create-form" id="createServiceOrderForm">
         <label class="service-order-create-wide" for="createServiceOrderOccurrence">Ocorrência vinculada <span>(opcional)</span>
           <select id="createServiceOrderOccurrence" name="ocorrenciaId"><option value="">Sem ocorrência vinculada</option></select>
         </label>
         <div class="service-order-create-wide service-order-prefill">
-          <button class="service-order-cancel-button" id="prefillCreateServiceOrder" type="button" disabled>Preencher com a ocorrência</button>
-          <small>O preenchimento é opcional. Você pode editar os dados e escolher outra árvore antes de salvar.</small>
+          <small>Ao selecionar uma ocorrência, os dados existentes de tipo, descrição e local serão usados na ordem.</small>
         </div>
         <label class="service-order-create-wide" for="createServiceOrderTitle">Título da OS
-          <input id="createServiceOrderTitle" name="titulo" maxlength="160" required autocomplete="off">
+          <select id="createServiceOrderTitle" name="titulo" required>
+            <option value="">Selecione o tipo de ocorrência</option>
+            <option value="Galho quebrado">Galho quebrado</option>
+            <option value="Árvore caída">Árvore caída</option>
+            <option value="Árvore em risco">Árvore em risco</option>
+            <option value="Necessidade de poda">Necessidade de poda</option>
+            <option value="Outro">Outro</option>
+          </select>
         </label>
-        <label class="service-order-create-wide" for="createServiceOrderTree">Árvore
-          <select id="createServiceOrderTree" name="arvoreId" required><option value="">Selecione uma árvore</option></select>
+        <label class="service-order-create-wide" for="createServiceOrderAddress">Endereço do local
+          <input id="createServiceOrderAddress" name="endereco" maxlength="300" required autocomplete="street-address" placeholder="Nome da rua, número">
+        </label>
+        <label class="service-order-create-wide" for="createServiceOrderNeighborhood">Bairro
+          <input id="createServiceOrderNeighborhood" name="bairro" maxlength="120" required autocomplete="address-level3" placeholder="Informe o bairro">
         </label>
         <label for="createServiceOrderPriority">Prioridade <span>(opcional)</span>
           <input id="createServiceOrderPriority" name="prioridade" list="createServiceOrderPriorities" maxlength="40" placeholder="Ex.: Baixa">
@@ -143,9 +151,6 @@
         </label>
         <label class="service-order-create-wide" for="createServiceOrderDescription">Descrição do serviço
           <textarea id="createServiceOrderDescription" name="descricao" rows="4" maxlength="4000" required placeholder="Descreva o trabalho que deverá ser realizado"></textarea>
-        </label>
-        <label class="service-order-create-wide" for="createServiceOrderNotes">Observações <span>(opcional)</span>
-          <textarea id="createServiceOrderNotes" name="observacoes" rows="3" maxlength="4000"></textarea>
         </label>
         <p class="service-order-create-feedback" id="createServiceOrderFeedback" role="status" aria-live="polite" tabindex="-1"></p>
         <div class="service-order-create-wide service-order-create-recovery">
@@ -161,6 +166,8 @@
       </form>
     </section>
   </div>
+
+  <div class="service-order-toast" id="serviceOrderToast" role="status" aria-live="polite" hidden></div>
 
   <!-- O sidebar verifica login e setor antes de carregar o JavaScript desta tela. -->
   <script src="/perfil_profissional/sidebar-profissional.js"></script>

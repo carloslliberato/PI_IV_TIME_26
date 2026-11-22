@@ -456,29 +456,10 @@
             placeholder="Rua, número ou referência">
         </label>
 
-        <label>
-          Latitude
-          <input
-            name="latitude"
-            type="number"
-            step="any"
-            min="-90"
-            max="90"
-            required
-            placeholder="Ex.: -22.9056">
-        </label>
-
-        <label>
-          Longitude
-          <input
-            name="longitude"
-            type="number"
-            step="any"
-            min="-180"
-            max="180"
-            required
-            placeholder="Ex.: -47.0608">
-        </label>
+        <p class="form-field-wide">
+          A localização será calculada automaticamente pelo endereço. Se não for encontrada, a árvore será salva sem
+          marcador no mapa.
+        </p>
 
         <label>
           Idade estimada
@@ -644,27 +625,10 @@
           <input name="endereco" required maxlength="250">
         </label>
 
-        <label>
-          Latitude
-          <input
-            name="latitude"
-            type="number"
-            step="any"
-            min="-90"
-            max="90"
-            required>
-        </label>
-
-        <label>
-          Longitude
-          <input
-            name="longitude"
-            type="number"
-            step="any"
-            min="-180"
-            max="180"
-            required>
-        </label>
+        <p class="form-field-wide">
+          A localização será recalculada automaticamente pelo endereço. Se não for encontrada, a árvore será salva sem
+          marcador no mapa.
+        </p>
 
         <label>
           Idade estimada

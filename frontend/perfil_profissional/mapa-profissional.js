@@ -13,7 +13,9 @@ const professionalMapDemo = {
   },
   // As árvores e ocorrências são preenchidas automaticamente pelas chamadas ao back-end
   trees: [],
+  treeLocations: [],
   occurrences: [],
+  occurrenceLocations: [],
   // Camada de ordens de serviço mantida para o módulo responsável
   serviceOrders: []
 };
@@ -47,6 +49,11 @@ function converterRisco(risco) {
   return riscos[risco] || "Não informado";
 }
 
+function temCoordenadasValidas(registro) {
+  return Number.isFinite(registro?.latitude ?? registro?.lat)
+    && Number.isFinite(registro?.longitude ?? registro?.lng);
+}
+
 // Busca as árvores reais cadastradas no MongoDB via GET /api/arvores
 async function carregarArvores() {
   const resposta = await fetch("/api/arvores", { credentials: "same-origin" });
@@ -54,34 +61,26 @@ async function carregarArvores() {
   const dados = await resposta.json();
   if (!Array.isArray(dados)) throw new Error("Resposta inesperada da API de árvores.");
 
-  professionalMapDemo.trees = dados
+  const arvoresDoMunicipio = dados
     .filter(arvore => String(arvore.municipioId || "").toLowerCase() === municipioIdMapa)
-    .filter(arvore => arvore.ativa !== false)
-    .filter(arvore => Number.isFinite(arvore.latitude) &&
-      Number.isFinite(arvore.longitude) &&
-      Math.abs(arvore.latitude) <= 90 && Math.abs(arvore.longitude) <= 180)
-    .map(arvore => ({
-      id: String(arvore.id),
-      nome: arvore.nomePopular || arvore.especie || "Árvore sem nome",
-      especie: arvore.nomeCientifico || arvore.especie || "Não informado",
-      bairro: arvore.bairro || "Não informado",
-      endereco: arvore.endereco || "Não informado",
-      lat: arvore.latitude,
-      lng: arvore.longitude,
-      risco: converterRisco(arvore.risco)
-    }));
-}
+    .filter(arvore => Number.isFinite(arvore.latitude) && Math.abs(arvore.latitude) <= 90
+      && Number.isFinite(arvore.longitude) && Math.abs(arvore.longitude) <= 180);
 
-// Caso uma ocorrência não tenha latitude/longitude, usa um ponto aproximado do município.
-function obterCoordenadasFallbackPorBairro(bairro, municipio) {
-  const b = String(bairro || "").toLowerCase();
-  if (municipio.id === "6ae666a7680e8a4330a1ab66") {
-    if (b.includes("taquaral")) return { lat: -22.8754, lng: -47.0475 };
-    if (b.includes("cambu")) return { lat: -22.8942, lng: -47.0531 };
-    if (b.includes("chapad")) return { lat: -22.8895, lng: -47.0742 };
-    if (b.includes("barao") || b.includes("barão")) return { lat: -22.8228, lng: -47.0805 };
-  }
-  return { lat: municipio.latitude, lng: municipio.longitude };
+  professionalMapDemo.treeLocations = arvoresDoMunicipio.map(arvore => ({
+    id: String(arvore.id),
+    nome: arvore.nomePopular || arvore.especie || "Árvore sem nome",
+    especie: arvore.nomeCientifico || arvore.especie || "Não informado",
+    bairro: arvore.bairro || "Não informado",
+    endereco: arvore.endereco || "Não informado",
+    latitude: arvore.latitude,
+    longitude: arvore.longitude,
+    lat: arvore.latitude,
+    lng: arvore.longitude,
+    risco: converterRisco(arvore.risco),
+    ativa: arvore.ativa !== false
+  }));
+  professionalMapDemo.trees = professionalMapDemo.treeLocations
+    .filter(arvore => arvore.ativa);
 }
 
 // Busca as ocorrências reais cadastradas no MongoDB via GET /api/ocorrencias
@@ -93,29 +92,68 @@ async function carregarOcorrencias() {
     const dados = await resposta.json();
     if (!Array.isArray(dados)) return;
 
-    professionalMapDemo.occurrences = dados
+    professionalMapDemo.occurrenceLocations = dados
       .filter(oco => String(oco.municipioId || "").toLowerCase() === municipioIdMapa)
-      .map(oco => {
-      const bairro = oco.bairro || "Centro";
-      const fallback = obterCoordenadasFallbackPorBairro(bairro, professionalMapDemo.municipality);
-      const temCoordenadas = Number.isFinite(oco.latitude) && Number.isFinite(oco.longitude);
-
-      return {
+      .map(oco => ({
+        objectId: String(oco._id || oco.ocorrenciaId || ""),
+        arvoreId: String(oco.arvoreId || ""),
         id: String(oco.protocolo || oco.id || oco._id),
-        latitude: temCoordenadas ? oco.latitude : fallback.lat,
-        longitude: temCoordenadas ? oco.longitude : fallback.lng,
+        latitude: oco.latitude,
+        longitude: oco.longitude,
         tipo: oco.tipoProblema || "Ocorrência arbórea",
         descricao: oco.descricao || oco.tipoProblema || "Sem descrição informada.",
-        bairro: bairro,
-        endereco: oco.localizacao || "Endereço não informado",
+        bairro: oco.bairro || "Não informado",
+        endereco: [oco.localizacao, oco.numero].filter(Boolean).join(", ") || "Endereço não informado",
         status: oco.status || "Recebida",
         risco: oco.urgencia || "Média"
-      };
-    });
+      }));
+    professionalMapDemo.occurrences = professionalMapDemo.occurrenceLocations
+      .filter(temCoordenadasValidas);
   } catch (erro) {
     console.error("Falha ao carregar ocorrências do mapa:", erro);
     professionalMapDemo.occurrences = [];
+    professionalMapDemo.occurrenceLocations = [];
   }
+}
+
+async function carregarOrdensDeServico() {
+  const resposta = await fetch("/api/ordens-servico", { credentials: "same-origin" });
+  const dados = await resposta.json();
+  if (!resposta.ok) {
+    throw new Error(dados.erro || `Falha ao consultar ordens de serviço (HTTP ${resposta.status}).`);
+  }
+  if (!Array.isArray(dados.ordens)) {
+    throw new Error("A API retornou uma lista de ordens de serviço inválida.");
+  }
+
+  const ocorrenciasPorId = new Map(
+    professionalMapDemo.occurrenceLocations
+      .filter(oco => oco.objectId)
+      .map(oco => [oco.objectId.toLowerCase(), oco])
+  );
+  const arvoresPorId = new Map(
+    professionalMapDemo.treeLocations.map(arvore => [arvore.id.toLowerCase(), arvore])
+  );
+
+  professionalMapDemo.serviceOrders = dados.ordens
+    .filter(ordem => String(ordem.municipioId || "").toLowerCase() === municipioIdMapa)
+    .map(ordem => {
+      const ocorrencia = ocorrenciasPorId.get(String(ordem.ocorrenciaId || "").toLowerCase());
+      const arvore = arvoresPorId.get(String(ordem.arvoreId || ocorrencia?.arvoreId || "").toLowerCase());
+      const local = temCoordenadasValidas(ordem) ? ordem
+        : temCoordenadasValidas(ocorrencia) ? ocorrencia
+        : temCoordenadasValidas(arvore) ? arvore : ocorrencia || arvore;
+      return {
+        id: String(ordem.codigo || ordem.id),
+        titulo: ordem.titulo || "Ordem de serviço",
+        descricao: ordem.descricao || "Sem descrição informada.",
+        bairro: ordem.bairro || local?.bairro || "Não informado",
+        endereco: ordem.endereco || local?.endereco || "Endereço não informado",
+        latitude: local?.latitude ?? local?.lat ?? null,
+        longitude: local?.longitude ?? local?.lng ?? null,
+        status: ordem.status || "Aberta"
+      };
+    });
 }
 
 // Inicializa o mapa Leaflet e carrega tanto as árvores quanto as ocorrências reais do banco
@@ -183,7 +221,7 @@ function initializeLeafletMap() {
   L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
     {
-      attribution: "Tiles © Esri — Sources: Esri, OpenStreetMap contributors",
+      attribution: "Tiles © Esri — Sources: Esri, <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap contributors</a>; geocoding © OpenStreetMap contributors",
       maxZoom: 19
     }
   ).addTo(professionalMap);
@@ -379,7 +417,8 @@ function focusProfessionalMapRecord(type, recordId) {
 // Alterna entre as camadas de Árvores, Ocorrências e Ordens de Serviço no menu "Camadas"
 async function activateProfessionalMapLayer(layer) {
   activeMapDataLayer = layer;
-  document.getElementById("professionalRiskLegend").hidden = layer === "serviceOrders";
+  let mensagemCamada;
+  document.getElementById("professionalRiskLegend").hidden = layer !== "trees";
   professionalMap.removeLayer(treeMarkerLayer);
   professionalMap.removeLayer(occurrenceMarkerLayer);
   professionalMap.removeLayer(serviceOrderMarkerLayer);
@@ -393,7 +432,20 @@ async function activateProfessionalMapLayer(layer) {
     professionalMap.addLayer(occurrenceMarkerLayer);
   }
   if (layer === "serviceOrders") {
-    addProfessionalServiceOrderExamples();
+    try {
+      await Promise.all([carregarArvores(), carregarOcorrencias()]);
+      await carregarOrdensDeServico();
+      addProfessionalServiceOrderMarkers();
+      const semCoordenadas = professionalMapDemo.serviceOrders
+        .filter(ordem => !Number.isFinite(ordem.latitude) || !Number.isFinite(ordem.longitude)).length;
+      mensagemCamada = semCoordenadas
+        ? `${professionalMapDemo.serviceOrders.length - semCoordenadas} OS com localização; ${semCoordenadas} sem coordenadas.`
+        : `${professionalMapDemo.serviceOrders.length} ordem(ns) de serviço carregadas.`;
+    } catch (erro) {
+      console.error("Falha ao carregar ordens de serviço do mapa:", erro);
+      professionalMapDemo.serviceOrders = [];
+      mensagemCamada = erro.message;
+    }
     professionalMap.addLayer(serviceOrderMarkerLayer);
   }
 
@@ -405,7 +457,7 @@ async function activateProfessionalMapLayer(layer) {
     occurrences: `Camada de ocorrências ativada (${professionalMapDemo.occurrences.length} registro(s)).`,
     serviceOrders: "Camada de ordens de serviço ativada."
   };
-  updateProfessionalMapToast(messages[layer]);
+  updateProfessionalMapToast(mensagemCamada || messages[layer]);
 }
 
 // Ajusta o zoom do mapa para enquadrar todos os marcadores da camada ativa ao clicar em "Ver todas"
@@ -413,7 +465,10 @@ function fitProfessionalMapToActiveRecords() {
   const records = activeMapDataLayer === "trees"
     ? professionalMapDemo.trees
     : activeMapDataLayer === "occurrences" ? professionalMapDemo.occurrences : professionalMapDemo.serviceOrders;
-  const bounds = records.map(record => [record.lat ?? record.latitude, record.lng ?? record.longitude]);
+  const bounds = records
+    .filter(record => Number.isFinite(record.lat ?? record.latitude)
+      && Number.isFinite(record.lng ?? record.longitude))
+    .map(record => [record.lat ?? record.latitude, record.lng ?? record.longitude]);
   if (bounds.length) professionalMap.fitBounds(bounds, { padding: [42, 42], maxZoom: 16 });
 }
 
@@ -451,11 +506,12 @@ function renderProfessionalOccurrenceMarkers() {
   });
 }
 
-// Desenha os marcadores de ordens de serviço no mapa
-function addProfessionalServiceOrderExamples() {
-  if (serviceOrderMarkerLayer.getLayers().length) return;
+// Desenha os marcadores de ordens de serviço vinculadas a ocorrências ou árvores.
+function addProfessionalServiceOrderMarkers() {
+  serviceOrderMarkerLayer.clearLayers();
   professionalServiceOrderMarkersById.clear();
   professionalMapDemo.serviceOrders.forEach(order => {
+    if (!Number.isFinite(order.latitude) || !Number.isFinite(order.longitude)) return;
     const marker = L.circleMarker([order.latitude, order.longitude], {
       radius: 8,
       color: "#185f8e",
@@ -466,6 +522,7 @@ function addProfessionalServiceOrderExamples() {
       <strong>Ordem de serviço ${escapeProfessionalMapText(order.id)}</strong><br>
       ${escapeProfessionalMapText(order.titulo)}<br>
       ${escapeProfessionalMapText(order.descricao)}<br>
+      ${escapeProfessionalMapText(order.endereco)}<br>
       ${escapeProfessionalMapText(order.bairro)}<br>
       Status: ${escapeProfessionalMapText(order.status)}
     `).addTo(serviceOrderMarkerLayer);

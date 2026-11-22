@@ -44,6 +44,10 @@ public class EquipeService {
         }
 
         Conta funcionario = buscarFuncionarioAutenticado(usuarioId);
+        String nomeGestor = dados.getGestorNome() == null ? "" : dados.getGestorNome().trim();
+        if (nomeGestor.isBlank() || nomeGestor.length() > 120) {
+            throw new IllegalArgumentException("Informe o nome do gestor com até 120 caracteres.");
+        }
         String emailGestor = normalizarEmail(
                 dados.getGestor(),
                 "Informe um e-mail válido para o gestor da equipe.");
@@ -56,6 +60,7 @@ public class EquipeService {
         Equipe equipe = new Equipe(
                 dados.getNome(),
                 dados.getRegiaoAtuacao(),
+                nomeGestor,
                 emailGestor,
                 funcionario.getMunicipioId(),
                 municipioNome,
@@ -177,6 +182,21 @@ public class EquipeService {
                 funcionario.getNome(),
                 buscaNormalizada,
                 statusNormalizado);
+    }
+
+    // Exibe o nome da conta associada ao e-mail armazenado como gestor da equipe.
+    public String nomeDoGestor(String nomeArmazenado, String emailArmazenado) {
+        if (nomeArmazenado != null && !nomeArmazenado.isBlank()
+                && !EMAIL_PATTERN.matcher(nomeArmazenado.trim()).matches()
+                && !"Nome não cadastrado".equalsIgnoreCase(nomeArmazenado.trim())) {
+            return nomeArmazenado.trim();
+        }
+        if (emailArmazenado == null || emailArmazenado.isBlank()) return "Nome não cadastrado";
+        String valor = emailArmazenado.trim();
+        return contaRepository.buscarPorEmailSemDiferenciarCaixa(valor)
+                .map(Conta::getNome)
+                .filter(nome -> nome != null && !nome.isBlank())
+                .orElse("Nome não cadastrado");
     }
 
     // Aceita somente os dois status apresentados no filtro da página.

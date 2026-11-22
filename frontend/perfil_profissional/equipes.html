@@ -16,7 +16,7 @@
 <body>
   <div class="app-shell">
     <!-- O sidebar valida login/setor, destaca Equipes e carrega equipes.js após autorizar o acesso. -->
-    <div id="sidebar-profissional" data-script="/perfil_profissional/equipes.js"></div>
+    <div id="sidebar-profissional" data-script="/perfil_profissional/equipes.js?v=20261123-codigo-link-gestor-nome-v2"></div>
 
     <main class="main professional-main">
       <!-- Identifica a tela e o município dos registros. -->
@@ -59,13 +59,12 @@
             <table class="teams-table">
               <thead>
                 <tr>
-                  <th scope="col">Código</th>
+                  <th scope="col">Identificação</th>
                   <th scope="col">Nome da equipe</th>
                   <th scope="col">Região de atuação</th>
                   <th scope="col">Status</th>
                   <th scope="col">Gestor</th>
                   <th scope="col">Colaboradores</th>
-                  <th scope="col">Ações</th>
                 </tr>
               </thead>
               <tbody id="teamsTableBody"></tbody>
@@ -96,6 +95,7 @@
       <form id="createTeamForm" novalidate>
         <label>Nome da equipe<input name="name" required maxlength="100" placeholder="Ex.: Equipe Leste"></label>
         <label>Região de atuação<input name="region" required maxlength="160" placeholder="Ex.: bairros da região Leste"></label>
+        <label>Nome do gestor<input name="managerName" required maxlength="120" autocomplete="name" placeholder="Nome completo do gestor"></label>
         <label>E-mail do gestor<input name="manager" type="email" required maxlength="254" autocomplete="email" placeholder="gestor@exemplo.com"></label>
         <p class="create-team-feedback" id="createTeamFeedback" role="status" aria-live="polite"></p>
         <button class="team-primary-button create-team-submit" type="submit"><i class="bi bi-check2-circle" aria-hidden="true"></i>Salvar equipe</button>

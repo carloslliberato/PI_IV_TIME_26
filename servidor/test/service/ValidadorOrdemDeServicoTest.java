@@ -43,18 +43,33 @@ class ValidadorOrdemDeServicoTest {
     }
 
     @Test
-    void exigeCorpoTituloDescricaoEArvore() {
+    void exigeCorpoTituloDescricaoEReferenciaDeLocal() {
         assertEquals("O pedido de validação da OS não foi informado.", reprovar(null));
         assertEquals("Informe os dados da nova ordem de serviço.",
                 reprovar(PedidoDeValidacaoOrdemDeServico.semDados(Operacao.CADASTRO, null)));
         for (String vazio : Arrays.asList(null, "", "   ")) {
-            assertEquals("O identificador da árvore deve ser informado.",
+            assertEquals("Informe o endereço local e o bairro para criar uma OS sem ocorrência.",
                     reprovar(cadastro(vazio, null, null, "Título", "Descrição", null, null)));
             assertEquals("O título deve ser informado.",
                     reprovar(cadastro(ARVORE, null, null, vazio, "Descrição", null, null)));
             assertEquals("A descrição deve ser informado.",
                     reprovar(cadastro(ARVORE, null, null, "Título", vazio, null, null)));
         }
+    }
+
+    @Test
+    void permiteCadastroSemArvoreQuandoEnderecoEBairroEstaoInformados() {
+        var pedido = PedidoDeValidacaoOrdemDeServico.cadastro(null, null, null,
+                "Galho quebrado", "Descrição do serviço.", null, null,
+                "Rua das Flores, 25", "Centro");
+        var cadastro = aprovarCadastro(pedido);
+        assertNull(cadastro.arvoreId());
+        assertEquals("Rua das Flores, 25", cadastro.endereco());
+        assertEquals("Centro", cadastro.bairro());
+        assertEquals("Informe o endereço local e o bairro para criar uma OS sem ocorrência.",
+                reprovar(PedidoDeValidacaoOrdemDeServico.cadastro(null, null, null,
+                        "Galho quebrado", "Descrição do serviço.", null, null,
+                        "Rua das Flores, 25", null)));
     }
 
     @Test

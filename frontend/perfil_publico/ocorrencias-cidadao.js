@@ -90,7 +90,7 @@ function initializeCitizenOccurrences() {
     filteredOccurrences.forEach(occurrence => {
       const row = document.createElement("tr");
       const values = [
-        { text: occurrence.id, className: "occurrence-id" },
+        { text: occurrence.codigoIdentificador, className: "occurrence-id" },
         { text: occurrence.municipio },
         { text: occurrence.bairro },
         { text: occurrence.tipo },
@@ -144,7 +144,8 @@ function initializeCitizenOccurrences() {
 
       // Converte os nomes dos campos do MongoDB para o formato usado pela tabela
       listaOcorrencias = dadosBanco.map(doc => ({
-        id: doc.id || "-",
+        codigoIdentificador: doc.codigoIdentificador || doc.id
+          || (typeof doc._id === "string" && doc._id.startsWith("OC-") ? doc._id : "-"),
         municipio: doc.municipio || formatarMunicipio(doc.municipioId),
         bairro: doc.bairro || extrairBairro(doc.localizacao),
         tipo: formatarTipoOcorrencia(doc.tipo || doc.tipoProblema),

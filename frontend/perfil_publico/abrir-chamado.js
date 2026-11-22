@@ -110,7 +110,6 @@ function initializeReportForm() {
       "#reportAddress, #reportLocation, #localizacao, #endereco",
       'input[type="text"]:not(#reportContactName)'
     );
-    const numeroDigitado = obterValorDoCampo("#reportNumber, #numero", 'input[name="numero"]');
     const bairroDigitado = obterValorDoCampo("#reportNeighborhood, #bairro", 'input[name*="bairro" i]');
     const descricaoDigitada = obterValorDoCampo("#reportDescription, #descricao", "textarea");
     const municipioSelecionado = obterValorDoCampo("#reportMunicipality, #municipioId", 'select[name*="municipio" i]');
@@ -123,7 +122,6 @@ function initializeReportForm() {
     const dadosChamado = {
       tipoProblema: tipoSelecionado,
       localizacao: enderecoDigitado,
-      numero: numeroDigitado,
       bairro: bairroDigitado,
       descricao: descricaoDigitada,
       // O nome enviado é resolvido para ObjectId pelo MunicipioRepository, como no cadastro de conta.
@@ -147,8 +145,13 @@ function initializeReportForm() {
         return;
       }
 
-      // Exibe mensagem de sucesso com o número do protocolo gerado pelo Java e redireciona
-      alert(`Chamado enviado com sucesso!\nProtocolo para acompanhamento: ${resultado.protocolo}`);
+      // Exibe o código interno e mantém separado o protocolo usado no acompanhamento.
+      const avisoGeocodificacao = resultado.aviso ? `\n\nAviso: ${resultado.aviso}` : "";
+      const codigoIdentificador = resultado.codigoIdentificador || resultado.ocorrencia?.id;
+      const avisoCodigo = codigoIdentificador
+        ? `\nCódigo identificador: ${codigoIdentificador}`
+        : "";
+      alert(`Chamado enviado com sucesso!${avisoCodigo}\nProtocolo para acompanhamento: ${resultado.protocolo}${avisoGeocodificacao}`);
       window.location.href = "/ocorrencias-cidadao";
     } catch (erro) {
       console.error("Erro ao enviar chamado para a API:", erro);

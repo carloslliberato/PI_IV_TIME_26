@@ -389,6 +389,16 @@ body{
 .tree-meta{font-size:11px;color:#6f7a75;margin-top:4px}
 .tree-address{font-size:11px;color:#747e79;margin-top:4px;line-height:1.35}
 .tree-distance{font-size:11px;color:#818b86;margin-top:3px}
+/* Diferencia os cartões de ocorrências dos cartões de árvores no painel lateral. */
+.occurrence-photo{background:#fee6e2;color:#bd4033}
+.occurrence-card:hover{border-color:#f0c2bc}
+.occurrence-status-badge{
+  background:#fff1ca;color:#a87900;border-radius:999px;
+  font-size:11px;font-weight:700;padding:4px 7px;white-space:nowrap;
+}
+.occurrence-card .tree-distance{
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
 
 .leaflet-popup-content-wrapper{
   border-radius:13px;
