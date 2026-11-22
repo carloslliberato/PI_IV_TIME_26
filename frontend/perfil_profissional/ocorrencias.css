@@ -39,6 +39,17 @@
 .occurrence-risk-badge.medium { background: #fff3d4; color: #ac7b0b; }
 .occurrence-risk-badge.high { background: #ffeadb; color: #b35a1e; }
 .occurrence-risk-badge.critical { background: #fde9e6; color: #bd3b2f; }
+.occurrence-status-badge { display: inline-flex; align-items: center; padding: 5px 9px; border-radius: 999px; background: #edf1ee; color: #58675e; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.occurrence-status-badge.received { background: #eef2f5; color: #566b7b; }
+.occurrence-status-badge.under-review { background: #fff3d4; color: #ac7b0b; }
+.occurrence-status-badge.in-progress { background: #e8f1fb; color: #2873ae; }
+.occurrence-status-badge.completed { background: #e8f4e8; color: #43833c; }
+.occurrence-status-badge.cancelled { background: #edf0ee; color: #647168; }
+.occurrence-risk-edit { border: 0; font: inherit; cursor: pointer; }
+.occurrence-risk-edit:hover { filter: brightness(.96); box-shadow: 0 0 0 2px rgba(23, 100, 68, .12); }
+.occurrence-risk-edit:focus-visible, .occurrence-risk-select:focus-visible { outline: 2px solid #176344; outline-offset: 2px; }
+.occurrence-risk-select { min-height: 31px; max-width: 125px; padding: 4px 8px; border: 1px solid #9ab9a5; border-radius: 8px; background: #fff; color: #34443a; font: inherit; font-size: 11px; }
+.occurrence-risk-select:disabled { opacity: .65; }
 .occurrence-order-created, .occurrence-order-missing { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .occurrence-order-created { color: #26704d; font-size: 11px; font-weight: 750; }
 .occurrence-order-missing { color: #c9362b; font-size: 11px; font-weight: 750; }

@@ -8,6 +8,7 @@ public class CadastroEquipeDTO {
 
     private String nome;
     private String regiaoAtuacao;
+    private String gestorNome;
     private String gestor;
 
     // Construtor vazio usado pelo Gson ao converter o JSON da requisição.
@@ -27,6 +28,8 @@ public class CadastroEquipeDTO {
         return gestor;
     }
 
+    public String getGestorNome() { return gestorNome; }
+
     // Setters usados pelo Gson ao preencher este DTO.
     public void setNome(String nome) {
         this.nome = nome;
@@ -39,4 +42,6 @@ public class CadastroEquipeDTO {
     public void setGestor(String gestor) {
         this.gestor = gestor;
     }
+
+    public void setGestorNome(String gestorNome) { this.gestorNome = gestorNome; }
 }

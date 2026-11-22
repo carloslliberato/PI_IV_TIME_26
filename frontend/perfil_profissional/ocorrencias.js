@@ -26,6 +26,8 @@ const occurrencePage = {
 let selectedOccurrenceId = null;
 let occurrenceToastTimer = null;
 let occurrenceOrderInProgress = false;
+const occurrenceRiskOptions = ["Baixa", "Média", "Alta", "Crítica"];
+const occurrenceRiskUpdates = new Set();
 
 // Protege o HTML escapando caracteres especiais nos textos vindos do banco
 function escapeOccurrenceText(value) {
@@ -46,6 +48,15 @@ function occurrenceRiskClass(risk) {
   if (normalized.includes("alt")) return "high";
   if (normalized.includes("med")) return "medium";
   return "low";
+}
+
+function occurrenceStatusClass(status){
+  const normalized = normalizeOccurrenceText(status);
+  if (normalized === "em atendimento") return "in-progress";
+  if (normalized === "em analise") return "under-review";
+  if (normalized === "concluida") return "completed";
+  if (normalized === "cancelada") return "cancelled";
+  return "received";
 }
 
 // Ordena as ocorrências por nível de criticidade ou por data mais recente
@@ -102,9 +113,10 @@ function renderOccurrencesTable() {
         <td><button class="occurrence-id-link" type="button" data-open-occurrence="${escapeOccurrenceText(occurrence.id)}">${escapeOccurrenceText(occurrence.codigoIdentificador)}</button></td>
         <td>${escapeOccurrenceText(occurrence.type)}</td>
         <td>${escapeOccurrenceText(occurrence.neighborhood)}</td>
-        <td><span class="occurrence-risk-badge ${occurrenceRiskClass(occurrence.risk)}">${escapeOccurrenceText(occurrence.risk)}</span></td>
+        <td>${renderOccurrenceRiskControl(occurrence)}</td>
         <td>${renderOccurrenceOrderCell(occurrence)}</td>
         <td>${escapeOccurrenceText(assignedTeam)}</td>
+        <td><span class="occurrence-status-badge ${occurrenceStatusClass(occurrence.status)}">${escapeOccurrenceText(occurrence.status)}</span></td>
         <td>${formatOccurrenceDate(occurrence.date)}</td>
       </tr>
     `;
@@ -115,6 +127,66 @@ function renderOccurrencesTable() {
   }
   if (occurrencePage.emptyState) {
     occurrencePage.emptyState.hidden = records.length > 0;
+  }
+}
+
+function renderOccurrenceRiskControl(occurrence){
+  if (occurrenceRiskUpdates.has(String(occurrence.id))){
+    return `<span class="occurrence-risk-badge ${occurrenceRiskClass(occurrence.risk)}" aria-busy="true">${escapeOccurrenceText(occurrence.risk)}…</span>`;
+  }
+  return `<button class="occurrence-risk-badge occurrence-risk-edit ${occurrenceRiskClass(occurrence.risk)}" type="button" data-edit-occurrence-risk="${escapeOccurrenceText(occurrence.id)}" aria-label="Alterar nível de risco, atual: ${escapeOccurrenceText(occurrence.risk)}" title="Clique para alterar o nível de risco">${escapeOccurrenceText(occurrence.risk)}</button>`;
+}
+
+function beginOccurrenceRiskEdit(button, occurrence){
+  if (!occurrence || occurrenceRiskUpdates.has(String(occurrence.id))) return;
+  const select = document.createElement("select");
+  select.className = "occurrence-risk-select";
+  select.setAttribute("aria-label", "Selecione o novo nível de risco");
+  select.dataset.editOccurrenceRiskSelect = occurrence.id;
+  select.innerHTML = occurrenceRiskOptions.map(risk =>
+    `<option value="${risk}" ${risk === occurrence.risk ? "selected" : ""}>${risk}</option>`).join("");
+  button.replaceWith(select);
+  select.focus();
+}
+
+async function updateOccurrenceRisk(occurrenceId, newRisk, select){
+  const occurrence = occurrenceData.occurrences.find(item => String(item.id) === String(occurrenceId));
+  if (!occurrence || !occurrenceRiskOptions.includes(newRisk)) return;
+  if (newRisk === occurrence.risk){
+    renderOccurrencesTable();
+    if (String(selectedOccurrenceId) === String(occurrence.id)) renderOccurrenceDetails(occurrence);
+    return;
+  }
+  if (!occurrence.databaseId){
+    showOccurrenceToast("Não foi possível identificar esta ocorrência no banco de dados.");
+    renderOccurrencesTable();
+    if (String(selectedOccurrenceId) === String(occurrence.id)) renderOccurrenceDetails(occurrence);
+    return;
+  }
+
+  occurrenceRiskUpdates.add(String(occurrence.id));
+  select.disabled = true;
+  try {
+    const response = await fetch(`/api/ocorrencias/${encodeURIComponent(occurrence.databaseId)}/prioridade`, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ urgencia: newRisk })
+    });
+    const responseText = await response.text();
+    let body = {};
+    try { body = responseText ? JSON.parse(responseText) : {}; }
+    catch { throw new Error("O servidor retornou uma resposta inválida."); }
+    if (!response.ok) throw new Error(body.erro || `O servidor respondeu com status ${response.status}.`);
+    occurrence.risk = newRisk;
+    showOccurrenceToast(`Nível de risco atualizado para ${newRisk}.`);
+  } catch (error){
+    showOccurrenceToast(`Não foi possível atualizar o nível de risco. ${error.message}`);
+  } finally {
+    occurrenceRiskUpdates.delete(String(occurrence.id));
+    renderOccurrencesTable();
+    if (String(selectedOccurrenceId) === String(occurrence.id)
+        && occurrencePage.modal && !occurrencePage.modal.hidden) renderOccurrenceDetails(occurrence);
   }
 }
 
@@ -144,7 +216,7 @@ function renderOccurrenceDetails(occurrence) {
     </header>
     <div class="occurrence-detail-grid occurrence-detail-meta">
       <div><span>Árvore</span><strong>${escapeOccurrenceText(occurrence.tree)} · ID ${escapeOccurrenceText(occurrence.treeId)}</strong></div>
-      <div><span>Nível de risco</span><strong><span class="occurrence-risk-badge ${occurrenceRiskClass(occurrence.risk)}">${escapeOccurrenceText(occurrence.risk)}</span></strong></div>
+      <div><span>Nível de risco</span><strong>${renderOccurrenceRiskControl(occurrence)}</strong></div>
       <div><span>Bairro</span><strong>${escapeOccurrenceText(occurrence.neighborhood)}</strong></div>
       <div><span>Endereço</span><strong>${escapeOccurrenceText(occurrence.address)}</strong></div>
       <div><span>Relatada por</span><strong>${escapeOccurrenceText(occurrence.reporter)}</strong></div>
@@ -400,7 +472,7 @@ async function carregarDadosDoBackend() {
         risk: doc.urgencia || "Média",
         reporter: doc.nomeContato || (doc.cidadaoId === "cid_anonimo" ? "Portal Público (Anônimo)" : `Cidadão (${doc.cidadaoId || "Portal"})`),
         description: doc.descricao || "Sem descrição detalhada.",
-        status: doc.status || "Recebida",
+        status: doc.status || "—",
         order: ordem
           ? {
               id: ordem.codigo || ordem.id,
@@ -425,17 +497,37 @@ function setupOccurrencePageEvents() {
   occurrencePage.sort?.addEventListener("change", renderOccurrencesTable);
 
   occurrencePage.tableBody?.addEventListener("click", event => {
+    const riskButton = event.target.closest("[data-edit-occurrence-risk]");
+    if (riskButton){
+      const occurrence = occurrenceData.occurrences.find(item => String(item.id) === riskButton.dataset.editOccurrenceRisk);
+      beginOccurrenceRiskEdit(riskButton, occurrence);
+      return;
+    }
     const trigger = event.target.closest("[data-open-occurrence]");
     if (trigger) openOccurrenceDetails(trigger.dataset.openOccurrence);
+  });
+  occurrencePage.tableBody?.addEventListener("change", event => {
+    const select = event.target.closest("[data-edit-occurrence-risk-select]");
+    if (select) updateOccurrenceRisk(select.dataset.editOccurrenceRiskSelect, select.value, select);
   });
 
   // Permite tentar novamente se a consulta inicial de equipes falhar ou retornar lista vazia.
   occurrencePage.modalContent?.addEventListener("click", event => {
+    const riskButton = event.target.closest("[data-edit-occurrence-risk]");
+    if (riskButton){
+      const occurrence = occurrenceData.occurrences.find(item => String(item.id) === riskButton.dataset.editOccurrenceRisk);
+      beginOccurrenceRiskEdit(riskButton, occurrence);
+      return;
+    }
     if (!event.target.closest("[data-reload-occurrence-teams]")) return;
     const occurrence = occurrenceData.occurrences.find(
       item => String(item.id) === String(selectedOccurrenceId)
     );
     if (occurrence && !occurrence.order) carregarEquipesDisponiveisDaOcorrencia(occurrence);
+  });
+  occurrencePage.modalContent?.addEventListener("change", event => {
+    const select = event.target.closest("[data-edit-occurrence-risk-select]");
+    if (select) updateOccurrenceRisk(select.dataset.editOccurrenceRiskSelect, select.value, select);
   });
 
   occurrencePage.modalContent?.addEventListener("submit", event => {

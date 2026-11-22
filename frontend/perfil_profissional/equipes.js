@@ -51,12 +51,12 @@ function renderTeamsTable() {
   const teams = teamsData.teams;
   teamsPage.tableBody.innerHTML = teams.map(team => `
     <tr>
-      <td><button class="team-name-link" type="button" data-open-team="${escapeTeamText(team.id)}">${escapeTeamText(team.name)}</button></td>
+      <td><button class="team-name-link" type="button" data-open-team="${escapeTeamText(team.id)}" aria-label="Ver detalhes da equipe ${escapeTeamText(team.code)}">${escapeTeamText(team.code)}</button></td>
+      <td>${escapeTeamText(team.name)}</td>
       <td>${escapeTeamText(team.region)}</td>
       <td><span class="team-status-badge ${team.status === "Disponível" ? "available" : "unavailable"}">${escapeTeamText(team.status)}</span></td>
       <td>${escapeTeamText(team.manager)}</td>
       <td>${team.employees.length}</td>
-      <td><button class="team-delete-button" type="button" data-delete-team="${escapeTeamText(team.id)}" aria-label="Excluir equipe ${escapeTeamText(team.name)}" title="Excluir equipe"><i class="bi bi-trash3" aria-hidden="true"></i></button></td>
     </tr>
   `).join("");
 
@@ -111,6 +111,7 @@ async function loadTeams() {
     // Adapta o formato da API aos campos consumidos pela tabela e pelos detalhes.
     teamsData.teams = responseData.equipes.map(equipe => ({
       id: String(equipe.id),
+      code: equipe.codigo || equipe.code || "—",
       name: equipe.nome,
       region: equipe.regiaoAtuacao,
       status: equipe.status,
@@ -170,14 +171,15 @@ async function submitTeamCreation(form) {
   const teamPayload = {
     nome: String(formData.get("name") || "").trim(),
     regiaoAtuacao: String(formData.get("region") || "").trim(),
+    gestorNome: String(formData.get("managerName") || "").trim(),
     gestor: String(formData.get("manager") || "").trim()
   };
   const feedback = teamsPage.createFeedback;
   const saveButton = form.querySelector("button[type='submit']");
 
   // Verifica campos após trim para não aceitar valores compostos apenas por espaços.
-  if (!teamPayload.nome || !teamPayload.regiaoAtuacao || !teamPayload.gestor) {
-    feedback.textContent = "Preencha o nome, a região de atuação e o e-mail do gestor.";
+  if (!teamPayload.nome || !teamPayload.regiaoAtuacao || !teamPayload.gestorNome || !teamPayload.gestor) {
+    feedback.textContent = "Preencha o nome, a região e o nome e e-mail do gestor.";
     feedback.classList.add("is-error");
     return;
   }
@@ -272,6 +274,7 @@ function renderTeamDetails(team) {
     <header class="team-detail-heading">
       <span class="team-detail-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
       <div><span class="team-detail-eyebrow">${escapeTeamText(team.region)}</span><h2 id="teamDetailsTitle">${escapeTeamText(team.name)}</h2></div>
+      <button class="team-delete-button team-detail-delete" type="button" data-delete-team="${escapeTeamText(team.id)}" aria-label="Excluir equipe ${escapeTeamText(team.name)}" title="Excluir equipe"><i class="bi bi-trash3" aria-hidden="true"></i><span>Excluir equipe</span></button>
     </header>
     <div class="team-detail-summary">
       <div><span>Status</span><strong><span class="team-status-badge ${team.status === "Disponível" ? "available" : "unavailable"}">${escapeTeamText(team.status)}</span></strong></div>
@@ -477,7 +480,7 @@ async function removeTeam(teamId) {
   if (!window.confirm(`Deseja realmente excluir a equipe "${team.name}"?`)) return;
 
   const deleteButton = Array.from(
-    teamsPage.tableBody.querySelectorAll("[data-delete-team]")
+    teamsPage.detailsContent.querySelectorAll("[data-delete-team]")
   ).find(button => button.dataset.deleteTeam === teamId);
   teamDeletionsInProgress.add(teamId);
   if (deleteButton) deleteButton.disabled = true;
@@ -510,6 +513,7 @@ async function removeTeam(teamId) {
 
     teamsData.teams = teamsData.teams.filter(item => item.id !== teamId);
     renderTeamsTable();
+    if (selectedTeamId === teamId) closeTeamDetails();
     showTeamsToast("Equipe excluída com sucesso.");
   } catch (error) {
     showTeamsToast(`Não foi possível excluir a equipe. ${error.message}`);
@@ -685,6 +689,8 @@ function setupTeamsPageEvents() {
   teamsPage.detailsContent.addEventListener("click", event => {
     if (event.target.closest("[data-add-employee]")) openEmployeeForm();
     if (event.target.closest("[data-assign-order]")) openTeamOrdersSelector();
+    const deleteTeamButton = event.target.closest("[data-delete-team]");
+    if (deleteTeamButton) removeTeam(deleteTeamButton.dataset.deleteTeam);
     const deleteButton = event.target.closest("[data-remove-collaborator]");
     if (deleteButton) removeCollaborator(deleteButton.dataset.removeCollaborator);
   });

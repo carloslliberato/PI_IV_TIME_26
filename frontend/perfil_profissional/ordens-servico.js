@@ -594,7 +594,7 @@ function getServiceOrderCompletionDraft(orderId){
     const localDate = `${now.getFullYear()}-${part(now.getMonth() + 1)}-${part(now.getDate())}`
       + `T${part(now.getHours())}:${part(now.getMinutes())}`;
     serviceOrdersState.completionDrafts.set(orderId, {
-      tipo: "", descricao: "", dataExecucao: localDate, fotos: ""
+      tipo: "", descricao: "", dataExecucao: localDate, arquivosFotos: []
     });
   }
   return serviceOrdersState.completionDrafts.get(orderId);
@@ -602,10 +602,9 @@ function getServiceOrderCompletionDraft(orderId){
 
 function saveServiceOrderCompletionDraft(form){
   const orderId = form.dataset.completeServiceOrder;
-  const draft = {};
-  for (const name of ["tipo", "descricao", "dataExecucao", "fotos"]){
-    draft[name] = form.elements.namedItem(name).value;
-  }
+  const draft = serviceOrdersState.completionDrafts.get(orderId) || { arquivosFotos: [] };
+  for (const name of ["tipo", "descricao", "dataExecucao"]) draft[name] = form.elements.namedItem(name).value;
+  if (!Array.isArray(draft.arquivosFotos)) draft.arquivosFotos = [];
   serviceOrdersState.completionDrafts.set(orderId, draft);
   return draft;
 }
@@ -661,8 +660,10 @@ function renderServiceOrderCancellationReason(order){
 }
 
 // Aceita somente links de fotos que o usuário escolhe abrir, sem carregar imagens.
-function normalizeServiceOrderPhotoLink(value){
-  if (typeof value !== "string" || value.trim().length > 2048) return null;
+function normalizeServiceOrderPhoto(value){
+  if (typeof value !== "string") return null;
+  if (/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(value)) return value;
+  if (value.trim().length > 2048) return null;
   try {
     const url = new URL(value.trim());
     if (!["http:", "https:"].includes(url.protocol) || !url.hostname
@@ -676,30 +677,32 @@ function normalizeServiceOrderPhotoLink(value){
 function validateServiceOrderCompletionDraft(draft){
   const tipo = draft.tipo.trim();
   const descricao = draft.descricao.trim();
-  if (!tipo || tipo.length > 80){
-    throw new Error("Informe o tipo de serviço com até 80 caracteres.");
-  }
-  if (!descricao || descricao.length > 4000){
-    throw new Error("Descreva o serviço realizado com até 4.000 caracteres.");
-  }
+  if (!tipo || tipo.length > 80) throw new Error("Informe o tipo de serviço com até 80 caracteres.");
+  if (!descricao || descricao.length > 4000) throw new Error("Descreva o serviço realizado com até 4.000 caracteres.");
   const executionDate = new Date(draft.dataExecucao);
-  if (!draft.dataExecucao || Number.isNaN(executionDate.getTime())){
-    throw new Error("Informe a data e o horário da execução.");
+  if (!draft.dataExecucao || Number.isNaN(executionDate.getTime())) throw new Error("Informe a data e o horário da execução.");
+  if (executionDate.getTime() > Date.now()) throw new Error("A execução não pode estar no futuro.");
+  const files = Array.isArray(draft.arquivosFotos) ? draft.arquivosFotos : [];
+  if (files.length > 5) throw new Error("Anexe no máximo 5 fotos.");
+  const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+  let totalBytes = 0;
+  for (const file of files){
+    if (!allowedTypes.has(file.type)) throw new Error("Anexe fotos JPG, PNG ou WebP.");
+    if (file.size > 2 * 1024 * 1024) throw new Error("Cada foto deve ter no máximo 2 MB.");
+    totalBytes += file.size;
   }
-  if (executionDate.getTime() > Date.now()){
-    throw new Error("A execução não pode estar no futuro.");
-  }
-  const lines = draft.fotos.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-  if (lines.length > 10){
-    throw new Error("Informe no máximo 10 links de fotos, um por linha.");
-  }
-  const fotos = lines.map(normalizeServiceOrderPhotoLink);
-  if (fotos.some(link => !link)){
-    throw new Error("Use links http ou https, sem usuário ou senha e com até 2.048 caracteres.");
-  }
-  return { tipo, descricao, dataExecucao: executionDate.toISOString(), fotos };
+  if (totalBytes > 7 * 1024 * 1024) throw new Error("O tamanho total das fotos deve ser de até 7 MB.");
+  return { tipo, descricao, dataExecucao: executionDate.toISOString(), arquivosFotos: files };
 }
 
+function readServiceOrderPhoto(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Não foi possível ler uma das fotos."));
+    reader.onerror = () => reject(new Error("Não foi possível ler uma das fotos."));
+    reader.readAsDataURL(file);
+  });
+}
 function renderServiceOrderCompletionForm(order, blocked){
   const draft = getServiceOrderCompletionDraft(order.id);
   return `
@@ -724,10 +727,11 @@ function renderServiceOrderCompletionForm(order, blocked){
             <textarea id="serviceOrderCompletionDescription" name="descricao" rows="5"
               maxlength="4000" required placeholder="Descreva a execução e o resultado do serviço">${escapeServiceOrderText(draft.descricao)}</textarea>
           </label>
-          <label class="service-order-create-wide" for="serviceOrderCompletionPhotos">Links de fotos <span>(opcional)</span>
-            <textarea id="serviceOrderCompletionPhotos" name="fotos" rows="3" maxlength="20510"
-              placeholder="https://exemplo.com/foto.jpg" aria-describedby="serviceOrderPhotosHint">${escapeServiceOrderText(draft.fotos)}</textarea>
-            <small id="serviceOrderPhotosHint">Até 10 links http ou https, um por linha. As fotos devem estar publicadas em outro local.</small>
+          <label class="service-order-create-wide" for="serviceOrderCompletionPhotos">Anexar fotos <span>(opcional)</span>
+            <input id="serviceOrderCompletionPhotos" name="arquivosFotos" type="file" accept="image/jpeg,image/png,image/webp" multiple aria-describedby="serviceOrderPhotosHint">
+            <small id="serviceOrderPhotosHint">JPG, PNG ou WebP. Até 5 fotos, 2 MB cada e 7 MB no total.</small>
+            <span class="service-order-photo-selection" id="serviceOrderPhotoSelection">${(draft.arquivosFotos || []).map(file => escapeServiceOrderText(file.name)).join(", ") || "Nenhuma foto selecionada."}</span>
+            <button class="service-order-cancel-button service-order-photo-clear" type="button" data-clear-completion-photos="${escapeServiceOrderText(order.id)}" ${(draft.arquivosFotos || []).length ? "" : "hidden"}>Remover fotos selecionadas</button>
           </label>
           <div class="service-order-create-actions">
             <button class="service-order-cancel-button" type="button" data-close-completion-form="${escapeServiceOrderText(order.id)}">Voltar aos detalhes</button>
@@ -745,7 +749,7 @@ function renderServiceOrderCompletionReport(order){
     return `<p class="service-order-not-completed">Esta ordem está concluída. Não há relatório de execução disponível para consulta.</p>`;
   }
   const photos = (Array.isArray(report.fotos) ? report.fotos : [])
-    .map(normalizeServiceOrderPhotoLink).filter(Boolean);
+    .map(normalizeServiceOrderPhoto).filter(Boolean);
   return `
     <section class="service-order-completion" aria-labelledby="serviceOrderReportTitle">
       <h3 id="serviceOrderReportTitle"><i class="bi bi-check2-circle" aria-hidden="true"></i>Registro de conclusão</h3>
@@ -757,9 +761,9 @@ function renderServiceOrderCompletionReport(order){
       </dl>
       <h4>Serviço realizado</h4>
       <p class="service-order-preserve-lines">${escapeServiceOrderText(report.descricao)}</p>
-      ${photos.length ? `<h4>Fotos</h4><ul class="service-order-photo-links">${photos.map((url, index) => `
-        <li><a href="${escapeServiceOrderText(url)}" target="_blank" rel="noopener noreferrer">Ver foto ${index + 1}<span class="visually-hidden"> (abre em outra aba)</span></a></li>
-      `).join("")}</ul>` : "<p>Nenhum link de foto informado.</p>"}
+      ${photos.length ? `<h4>Fotos</h4><div class="service-order-photo-gallery">${photos.map((url, index) => url.startsWith("data:image/")
+        ? `<img src="${escapeServiceOrderText(url)}" alt="Foto ${index + 1} do serviço">`
+        : `<a href="${escapeServiceOrderText(url)}" target="_blank" rel="noopener noreferrer">Ver foto ${index + 1}<span class="visually-hidden"> (abre em outra aba)</span></a>`).join("")}</div>` : "<p>Nenhuma foto anexada.</p>"}
       <span>Registro finalizado, disponível somente para consulta.</span>
     </section>`;
 }
@@ -930,10 +934,7 @@ function renderServiceOrderDetails(order){
       <h3>Descrição do serviço</h3>
       <p class="service-order-preserve-lines">${escapeServiceOrderText(order.descricao)}</p>
     </section>
-    <section class="service-order-description">
-      <h3>Observações</h3>
-      <p class="service-order-preserve-lines">${escapeServiceOrderText(order.observacoes)}</p>
-    </section>
+
     ${renderServiceOrderCompletionReport(order)}
     ${renderServiceOrderCancellationReason(order)}
     ${formOpen ? renderServiceOrderCompletionForm(order, blocked) : ""}
@@ -1169,6 +1170,8 @@ async function completeServiceOrderFromDetails(form){
   let data;
   try {
     data = validateServiceOrderCompletionDraft(draft);
+    const fotos = await Promise.all(data.arquivosFotos.map(readServiceOrderPhoto));
+    data = { tipo: data.tipo, descricao: data.descricao, dataExecucao: data.dataExecucao, fotos };
   } catch (error){
     showServiceOrderStatusFeedback(orderId, error.message, true);
     document.getElementById("serviceOrderStatusFeedback")?.focus();
@@ -1266,6 +1269,15 @@ function setupServiceOrdersEvents(){
   serviceOrdersPage.modalContent.addEventListener("click", event => {
     const trigger = event.target.closest("button");
     if (!trigger || trigger.disabled) return;
+    if (trigger.dataset.clearCompletionPhotos){
+      const draft = serviceOrdersState.completionDrafts.get(trigger.dataset.clearCompletionPhotos);
+      if (draft) draft.arquivosFotos = [];
+      const input = serviceOrdersPage.modalContent.querySelector("[name='arquivosFotos']");
+      if (input) input.value = "";
+      document.getElementById("serviceOrderPhotoSelection").textContent = "Nenhuma foto selecionada.";
+      trigger.hidden = true;
+      return;
+    }
     if (trigger.dataset.cancelServiceOrder) cancelServiceOrderFromDetails(trigger.dataset.cancelServiceOrder);
     if (trigger.dataset.closeCancellationForm) closeServiceOrderCancellationForm(trigger.dataset.closeCancellationForm);
     if (trigger.dataset.openCompletionForm) openServiceOrderCompletionForm(trigger.dataset.openCompletionForm);
@@ -1287,6 +1299,16 @@ function setupServiceOrdersEvents(){
   });
 
   serviceOrdersPage.modalContent.addEventListener("change", event => {
+    const photoInput = event.target.closest("[name='arquivosFotos']");
+    if (photoInput){
+      const form = photoInput.closest("[data-complete-service-order]");
+      const draft = saveServiceOrderCompletionDraft(form);
+      draft.arquivosFotos = Array.from(photoInput.files || []);
+      const names = draft.arquivosFotos.map(file => file.name).join(", ");
+      document.getElementById("serviceOrderPhotoSelection").textContent = names || "Nenhuma foto selecionada.";
+      serviceOrdersPage.modalContent.querySelector("[data-clear-completion-photos]").hidden = !draft.arquivosFotos.length;
+      return;
+    }
     const form = event.target.closest("[data-assign-service-order]");
     if (form) serviceOrdersState.teamDrafts.set(form.dataset.assignServiceOrder, form.elements.namedItem("equipeId").value);
   });

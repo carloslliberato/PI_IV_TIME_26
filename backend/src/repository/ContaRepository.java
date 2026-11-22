@@ -17,8 +17,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.regex;
 
 public class ContaRepository implements Repository<Conta> {
 
@@ -79,6 +81,12 @@ public class ContaRepository implements Repository<Conta> {
         }
 
         return Optional.of(converterParaConta(documento));
+    }
+
+    public Optional<Conta> buscarPorEmailSemDiferenciarCaixa(String email) {
+        if (email == null || email.isBlank()) return Optional.empty();
+        Document documento = colecao.find(regex("email", "^" + Pattern.quote(email.trim()) + "$", "i")).first();
+        return documento == null ? Optional.empty() : Optional.of(converterParaConta(documento));
     }
 
     // Verifica se um e-mail já está cadastrado

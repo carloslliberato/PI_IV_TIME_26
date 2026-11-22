@@ -7,4 +7,5 @@
 
 # Arquivos temporários do Gradle
 .gradle/
+.gradle-cache/
 build/

@@ -122,6 +122,13 @@
 .service-order-completion-form input, .service-order-completion-form textarea { width: 100%; min-width: 0; box-sizing: border-box; padding: 11px; border: 1px solid #d4e2d9; border-radius: 8px; background: #fff; color: #34443a; font: inherit; font-size: 13px; }
 .service-order-completion-form textarea { resize: vertical; }
 .service-order-completion-form input:focus, .service-order-completion-form textarea:focus { outline: 2px solid #8db69d; outline-offset: 2px; }
+.service-order-completion-form input[type="file"] { padding: 9px; }
+.service-order-photo-selection { color: #53675b; font-size: 11px; font-weight: 500; overflow-wrap: anywhere; }
+.service-order-photo-clear { align-self: flex-start; }
+.service-order-photo-clear[hidden] { display: none; }
+.service-order-photo-gallery { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.service-order-photo-gallery img { width: min(180px, 100%); max-height: 150px; object-fit: cover; border: 1px solid #dce7df; border-radius: 8px; }
+.service-order-photo-gallery a { color: #176344; font-size: 12px; font-weight: 700; }
 .service-orders-create-button:disabled, .service-order-cancel-button:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
 .service-order-completion-form :disabled { opacity: .65; cursor: not-allowed; }
 .service-order-preserve-lines { white-space: pre-wrap; overflow-wrap: anywhere; }

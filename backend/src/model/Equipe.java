@@ -16,6 +16,7 @@ public class Equipe {
     private final String nome;
     private final String regiaoAtuacao;
     private final String gestor;
+    private final String gestorEmail;
     private final String status;
     private final ObjectId municipioId;
     private final String municipioNome;
@@ -47,6 +48,13 @@ public class Equipe {
                 usuarioNome,
                 Instant.now(),
                 List.of());
+    }
+
+    public Equipe(
+            String nome, String regiaoAtuacao, String gestor, String gestorEmail,
+            ObjectId municipioId, String municipioNome, ObjectId usuarioId, String usuarioNome) {
+        this(new ObjectId(), null, nome, regiaoAtuacao, gestor, gestorEmail, "Disponível",
+                municipioId, municipioNome, usuarioId, usuarioNome, Instant.now(), List.of());
     }
 
     // Recupera uma equipe já persistida, preservando seus valores do MongoDB.
@@ -117,6 +125,15 @@ public class Equipe {
             String usuarioNome,
             Instant dataCadastro,
             List<Colaborador> colaboradores) {
+        this(id, codigo, nome, regiaoAtuacao, gestor, null, status, municipioId,
+                municipioNome, usuarioId, usuarioNome, dataCadastro, colaboradores);
+    }
+
+    public Equipe(
+            ObjectId id, String codigo, String nome, String regiaoAtuacao,
+            String gestor, String gestorEmail, String status, ObjectId municipioId,
+            String municipioNome, ObjectId usuarioId, String usuarioNome,
+            Instant dataCadastro, List<Colaborador> colaboradores) {
 
         if (id == null || municipioId == null || usuarioId == null) {
             throw new IllegalArgumentException(
@@ -137,6 +154,7 @@ public class Equipe {
         this.gestor = validarTexto(
                 gestor,
                 "O gestor responsável é obrigatório.");
+        this.gestorEmail = gestorEmail;
         this.status = validarTexto(status, "O status da equipe é obrigatório.");
         this.municipioId = municipioId;
         this.municipioNome = municipioNome;
@@ -178,6 +196,8 @@ public class Equipe {
         return gestor;
     }
 
+    public String getGestorEmail() { return gestorEmail; }
+
     public String getStatus() {
         return status;
     }
@@ -217,6 +237,7 @@ public class Equipe {
                 nome,
                 regiaoAtuacao,
                 gestor,
+                gestorEmail,
                 status,
                 municipioId,
                 municipioNome,
