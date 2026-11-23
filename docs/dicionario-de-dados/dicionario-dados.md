@@ -106,7 +106,26 @@ Descrição: Registra o serviço de manejo ou manutenção a ser executado em um
 
 O cadastro recebe `arvoreId`, `ocorrenciaId`, `titulo`, `descricao` e `prioridade`; `equipeId` e `observacoes` são opcionais. Os identificadores externos chegam como texto na API e são convertidos para `ObjectId` pelo backend. Ordens concluídas ou canceladas não podem ser editadas; a conclusão é registrada junto à intervenção correspondente.
 
-### 5. Equipe
+### 5. Intervenção
+Descrição: Registra um serviço executado em uma árvore e preserva o resultado no histórico de intervenções. Os documentos são armazenados na coleção `intervencoes`; intervenções geradas pela conclusão de uma ordem de serviço são vinculadas à respectiva OS.
+
+| Nome | Tipo | Obrigatoriedade | Descrição |
+| --- | --- | --- | --- |
+| _id | ObjectId | Sim | Identificador interno da intervenção, gerado pelo sistema. |
+| municipioId | ObjectId | Sim | Identificador do município ao qual a intervenção pertence. |
+| arvoreId | ObjectId | Sim | Identificador da árvore em que o serviço foi executado. |
+| ordemServicoId | ObjectId | Não | Identificador da ordem de serviço que originou a intervenção. Pode ser nulo para registros sem vínculo com uma OS. |
+| equipeId | ObjectId | Não | Identificador da equipe responsável pela execução. Pode ser nulo quando não havia equipe vinculada ou a intervenção não está associada a uma OS. |
+| usuarioId | ObjectId | Sim | Identificador da conta do funcionário que registrou a intervenção. |
+| tipo | String | Sim | Tipo do serviço executado, por exemplo `Poda` ou `Inspeção`. |
+| descricao | String | Sim | Descrição detalhada da intervenção realizada. |
+| fotos | Array de String | Não | Referências HTTP/HTTPS das fotos anexadas à intervenção. O cadastro inicia ou mantém o array como vazio quando não há fotos. |
+| dataExecucao | Date | Sim | Data e horário em que o serviço foi efetivamente executado, armazenados como BSON Date. |
+| dataCriacao | Date | Sim | Data e horário de criação do registro de intervenção, armazenados como BSON Date. |
+
+A consulta do histórico combina `municipioId` e `arvoreId` e apresenta os registros mais recentes primeiro. Conclusões registradas em uma OS são gravadas na mesma transação e vinculadas ao campo `intervencaoConclusaoId` da ordem.
+
+### 6. Equipe
 Descrição: Armazena equipes municipais criadas por funcionários autenticados.
 
 Atributos:
@@ -137,7 +156,7 @@ Cada elemento de `colaboradores` contém:
 | disponivel | Boolean | Sim | Disponibilidade inicial do colaborador. |
 | dataCadastro | Date | Sim | Data e horário em que foi adicionado à equipe. |
 
-### 6. Recuperação de Senha
+### 7. Recuperação de Senha
 Descrição: Armazena solicitações de redefinição de senha associadas a uma conta. Os documentos ficam na coleção `recuperacoes_senha`. O código enviado por e-mail não é armazenado em texto puro; somente seu hash é persistido.
 
 | Nome | Tipo | Obrigatoriedade | Descrição |
@@ -150,3 +169,13 @@ Descrição: Armazena solicitações de redefinição de senha associadas a uma 
 | utilizado | Boolean | Sim | Indica se a solicitação já foi consumida ou invalidada. Inicia como `false` e passa para `true` após uso, expiração, limite de tentativas, falha no envio do e-mail ou substituição por uma solicitação mais recente. |
 
 Uma nova solicitação invalida as recuperações anteriores da mesma conta. O código pode ser usado uma única vez e somente antes da expiração e do limite de tentativas.
+
+
+
+### 8. Municípios
+Descrição: Armazena dados dos municípios das contas.
+
+| Nome | Tipo | Obrigatoriedade | Descrição |
+| --- | --- | --- | --- |
+| _id | ObjectId | Sim | Identificador único do município, gerado pelo sistema. |
+| nome | String | Sim | Nome do município |
