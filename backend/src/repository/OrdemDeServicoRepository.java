@@ -486,6 +486,24 @@ public class OrdemDeServicoRepository {
 
     public List<Map<String, Object>> historicoPorArvore(ObjectId arvoreId){
         if (arvoreId == null) throw new IllegalArgumentException("O identificador da árvore não pode ser nulo.");
+        Document arvore = arvores.find(eq("_id", arvoreId))
+                .projection(new Document("historico", 1)).first();
+        if (arvore != null && arvore.get("historico") instanceof List<?> eventos && !eventos.isEmpty()) {
+            List<Map<String, Object>> historico = new ArrayList<>();
+            for (Object valor : eventos) {
+                if (!(valor instanceof Document evento)) continue;
+                Map<String, Object> item = new HashMap<>();
+                item.put("codigo", null);
+                item.put("tipo", evento.getString("tipo"));
+                item.put("descricao", evento.getString("descricao"));
+                Object data = evento.get("data", evento.get("dataExecucao", evento.get("dataCriacao")));
+                item.put("data", data instanceof Date dataDate ? dataDate.toInstant().toString()
+                        : data instanceof Instant dataInstant ? dataInstant.toString()
+                        : data instanceof String dataTexto ? dataTexto : null);
+                historico.add(item);
+            }
+            return historico;
+        }
         List<Map<String, Object>> ordens = new ArrayList<>();
         Bson filtro = or(eq("arvoreId", arvoreId), eq("arvoreId", arvoreId.toHexString()));
         Bson campos = new Document("codigo", 1).append("id", 1).append("titulo", 1).append("dataCriacao", 1);

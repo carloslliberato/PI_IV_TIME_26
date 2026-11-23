@@ -16,6 +16,52 @@ let publicOccurrences = [];
 let publicOccurrencesLoaded = false; // Indica se a primeira consulta de ocorrências terminou.
 let publicLayerTransition = 0;
 let activePublicLayer = "trees";
+const PUBLIC_MAP_LIST_PAGE_SIZE = 18;
+
+function renderNextPublicListPage(container) {
+  const state = container._publicInfiniteList;
+  if (!state || state.rendered >= state.items.length) return;
+  const next = state.items.slice(state.rendered, state.rendered + PUBLIC_MAP_LIST_PAGE_SIZE);
+  container.insertAdjacentHTML("beforeend", next.map(state.renderItem).join(""));
+  state.rendered += next.length;
+}
+
+function renderPublicInfiniteList(container, items, renderItem, emptyHtml) {
+  container._publicInfiniteList = { items, renderItem, rendered: 0 };
+  container.scrollTop = 0;
+  container.innerHTML = items.length ? "" : emptyHtml;
+  if (items.length) renderNextPublicListPage(container);
+}
+
+function setupPublicInfiniteList() {
+  const container = document.getElementById("treeList");
+  container.addEventListener("scroll", () => {
+    if (container.scrollTop + container.clientHeight >= container.scrollHeight - 180) {
+      renderNextPublicListPage(container);
+    }
+  }, { passive: true });
+  container.addEventListener("click", event => {
+    const treeCard = event.target.closest("[data-tree-card]");
+    if (treeCard) {
+      const tree = trees.find(item => item.id === treeCard.dataset.treeCard);
+      if (!tree) return;
+      if (!temCoordenadasValidas(tree)) {
+        const aviso = document.querySelector("#mapToast span");
+        if (aviso) aviso.textContent = "Esta árvore não possui localização disponível no mapa.";
+        return;
+      }
+      map?.flyTo([tree.lat, tree.lng], 16, { duration: 0.8 });
+      markersById.get(tree.id)?.openPopup();
+      return;
+    }
+    const occurrenceCard = event.target.closest("[data-occurrence-card]");
+    if (!occurrenceCard) return;
+    const occurrence = publicOccurrences.find(item => item.id === occurrenceCard.dataset.occurrenceCard);
+    if (!occurrence || !Number.isFinite(occurrence.lat) || !Number.isFinite(occurrence.lng)) return;
+    map?.flyTo([occurrence.lat, occurrence.lng], 16, { duration: 0.8 });
+    occurrenceMarkersById.get(occurrence.id)?.openPopup();
+  });
+}
 
 // Converte o risco vindo da API de árvores para texto legível
 function riscoPublico(valor) {
@@ -174,6 +220,7 @@ let occurrenceMarkersById = new Map();
 function initializePublicMap() {
   initMap();
   renderTreeList([]);
+  setupPublicInfiniteList();
   setupEvents();
   carregarOcorrenciasPublicas();
   carregarArvoresPublicas().catch(erro => {
@@ -293,17 +340,7 @@ function buildTreeMarkers(source = trees) {
 // Desenha a lista lateral de árvores na coluna direita
 function renderTreeList(list) {
   const container = document.getElementById("treeList");
-
-  if (!list.length) {
-    container.innerHTML = `
-      <div class="alert alert-light border">
-        Nenhuma árvore cadastrada para esta busca ou município.
-      </div>
-    `;
-    return;
-  }
-
-  container.innerHTML = list.map(tree => `
+  renderPublicInfiniteList(container, list, tree => `
     <article class="tree-card" data-tree-card="${escapeTreeDetail(tree.id)}">
       <div class="tree-photo d-flex align-items-center justify-content-center bg-success-subtle" aria-hidden="true">
         <i class="bi bi-tree-fill fs-3 text-success"></i>
@@ -311,31 +348,18 @@ function renderTreeList(list) {
       <div class="tree-info">
         <div class="tree-top">
           <h3 class="tree-name">${escapeTreeDetail(tree.nome)}</h3>
-          <span class="tree-badge badge-${riskClass(tree.risco)}">
-            <i class="bi bi-tree-fill me-1"></i>${escapeTreeDetail(tree.risco)}
-          </span>
+          <span class="tree-badge badge-${riskClass(tree.risco)}"><i class="bi bi-tree-fill me-1"></i>${escapeTreeDetail(tree.risco)}</span>
         </div>
         <div class="tree-meta">${escapeTreeDetail(codigoArvorePublico(tree))}</div>
         <div class="tree-address">${escapeTreeDetail(tree.endereco)}</div>
         <div class="tree-distance">${escapeTreeDetail(tree.distancia || "")}</div>
       </div>
     </article>
-  `).join("");
-
-  container.querySelectorAll("[data-tree-card]").forEach(card => {
-    card.addEventListener("click", () => {
-      const tree = trees.find(t => t.id === card.dataset.treeCard);
-      if (!tree) return;
-      if (!temCoordenadasValidas(tree)) {
-        const aviso = document.querySelector("#mapToast span");
-        if (aviso) aviso.textContent = "Esta árvore não possui localização disponível no mapa.";
-        return;
-      }
-      if (map) map.flyTo([tree.lat, tree.lng], 16, { duration: 0.8 });
-      const marker = markersById.get(tree.id);
-      if (marker) marker.openPopup();
-    });
-  });
+  `, `
+      <div class="alert alert-light border">
+        Nenhuma árvore cadastrada para esta busca ou município.
+      </div>
+    `);
 }
 
 // Desenha na lateral as ocorrências do município, inclusive as que ainda não têm pino no mapa.
@@ -344,24 +368,24 @@ function renderOccurrenceList(list, carregando = false) {
 
   // Informa que a API está sendo consultada sem voltar a exibir os cartões de árvores.
   if (carregando) {
-    container.innerHTML = `
+    renderPublicInfiniteList(container, [], () => "", `
       <div class="alert alert-light border">Carregando ocorrências do município...</div>
-    `;
+    `);
     return;
   }
 
   // Mostra um estado vazio claro quando o município não possui ocorrências.
   if (!list.length) {
-    container.innerHTML = `
+    renderPublicInfiniteList(container, [], () => "", `
       <div class="alert alert-light border">
         Nenhuma ocorrência registrada para este município.
       </div>
-    `;
+    `);
     return;
   }
 
   // Monta cartões com os dados principais de cada ocorrência.
-  container.innerHTML = list.map(ocorrencia => `
+  renderPublicInfiniteList(container, list, ocorrencia => `
     <article class="tree-card occurrence-card" data-occurrence-card="${escapeTreeDetail(ocorrencia.id)}">
       <div class="tree-photo occurrence-photo d-flex align-items-center justify-content-center" aria-hidden="true">
         <i class="bi bi-exclamation-triangle-fill fs-3"></i>
@@ -376,18 +400,7 @@ function renderOccurrenceList(list, carregando = false) {
         <div class="tree-distance">${escapeTreeDetail(ocorrencia.descricao)}</div>
       </div>
     </article>
-  `).join("");
-
-  // Ao clicar em uma ocorrência com coordenadas, leva o mapa ao marcador correspondente.
-  container.querySelectorAll("[data-occurrence-card]").forEach(card => {
-    card.addEventListener("click", () => {
-      const ocorrencia = publicOccurrences.find(
-        item => item.id === card.dataset.occurrenceCard);
-      if (!ocorrencia || !Number.isFinite(ocorrencia.lat) || !Number.isFinite(ocorrencia.lng)) return;
-      if (map) map.flyTo([ocorrencia.lat, ocorrencia.lng], 16, { duration: 0.8 });
-      occurrenceMarkersById.get(ocorrencia.id)?.openPopup();
-    });
-  });
+  `, "");
 }
 
 // Configura os eventos de busca, troca de município, camadas e filtros do mapa público
@@ -741,7 +754,7 @@ async function showTreeDetails(tree) {
         <img class="tree-detail-photo" id="treeDetailPhoto" src="${t(fotos[0])}" alt="Foto anexada à árvore">
       ` : `<div class="tree-detail-empty"><i class="bi bi-images" aria-hidden="true"></i><span>Nenhuma foto foi anexada a esta árvore.</span></div>`}
     `;
-    body.insertAdjacentHTML("beforeend", '<h3 class="tree-details-section-title">Histórico de ordens de serviço</h3><div id="treeOrderHistory"><p>Carregando histórico...</p></div>');
+    body.insertAdjacentHTML("beforeend", '<h3 class="tree-details-section-title">Histórico</h3><div id="treeOrderHistory"><p>Carregando histórico...</p></div>');
     carregarHistoricoOrdensDaArvore(tree.id, body);
   } catch (erro) {
     console.error("Falha ao abrir ficha pública:", erro);
@@ -757,20 +770,16 @@ async function carregarHistoricoOrdensDaArvore(treeId, body){
     const dados = await resposta.json();
     const ordens = Array.isArray(dados.ordens) ? dados.ordens : [];
     if (!ordens.length) {
-      const mensagem = dados.possuiOcorrencia
-        ? "Há uma ocorrência vinculada a esta árvore, mas ainda não há ordens de serviço registradas."
-        : "Esta árvore não possui um histórico salvo.";
+      const mensagem = "Esta árvore não possui um histórico salvo.";
       container.innerHTML = `<div class="tree-detail-empty"><i class="bi bi-clock-history" aria-hidden="true"></i><span>${escapeTreeDetail(mensagem)}</span></div>`;
       return;
     }
     const t = escapeTreeDetail;
-    container.innerHTML = `<div class="table-responsive"><table class="table tree-order-history-table">
-      <thead><tr><th>Identificação</th><th>Tipo da ocorrência</th><th>Data</th></tr></thead>
-      <tbody>${ordens.map(ordem => {
+    container.innerHTML = `<ol class="tree-history-timeline">${ordens.map(ordem => {
         const instante = ordem.data ? new Date(ordem.data) : null;
         const data = instante && !Number.isNaN(instante.getTime()) ? instante.toLocaleDateString("pt-BR") : "Não informada";
-        return `<tr><td>${t(ordem.codigo || "OS sem código")}</td><td>${t(ordem.tipo || "Não informado")}</td><td>${t(data)}</td></tr>`;
-      }).join("")}</tbody></table></div>`;
+        return `<li class="tree-history-item"><time>${t(data)}</time><strong>${t(ordem.tipo || "Intervenção")}</strong>${ordem.descricao ? `<p>${t(ordem.descricao)}</p>` : ""}</li>`;
+      }).join("")}</ol>`;
   } catch (erro) {
     console.warn("Falha ao consultar histórico de OS da árvore:", erro);
     container.innerHTML = `<div class="tree-detail-empty"><i class="bi bi-info-circle" aria-hidden="true"></i><span>Não foi possível carregar o histórico agora.</span></div>`;

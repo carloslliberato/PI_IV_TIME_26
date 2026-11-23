@@ -38,6 +38,49 @@ let professionalMarkersById = new Map();
 let professionalOccurrenceMarkersById = new Map();
 let professionalServiceOrderMarkersById = new Map();
 let activeMapDataLayer = "trees";
+const PROFESSIONAL_MAP_LIST_PAGE_SIZE = 18;
+
+function renderNextProfessionalListPage(listElement) {
+  const state = listElement._professionalInfiniteList;
+  if (!state || state.rendered >= state.records.length) return;
+  const page = state.records.slice(state.rendered, state.rendered + PROFESSIONAL_MAP_LIST_PAGE_SIZE);
+  listElement.insertAdjacentHTML("beforeend", page.map(state.renderRecord).join(""));
+  state.rendered += page.length;
+}
+
+function renderProfessionalInfiniteList(listElement, records, renderRecord, emptyHtml) {
+  listElement._professionalInfiniteList = { records, renderRecord, rendered: 0 };
+  listElement.scrollTop = 0;
+  listElement.innerHTML = records.length ? "" : emptyHtml;
+  if (records.length) renderNextProfessionalListPage(listElement);
+}
+
+function setupProfessionalInfiniteList() {
+  const listElement = document.getElementById("professionalTreeList");
+  listElement.addEventListener("scroll", () => {
+    if (listElement.scrollTop + listElement.clientHeight >= listElement.scrollHeight - 180) {
+      renderNextProfessionalListPage(listElement);
+    }
+  }, { passive: true });
+  const focusCard = card => {
+    if (card.dataset.professionalTree) {
+      focusProfessionalTree(card.dataset.professionalTree);
+    } else if (card.dataset.mapRecordType && card.dataset.mapRecordId) {
+      focusProfessionalMapRecord(card.dataset.mapRecordType, card.dataset.mapRecordId);
+    }
+  };
+  listElement.addEventListener("click", event => {
+    const card = event.target.closest("[data-professional-tree], [data-map-record-type]");
+    if (card) focusCard(card);
+  });
+  listElement.addEventListener("keydown", event => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const card = event.target.closest("[data-professional-tree], [data-map-record-type]");
+    if (!card) return;
+    event.preventDefault();
+    focusCard(card);
+  });
+}
 
 // Converte o código de risco do banco de árvores para texto legível
 function converterRisco(risco) {
@@ -179,6 +222,7 @@ async function initializeProfessionalMap() {
   updateProfessionalMapListHeading();
   if (!initializeLeafletMap()) return;
   setupProfessionalMapEvents();
+  setupProfessionalInfiniteList();
   renderProfessionalActiveList();
 
   // Carrega ocorrências reais em paralelo com as árvores
@@ -330,13 +374,7 @@ function renderProfessionalTreeMarkers(treeRecords) {
 // Desenha os cartões de árvores na lista lateral direita
 function renderProfessionalTreeList(treeRecords) {
   const listElement = document.getElementById("professionalTreeList");
-
-  if (!treeRecords.length) {
-    listElement.innerHTML = '<div class="professional-tree-empty">Não há árvores que correspondam à busca neste município.</div>';
-    return;
-  }
-
-  listElement.innerHTML = treeRecords.map(tree => `
+  renderProfessionalInfiniteList(listElement, treeRecords, tree => `
     <article class="professional-tree-card" data-professional-tree="${escapeProfessionalMapText(tree.id)}" tabindex="0" role="button" aria-label="Centralizar mapa na árvore ${escapeProfessionalMapText(tree.nome)}">
       <span class="professional-tree-card-icon"><i class="bi bi-tree-fill" aria-hidden="true"></i></span>
       <div class="professional-tree-card-copy">
@@ -348,18 +386,7 @@ function renderProfessionalTreeList(treeRecords) {
         <div class="professional-tree-card-address">${escapeProfessionalMapText(codigoArvoreMapa(tree))} · ${escapeProfessionalMapText(tree.bairro)}</div>
       </div>
     </article>
-  `).join("");
-
-  listElement.querySelectorAll("[data-professional-tree]").forEach(card => {
-    const focusTree = () => focusProfessionalTree(card.dataset.professionalTree);
-    card.addEventListener("click", focusTree);
-    card.addEventListener("keydown", event => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        focusTree();
-      }
-    });
-  });
+  `, '<div class="professional-tree-empty">Não há árvores que correspondam à busca neste município.</div>');
 }
 
 // Atualiza os títulos e placeholders da barra lateral conforme a camada selecionada (Árvores, Ocorrências ou Ordens)
@@ -398,13 +425,7 @@ function renderProfessionalActiveList() {
   const icon = isOccurrence ? "bi-exclamation-triangle-fill" : "bi-clipboard2-check-fill";
   const emptyText = isOccurrence ? "Não há ocorrências registradas neste município." : "Não há ordens de serviço registradas neste município.";
   const listElement = document.getElementById("professionalTreeList");
-
-  if (!matches.length) {
-    listElement.innerHTML = `<div class="professional-tree-empty">${emptyText}</div>`;
-    return;
-  }
-
-  listElement.innerHTML = matches.map(record => `
+  renderProfessionalInfiniteList(listElement, matches, record => `
     <article class="professional-tree-card" data-map-record-type="${isOccurrence ? "occurrences" : "serviceOrders"}" data-map-record-id="${escapeProfessionalMapText(record.id)}" tabindex="0" role="button" aria-label="Centralizar mapa em ${escapeProfessionalMapText(record.id)}">
       <span class="professional-tree-card-icon"><i class="bi ${icon}" aria-hidden="true"></i></span>
       <div class="professional-tree-card-copy">
@@ -416,18 +437,7 @@ function renderProfessionalActiveList() {
         <div class="professional-tree-card-address">${escapeProfessionalMapText(record.status)} · ${escapeProfessionalMapText(record.id)} · ${escapeProfessionalMapText(record.bairro)}</div>
       </div>
     </article>
-  `).join("");
-
-  listElement.querySelectorAll("[data-map-record-type]").forEach(card => {
-    const focusRecord = () => focusProfessionalMapRecord(card.dataset.mapRecordType, card.dataset.mapRecordId);
-    card.addEventListener("click", focusRecord);
-    card.addEventListener("keydown", event => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        focusRecord();
-      }
-    });
-  });
+  `, `<div class="professional-tree-empty">${emptyText}</div>`);
 }
 
 // Voa com a câmera do mapa até o marcador clicado na lista lateral e abre o balão (popup)
@@ -662,7 +672,7 @@ async function openProfessionalTreeDetails(tree) {
         </select>
         <img class="professional-tree-photo" id="professionalTreePhoto" src="${texto(fotos[0])}" alt="Foto anexada à árvore">
       ` : `<div class="professional-tree-empty-state"><i class="bi bi-images" aria-hidden="true"></i><span>Nenhuma foto foi anexada a esta árvore.</span></div>`}
-      <h3 class="professional-tree-modal-section-title">Histórico de ordens de serviço</h3>
+      <h3 class="professional-tree-modal-section-title">Histórico</h3>
       <div id="professionalTreeHistory"><div class="professional-tree-empty-state"><i class="bi bi-clock-history" aria-hidden="true"></i><span>Carregando histórico...</span></div></div>
     `;
     carregarHistoricoProfissionalDaArvore(tree.id, corpo);
@@ -682,19 +692,16 @@ async function carregarHistoricoProfissionalDaArvore(treeId, corpo) {
     const dados = await resposta.json();
     const ordens = Array.isArray(dados.ordens) ? dados.ordens : [];
     if (!ordens.length) {
-      const mensagem = dados.possuiOcorrencia
-        ? "Há uma ocorrência vinculada a esta árvore, mas ainda não há ordens de serviço registradas."
-        : "Esta árvore não possui um histórico salvo.";
+      const mensagem = "Esta árvore não possui um histórico salvo.";
       container.innerHTML = `<div class="professional-tree-empty-state"><i class="bi bi-clock-history" aria-hidden="true"></i><span>${escapeProfessionalMapText(mensagem)}</span></div>`;
       return;
     }
-    container.innerHTML = `<div class="table-responsive"><table class="professional-tree-history-table">
-      <thead><tr><th>Identificação</th><th>Tipo da ocorrência</th><th>Data</th></tr></thead>
-      <tbody>${ordens.map(ordem => {
+    container.innerHTML = `<ol class="professional-tree-history-timeline">${ordens.map(ordem => {
         const instante = ordem.data ? new Date(ordem.data) : null;
         const data = instante && !Number.isNaN(instante.getTime()) ? instante.toLocaleDateString("pt-BR") : "Não informada";
-        return `<tr><td>${escapeProfessionalMapText(ordem.codigo || "OS sem código")}</td><td>${escapeProfessionalMapText(ordem.tipo || "Não informado")}</td><td>${escapeProfessionalMapText(data)}</td></tr>`;
-      }).join("")}</tbody></table></div>`;
+        const texto = escapeProfessionalMapText;
+        return `<li class="professional-tree-history-item"><time>${texto(data)}</time><strong>${texto(ordem.tipo || "Intervenção")}</strong>${ordem.descricao ? `<p>${texto(ordem.descricao)}</p>` : ""}</li>`;
+      }).join("")}</ol>`;
   } catch (erro) {
     console.warn("Erro ao consultar histórico de OS da árvore:", erro);
     container.innerHTML = `<div class="professional-tree-empty-state"><i class="bi bi-info-circle" aria-hidden="true"></i><span>Não foi possível carregar o histórico agora.</span></div>`;

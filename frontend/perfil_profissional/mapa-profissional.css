@@ -28,14 +28,14 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 22px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .professional-map-panel {
   position: relative;
   min-width: 0;
-  height: calc(100vh - 220px);
-  min-height: 590px;
+  height: clamp(440px, calc(100vh - 240px), 850px);
+  min-height: 0;
   overflow: hidden;
   border: 1px solid #dce8e1;
   border-radius: 16px;
@@ -46,7 +46,7 @@
 #professionalMap {
   width: 100%;
   height: 100%;
-  min-height: 590px;
+  min-height: 0;
   background: #e8efea;
 }
 
@@ -238,6 +238,9 @@
 /* Coluna de busca e árvores com foco no município profissional. */
 .professional-map-rail {
   min-width: 0;
+  max-height: calc(100vh - 220px);
+  display: flex;
+  flex-direction: column;
 }
 
 .professional-map-info-card {
@@ -305,8 +308,15 @@
 
 .professional-tree-list {
   display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: calc(100vh - 360px);
   flex-direction: column;
   gap: 9px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 0 4px 4px 0;
 }
 
 .professional-tree-card {
@@ -504,6 +514,13 @@
 .professional-tree-history-table th { padding: 10px 9px; border-bottom: 1px solid #e7eeea; background: #f7faf8; color: #718078; font-size: 11px; font-weight: 750; white-space: nowrap; }
 .professional-tree-history-table td { padding: 10px 9px; border-bottom: 1px solid #edf1ee; color: #526158; vertical-align: middle; }
 .professional-tree-history-table tr:last-child td { border-bottom: 0; }
+.professional-tree-history-timeline { position: relative; display: grid; gap: 0; margin: 0; padding: 0 0 0 20px; list-style: none; }
+.professional-tree-history-timeline::before { position: absolute; top: 5px; bottom: 8px; left: 5px; width: 2px; background: #dce9e0; content: ""; }
+.professional-tree-history-item { position: relative; display: grid; gap: 5px; padding: 0 0 18px 8px; color: #405247; }
+.professional-tree-history-item::before { position: absolute; top: 4px; left: -19px; width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; background: #23804f; box-shadow: 0 0 0 1px #9bbba5; content: ""; }
+.professional-tree-history-item time { color: #718078; font-size: 12px; }
+.professional-tree-history-item strong { font-size: 14px; font-weight: 700; }
+.professional-tree-history-item p { margin: 0; color: #607268; font-size: 13px; line-height: 1.5; }
 
 /* Marcadores circulares usam a mesma paleta de risco do mapa público. */
 .professional-tree-pin {
@@ -526,25 +543,25 @@
 
 @media (max-width: 1100px) {
   .professional-map-workspace { grid-template-columns: minmax(0, 1fr) 285px; gap: 16px; }
-  .professional-map-panel, #professionalMap { min-height: 540px; }
 }
 
 @media (max-width: 850px) {
   .professional-map-workspace { grid-template-columns: 1fr; }
-  .professional-map-panel { height: 620px; }
-  #professionalMap { min-height: 620px; }
+  .professional-map-panel { height: clamp(430px, 62vh, 680px); }
   .professional-map-rail { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .professional-map-rail { max-height: none; }
   .professional-map-info-card { grid-column: 1 / -1; margin-bottom: 0; }
   .professional-map-list-heading, .professional-tree-list { grid-column: 1 / -1; }
+  .professional-tree-list { max-height: 55vh; min-height: 240px; }
 }
 
 @media (max-width: 600px) {
   .professional-map-content { padding-top: 22px; }
   .professional-map-heading { align-items: flex-start; }
   .professional-map-scope { white-space: normal; }
-  .professional-map-panel { height: 590px; min-height: 590px; }
-  #professionalMap { min-height: 590px; }
+  .professional-map-panel { height: clamp(380px, 58vh, 560px); }
   .professional-map-layers { top: 10px; right: 10px; width: 195px; padding: 12px; }
   .professional-map-toast { right: 10px; bottom: 10px; left: 10px; max-width: none; }
   .professional-map-rail { display: block; }
+  .professional-tree-list { max-height: 55vh; min-height: 220px; }
 }
