@@ -26,6 +26,7 @@ A aplicação possui um portal público para cidadãos e um painel profissional 
 
 - Cadastro e consulta de árvores, com localização geográfica, espécie, estado, nível de risco e histórico.
 - Visualização de árvores e ocorrências no mapa, além de filtros e busca.
+- Nos mapas, consulta de árvores e ocorrências; no mapa profissional, também de ordens de serviço. As listas laterais carregam os cartões em blocos conforme a rolagem; os dados ainda são recebidos da API antes da exibição incremental.
 - Cadastro de equipes municipais, códigos personalizados, colaboradores, região de atuação e disponibilidade.
 - Consulta e atualização de ocorrências, incluindo status e nível de risco.
 - Criação, atribuição, acompanhamento, conclusão e cancelamento de ordens de serviço.
@@ -46,6 +47,7 @@ Os documentos MongoDB mantêm seus ObjectIds para uso interno e em referências 
 | Javalin 6.3 | Servidor HTTP e API REST |
 | MongoDB Java Driver 5.2 | Persistência e consultas ao MongoDB |
 | HTML, CSS e JavaScript | Portais público e profissional |
+| Leaflet, tiles da Esri e Nominatim/OpenStreetMap | Mapa interativo, imagens de fundo e geocodificação de endereços |
 | Java Object Serialization / Socket | Comunicação entre backend e servidor de validação |
 | Gson, Jackson e jBCrypt | JSON e operações de apoio do backend |
 | JUnit 5 | Testes automatizados |
@@ -73,7 +75,8 @@ PI_IV_TIME_26/
 │   ├── cadastro_funcionario/
 │   ├── login/
 │   ├── perfil_profissional/
-│   └── perfil_publico/
+│   ├── perfil_publico/
+│   └── shared/               # Componentes JavaScript compartilhados
 ├── bd/                       # Scripts e consultas de referência MongoDB
 ├── docs/                     # Arquitetura, APIs e dicionário de dados
 ├── scripts/                  # Scripts auxiliares de teste e verificação
@@ -92,7 +95,9 @@ PI_IV_TIME_26/
 - MongoDB acessível (local ou Atlas), configurado para o backend.
 - Git para clonar o repositório.
 
-O banco usado pela aplicação é `arboriza_db`. Antes de executar em outro ambiente, ajuste a conexão do backend para apontar a uma instância MongoDB acessível. O Gradle Wrapper está incluído; não é necessário instalar o Gradle separadamente. Não publique nem adicione credenciais do banco à documentação ou ao controle de versão.
+O banco usado pela aplicação é `arboriza_db`. A conexão MongoDB está atualmente configurada em `backend/src/repository/ConexaoMongo.java` e não é carregada de uma variável de ambiente. Para compartilhar ou implantar o projeto, mova a URI para uma configuração secreta fora do código e rotacione credenciais que já tenham sido incluídas no histórico do Git. Não publique credenciais na documentação ou no controle de versão.
+
+O Gradle Wrapper está incluído; não é necessário instalar o Gradle separadamente.
 
 O diretório `bd/` contém scripts de exemplo e consultas MongoDB. Eles não são executados automaticamente e podem refletir formatos de dados anteriores; revise-os antes de executá-los em um banco real.
 
@@ -142,6 +147,7 @@ Abra `http://localhost:8080/`. Algumas rotas disponíveis são:
 | Rota | Área |
 | --- | --- |
 | `/` | Portal público |
+| `/perfil-publico` | Portal público sem redirecionamento por perfil |
 | `/abrir-chamado` | Abertura de ocorrência |
 | `/acompanhar-chamado` | Acompanhamento de chamado |
 | `/cadastro-cidadao` | Cadastro de cidadão |
@@ -168,6 +174,8 @@ Para compilar os dois módulos:
 .\gradlew.bat :backend:build :servidor:build
 ```
 
+No Linux ou macOS, use `./gradlew` no lugar de `gradlew.bat`.
+
 Para executar os testes:
 
 ```bash
@@ -192,6 +200,7 @@ Documentação complementar:
 - [Cancelamento de ordens de serviço](./docs/api-cancelamento-os.md)
 - [Relatórios de ordens de serviço](./docs/api-relatorios-os.md)
 - [Intervenções](./docs/api-intervencoes.md)
+- [Geocodificação de endereços](./docs/geocodificacao-enderecos.md)
 
 ---
 
