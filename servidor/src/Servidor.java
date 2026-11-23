@@ -14,6 +14,7 @@ public class Servidor
     {
 
         Scanner teclado = new Scanner(System.in);
+        // Verifica se o numero de argumentos é valido
         if (args.length>1)
         {
             System.err.println ("Uso esperado: java Servidor [PORTA]\n");
@@ -28,6 +29,7 @@ public class Servidor
         ArrayList<Parceiro> usuarios =
         new ArrayList<Parceiro> ();
 
+        // Cria e inicia a thread que aceita conexoes de clientes
         AceitadoraDeConexao aceitadoraDeConexao=null;
         try
         {
@@ -41,6 +43,7 @@ public class Servidor
             return;
         }
 
+        // Loop principal do servidor
         for(;;)
         {
             System.out.println ("O servidor esta ativo! Para desativa-lo,");
@@ -59,6 +62,7 @@ public class Servidor
             {
                 synchronized (usuarios)
                 {
+                    // Cria o comunicado de desligamento
 					ComunicadoDeDesligamento comunicadoDeDesligamento =
                     new ComunicadoDeDesligamento ();
                     
@@ -66,6 +70,7 @@ public class Servidor
                     {
                         try
                         {
+                            // Envia o comunicado de desligamento para o usuario
                             usuario.receba (comunicadoDeDesligamento);
                             usuario.adeus  ();
                         }

@@ -4,6 +4,7 @@ package model;
 
 import org.bson.types.ObjectId;
 
+// Classe que representa um município
 public class Municipio {
     private ObjectId municipioId;
     private String nome;
@@ -13,6 +14,7 @@ public class Municipio {
         this.nome = nome;
     }
     
+    // Getters e Setters
     public ObjectId getMunicipioId() {
         return municipioId;
     }

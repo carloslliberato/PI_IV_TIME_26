@@ -1,5 +1,7 @@
 // Autor: Carlos Luciano
 
+
+/* Classe que configura as rotas da aplicação */
 package config;
 
 import controller.ArvoreController;

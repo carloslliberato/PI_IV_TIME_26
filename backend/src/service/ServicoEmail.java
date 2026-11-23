@@ -3,7 +3,7 @@
 package service;
 
 import java.util.Properties;
-
+/* Classe que representa o serviço de envio de e-mails */
 import jakarta.mail.Authenticator;
 import jakarta.mail.Message;
 import jakarta.mail.PasswordAuthentication;
@@ -16,6 +16,7 @@ public class ServicoEmail {
 
     public void enviarEmail(String destinatario, String assunto, String mensagem) {
 
+        // Obtém o remetente e a senha do aplicativo a partir da configuração de e-mail
         String remetente = ConfiguracaoEmail.getEmailRemetente();
         String senha = ConfiguracaoEmail.getSenhaApp();
 
@@ -35,6 +36,7 @@ public class ServicoEmail {
         });
 
         try {
+            // Cria uma nova mensagem de e-mail
             Message email = new MimeMessage(sessao);
 
             email.setFrom(new InternetAddress(remetente));
@@ -43,6 +45,7 @@ public class ServicoEmail {
                 InternetAddress.parse(destinatario)
             );
 
+            // Define o assunto e o conteúdo da mensagem
             email.setSubject(assunto);
             email.setText(mensagem);
 

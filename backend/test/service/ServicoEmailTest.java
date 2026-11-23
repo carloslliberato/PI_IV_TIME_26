@@ -1,4 +1,4 @@
-
+// Autor: Carlos Luciano
 package service;
 
 import org.junit.jupiter.api.Test;
@@ -12,7 +12,7 @@ public class ServicoEmailTest {
 
         ServicoEmail servicoEmail = new ServicoEmail();
 
-        String destinatario = "carloslsliberato@gmail.com";
+        String destinatario = "";
 
         String assunto = "Teste de envio - Arboriza";
 

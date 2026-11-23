@@ -5,11 +5,14 @@ package protocolo;
 import java.util.ArrayList;
 import java.util.List;
 
+/* Classe que representa o resultado da validação de cadastro */
+
 public class ResultadoValidacaoCadastro extends Comunicado {
 
     private boolean valido;
     private ArrayList<String> erros;
 
+    // Construtor
     public ResultadoValidacaoCadastro(boolean valido, List<String> erros) {
         this.valido = valido;
         this.erros = erros == null
@@ -17,6 +20,7 @@ public class ResultadoValidacaoCadastro extends Comunicado {
                 : new ArrayList<>(erros);
     }
 
+    // Getters e Setters
     public boolean isValido() {
         return valido;
     }

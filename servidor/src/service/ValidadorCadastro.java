@@ -28,7 +28,6 @@ public class ValidadorCadastro {
         }
 
         // VALIDAÇÕES COMUNS
-
         String tipoConta = pedido.getTipoConta();
 
         if (tipoConta == null ||
@@ -60,8 +59,7 @@ public class ValidadorCadastro {
             erros.add("Telefone inválido. Informe DDD e número.");
         }
 
-//
-
+        // VALIDAÇÕES DE SENHA
         String senha = pedido.getSenha();
         String confirmarSenha = pedido.getConfirmarSenha();
 
@@ -76,7 +74,6 @@ public class ValidadorCadastro {
         }
 
         // VALIDAÇÕES DE FUNCIONÁRIO
-
         if ("FUNCIONARIO".equals(tipoConta)) {
 
             if (pedido.getSetor() == null ||
@@ -107,7 +104,6 @@ public class ValidadorCadastro {
             if (pedido.getSetor() != null ||
                     pedido.getOutroSetor() != null ||
                     pedido.getCargo() != null) {
-
                 erros.add("Cidadãos não devem enviar dados profissionais.");
             }
 

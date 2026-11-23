@@ -1,5 +1,6 @@
 // Autor: Carlos Luciano
 
+/* Classe que configura as páginas da aplicação */
 package config;
 
 import io.javalin.Javalin;

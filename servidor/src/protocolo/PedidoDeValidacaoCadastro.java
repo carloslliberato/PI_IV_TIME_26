@@ -3,6 +3,9 @@
 package protocolo;
 
 public class PedidoDeValidacaoCadastro extends Comunicado {
+
+    /* Pedido de validação de cadastro */
+
     private String tipoConta;
     private String nome;
     private String email;
@@ -18,6 +21,7 @@ public class PedidoDeValidacaoCadastro extends Comunicado {
     public PedidoDeValidacaoCadastro(String tipoConta, String nome, String email, String telefone, String municipio,
             String senha, String confirmarSenha, String setor, String outroSetor, String cargo) {
 
+        // Inicializa os atributos do pedido de validação de cadastro
         this.tipoConta = tipoConta;
         this.nome = nome;
         this.email = email;

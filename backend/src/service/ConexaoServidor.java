@@ -1,5 +1,7 @@
 // Autor: Carlos Luciano
 
+/* Classe que representa a conexão com o servidor */
+
 package service;
 
 import java.net.Socket;
@@ -28,16 +30,19 @@ public class ConexaoServidor {
 
     private Parceiro parceiro;
 
+    // Construtor
     public ConexaoServidor(String host, int porta) {
         this.host = host;
         this.porta = porta;
     }
 
+    // Método para conectar ao servidor
     public boolean conectar() {
 
         try {
             conexao = new Socket(host, porta);
 
+            // Inicializa o transmissor e receptor de objetos para comunicação com o servidor
             transmissor = new ObjectOutputStream(
                     conexao.getOutputStream());
 
@@ -61,8 +66,10 @@ public class ConexaoServidor {
         }
     }
 
+    // Método para fechar a conexão com o servidor
     public void fechar() {
 
+        // Fecha o receptor, transmissor e a conexão com o servidor
         try {
             if (receptor != null) {
                 receptor.close();
@@ -74,6 +81,7 @@ public class ConexaoServidor {
                             + erro.getMessage());
         }
 
+        // Fecha o transmissor, transmissor e a conexão com o servidor
         try {
             if (transmissor != null) {
                 transmissor.close();
@@ -87,6 +95,7 @@ public class ConexaoServidor {
 
         boolean conexaoFechada = false;
 
+        // Fecha a conexão com o servidor
         try {
             if (conexao != null) {
                 conexao.close();
@@ -111,6 +120,7 @@ public class ConexaoServidor {
         return parceiro;
     }
 
+    // Método para validar o cadastro de um usuário no servidor
     public synchronized ResultadoValidacaoCadastro validarCadastro(
             PedidoDeValidacaoCadastro pedido) throws Exception {
 
@@ -123,6 +133,7 @@ public class ConexaoServidor {
 
         Comunicado resposta = parceiro.envie();
 
+        // Verifica se a resposta recebida é do tipo esperado (ResultadoValidacaoCadastro)
         if (!(resposta instanceof ResultadoValidacaoCadastro)) {
             throw new Exception(
                     "Resposta inesperada do servidor.");
@@ -131,6 +142,7 @@ public class ConexaoServidor {
         return (ResultadoValidacaoCadastro) resposta;
     }
 
+    // Método para validar a árvore de cadastro no servidor
     public synchronized ResultadoValidacaoArvore validarArvore(
             PedidoDeValidacaoArvore pedido) throws Exception {
 

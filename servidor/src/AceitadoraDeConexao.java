@@ -27,6 +27,7 @@ public class AceitadoraDeConexao extends Thread {
     }
 
     public void run() {
+        // Loop infinito que aceita conexoes de clientes
         for (;;) {
             Socket conexao = null;
             try {
@@ -35,6 +36,7 @@ public class AceitadoraDeConexao extends Thread {
                 continue;
             }
 
+            // Cria e inicia a thread que supervisiona a conexao com o cliente
             SupervisoraDeConexao supervisoraDeConexao = null;
             try {
                 supervisoraDeConexao = new SupervisoraDeConexao(conexao, usuarios);

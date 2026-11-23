@@ -15,9 +15,11 @@ public class PedidoDeValidacaoCadastro extends Comunicado {
     private String outroSetor;
     private String cargo;
 
+    // Construtor
     public PedidoDeValidacaoCadastro(String tipoConta, String nome, String email, String telefone, String municipio,
             String senha, String confirmarSenha, String setor, String outroSetor, String cargo) {
 
+        // Inicializa os atributos do pedido de validação de cadastro
         this.tipoConta = tipoConta;
         this.nome = nome;
         this.email = email;
@@ -30,6 +32,7 @@ public class PedidoDeValidacaoCadastro extends Comunicado {
         this.cargo = cargo;
     }
 
+    // Getters e Setters    
     public String getTipoConta() {
         return tipoConta;
     }

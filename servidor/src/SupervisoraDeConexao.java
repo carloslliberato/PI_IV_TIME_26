@@ -42,6 +42,7 @@ public class SupervisoraDeConexao extends Thread {
 
     public void run() {
 
+        // Constrói os objetos de transmissao e recepcao de mensagens
         ObjectOutputStream transmissor = null;
         ObjectInputStream receptor = null;
 
@@ -63,12 +64,14 @@ public class SupervisoraDeConexao extends Thread {
 
             for (;;) {
 
+                // Recebe o comunicado do usuario
                 Comunicado comunicado = this.usuario.envie();
 
                 if (comunicado == null) {
                     break;
                 }
 
+                // Validação de cadastro via Socket.
                 else if (comunicado instanceof PedidoDeValidacaoCadastro) {
 
                     PedidoDeValidacaoCadastro pedido =
@@ -80,6 +83,7 @@ public class SupervisoraDeConexao extends Thread {
                     this.usuario.receba(resultado);
                 }
 
+                // Validação de equipe via Socket.
                 else if (comunicado instanceof PedidoDeValidacaoEquipe) {
 
                     PedidoDeValidacaoEquipe pedido =
@@ -91,6 +95,7 @@ public class SupervisoraDeConexao extends Thread {
                     this.usuario.receba(resultado);
                 }
 
+                // Validação de árvore via Socket.
                 else if (comunicado instanceof PedidoDeValidacaoArvore) {
 
                     PedidoDeValidacaoArvore pedido =
@@ -130,6 +135,7 @@ public class SupervisoraDeConexao extends Thread {
             erro.printStackTrace();
         } finally {
 
+            // Se o usuário estiver logado, remove-o da lista de usuários e encerra a conexão. Caso contrário, apenas fecha a conexão.
             if (this.usuario != null) {
 
                 synchronized (this.usuarios) {
