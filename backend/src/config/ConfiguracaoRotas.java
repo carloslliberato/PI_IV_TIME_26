@@ -251,6 +251,10 @@ public class ConfiguracaoRotas {
                 "/api/equipes/{equipeId}/colaboradores/{colaboradorId}",
                 ctx -> equipeController.excluirColaborador(ctx));
 
+        servidorHttp.patch(
+                "/api/equipes/{equipeId}/colaboradores/{colaboradorId}/disponibilidade",
+                ctx -> equipeController.alterarDisponibilidadeColaborador(ctx));
+
         // Rotas de Ocorrências
         servidorHttp.post(
                 "/api/ocorrencias",

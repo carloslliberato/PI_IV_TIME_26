@@ -68,7 +68,9 @@ function initializeCitizenOccurrences() {
     const nomesPorId = {
       "6ae666a7680e8a4330a1ab66": "Campinas",
       "6ae7854cb9962492d01e6af6": "Hortolândia",
-      "6ae7856ab9962492d01e6af7": "Sumaré"
+      "6ae7856ab9962492d01e6af7": "Sumaré",
+      "6b0382ed251d742536f8cd10": "Valinhos",
+      "6b0382ed251d742536f8cd11": "Vinhedo"
     };
     if (nomesPorId[mun]) return nomesPorId[mun];
     return mun.charAt(0).toUpperCase() + mun.slice(1);

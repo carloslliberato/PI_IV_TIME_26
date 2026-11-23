@@ -10,6 +10,7 @@
 (() => {
 
   let municipioIdFuncionario = null;
+  let municipioNomeFuncionario = "";
 
   const el = id => document.getElementById(id);
 
@@ -33,7 +34,8 @@
   let arvoreSelecionada = null;
   let fotosDaArvore = [];
   let indiceFotoAtual = 0;
-  let abaAtiva = "occurrences";
+  let abaAtiva = "orders";
+  let requisicaoOrdensDaArvore = 0;
   let toastTimer;
 
   const riscos = {
@@ -247,11 +249,11 @@
 
     const sessao = await requisicao("/api/contas/sessao");
     municipioIdFuncionario = String(sessao.municipioId || "").toLowerCase();
-    const nomeMunicipio = typeof sessao.municipioNome === "string" ? sessao.municipioNome.trim() : "";
+    municipioNomeFuncionario = typeof sessao.municipioNome === "string" ? sessao.municipioNome.trim() : "";
     if (!municipioIdFuncionario) {
       throw new Error("O município do funcionário não está disponível na sessão.");
     }
-    el("treeMunicipality").textContent = nomeMunicipio || "Município de atuação";
+    el("treeMunicipality").textContent = municipioNomeFuncionario || "Município de atuação";
 
     const registros = await requisicao("/api/arvores");
 
@@ -276,6 +278,7 @@
 
     arvoreSelecionada = arvore;
 
+    el("treeDetailsCode").textContent = arvore.codigoArv || "Código não informado";
     el("treeDetailsTitle").textContent =
       arvore.nomePopular || arvore.especie || "Árvore";
 
@@ -326,7 +329,7 @@
       : "";
     el("openTreePhotos").disabled = false;
 
-    abaAtiva = "occurrences";
+    abaAtiva = "orders";
 
     renderizarAba();
   }
@@ -348,6 +351,15 @@
       );
     });
 
+    if (abaAtiva === "orders") {
+      carregarOrdensDaArvore();
+      return;
+    }
+    if (abaAtiva === "history") {
+      carregarHistoricoDaArvore();
+      return;
+    }
+
     el("treeRelatedContent").innerHTML = `
       <div class="tree-related-empty">
         <i class="bi bi-info-circle"></i>
@@ -356,6 +368,120 @@
         </span>
       </div>
     `;
+  }
+
+  async function carregarHistoricoDaArvore() {
+    const arvore = arvoreSelecionada;
+    if (!arvore) return;
+    const request = ++requisicaoOrdensDaArvore;
+    const content = el("treeRelatedContent");
+    content.innerHTML = `
+      <div class="tree-related-empty">
+        <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+        <span>Carregando histórico...</span>
+      </div>
+    `;
+
+    try {
+      const resposta = await requisicao(`/api/intervencoes?arvoreId=${encodeURIComponent(arvore.id)}`);
+      const historico = (Array.isArray(resposta?.intervencoes) ? resposta.intervencoes : [])
+        .slice()
+        .sort((a, b) => new Date(a.dataExecucao || a.dataCriacao || 0)
+          - new Date(b.dataExecucao || b.dataCriacao || 0));
+      if (request !== requisicaoOrdensDaArvore || abaAtiva !== "history"
+          || arvoreSelecionada?.id !== arvore.id) return;
+
+      if (!historico.length) {
+        content.innerHTML = `
+          <div class="tree-related-empty">
+            <i class="bi bi-clock-history" aria-hidden="true"></i>
+            <span>Não possui histórico salvo.</span>
+          </div>
+        `;
+        return;
+      }
+
+      content.innerHTML = `
+        <ol class="tree-history-timeline" aria-label="Histórico de intervenções da árvore">
+          ${historico.map(item => `
+            <li class="tree-history-entry">
+              <time>${escapeHtml(formatarData(item.dataExecucao || item.dataCriacao))}</time>
+              <div class="tree-history-card">
+                <strong>${escapeHtml(item.tipo || "Intervenção")}</strong>
+                ${item.descricao ? `<p>${escapeHtml(item.descricao)}</p>` : ""}
+              </div>
+            </li>
+          `).join("")}
+        </ol>
+      `;
+    } catch (erro) {
+      if (request !== requisicaoOrdensDaArvore) return;
+      content.innerHTML = `
+        <div class="tree-related-empty tree-related-error">
+          <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+          <span>${escapeHtml(erro.message || "Não foi possível carregar o histórico da árvore.")}</span>
+        </div>
+      `;
+    }
+  }
+
+  async function carregarOrdensDaArvore() {
+    const arvore = arvoreSelecionada;
+    if (!arvore) return;
+    const request = ++requisicaoOrdensDaArvore;
+    const content = el("treeRelatedContent");
+    content.innerHTML = `
+      <div class="tree-related-empty">
+        <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+        <span>Carregando ordens de serviço...</span>
+      </div>
+    `;
+
+    try {
+      const resposta = await requisicao("/api/ordens-servico");
+      const ordens = (Array.isArray(resposta?.ordens) ? resposta.ordens : [])
+        .filter(ordem => String(ordem.arvoreId || "").toLowerCase() === String(arvore.id).toLowerCase())
+        .sort((a, b) => new Date(b.dataCriacao || 0) - new Date(a.dataCriacao || 0));
+      if (request !== requisicaoOrdensDaArvore || abaAtiva !== "orders"
+          || arvoreSelecionada?.id !== arvore.id) return;
+
+      if (!ordens.length) {
+        content.innerHTML = `
+          <div class="tree-related-empty">
+            <i class="bi bi-clipboard-check" aria-hidden="true"></i>
+            <span>Nenhuma ordem de serviço vinculada a esta árvore.</span>
+          </div>
+        `;
+        return;
+      }
+
+      content.innerHTML = `
+        <div class="tree-related-table-wrap">
+          <table class="tree-related-table">
+            <thead><tr>
+              <th>Código da ordem</th><th>Tipo de ocorrência</th><th>Equipe</th><th>Status</th><th>Data</th>
+            </tr></thead>
+            <tbody>${ordens.map(ordem => `
+              <tr>
+                <td><strong>${escapeHtml(ordem.codigo || ordem.id || "Não informado")}</strong></td>
+                <td>${escapeHtml(ordem.titulo || "Não informado")}</td>
+                <td>${escapeHtml(ordem.equipeNome || "Não atribuída")}</td>
+                <td>${escapeHtml(ordem.status || "Não informado")}</td>
+                <td>${escapeHtml(formatarData(ordem.dataCriacao))}</td>
+              </tr>
+            `).join("")}</tbody>
+          </table>
+        </div>
+      `;
+    } catch (erro) {
+      if (request !== requisicaoOrdensDaArvore) return;
+      content.innerHTML = `
+        <div class="tree-related-empty tree-related-error">
+          <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+          <span>${escapeHtml(erro.message || "Não foi possível carregar as ordens de serviço.")}</span>
+        </div>
+      `;
+    }
   }
 
   function exibirFotoAtual() {
@@ -679,8 +805,25 @@
         ? "reativar"
         : "arquivar";
 
+      let motivo = null;
+      if (!ativar) {
+        motivo = window.prompt(`Informe o motivo para desativar a árvore ${arvoreSelecionada.nomePopular}:`);
+        if (motivo === null) return;
+        motivo = motivo.trim();
+        if (!motivo) {
+          mostrarAviso("Informe o motivo para desativar a árvore.", true);
+          return;
+        }
+        if (motivo.length > 500) {
+          mostrarAviso("O motivo deve ter no máximo 500 caracteres.", true);
+          return;
+        }
+      }
+
       const confirmar = window.confirm(
-        `Deseja ${acao} a árvore ${arvoreSelecionada.nomePopular}?`
+        ativar
+          ? `Deseja realmente reativar a árvore ${arvoreSelecionada.nomePopular}?`
+          : `Deseja mesmo arquivar a árvore ${arvoreSelecionada.nomePopular}?\n\nMotivo: ${motivo}`
       );
 
       if (!confirmar) return;
@@ -692,7 +835,8 @@
           {
             method: "PATCH",
             body: JSON.stringify({
-              ativa: ativar
+              ativa: ativar,
+              motivo
             })
           }
         );
@@ -720,33 +864,20 @@
   // REGISTRO DE INTERVENÇÃO
   // ========================================
 
-  el("startInterventionButton").addEventListener("click", async () => {
+  el("startInterventionButton").addEventListener("click", () => {
     if (!arvoreSelecionada) return;
     const form = el("newInterventionForm");
-    const feedback = el("newInterventionFeedback");
-    form.elements.arvoreNome.value = arvoreSelecionada.nomePopular || arvoreSelecionada.especie || "\u00c1rvore";
+    form.reset();
+    form.elements.municipioId.value = municipioNomeFuncionario;
+    form.elements.arvoreNome.value = `${arvoreSelecionada.codigoArv || ""} ${arvoreSelecionada.nomePopular || arvoreSelecionada.especie || "Árvore"}`.trim();
     form.elements.endereco.value = arvoreSelecionada.endereco || "";
     form.elements.numero.value = arvoreSelecionada.numero || "";
     form.elements.bairro.value = arvoreSelecionada.bairro || "";
-    form.elements.tipo.value = "";
-    form.elements.prioridade.value = "";
-    form.elements.equipeId.innerHTML = '<option value="">N\u00e3o atribuir equipe agora</option>';
-    form.elements.descricao.value = "";
-    feedback.textContent = "Carregando equipes dispon\u00edveis...";
+    el("newInterventionFeedback").textContent = municipioNomeFuncionario
+      ? ""
+      : "Não foi possível identificar o município de atuação da sua conta.";
     abrirModal(el("newInterventionModal"));
-    try {
-      const opcoes = await requisicao("/api/ordens-servico/opcoes-cadastro");
-      if (!Array.isArray(opcoes?.equipes)) throw new Error("N\u00e3o foi poss\u00edvel carregar as equipes dispon\u00edveis.");
-      opcoes.equipes.forEach(equipe => {
-        if (equipe && typeof equipe.id === "string" && typeof equipe.nome === "string") {
-          form.elements.equipeId.add(new Option(equipe.nome, equipe.id));
-        }
-      });
-      feedback.textContent = "";
-    } catch (erro) {
-      feedback.textContent = erro.message;
-    }
-    form.elements.tipo.focus();
+    form.elements.tipoProblema.focus();
   });
 
   el("newInterventionForm").addEventListener("submit", async event => {
@@ -755,38 +886,30 @@
     const form = event.currentTarget;
     const submitButton = form.querySelector('button[type="submit"]');
     const feedback = el("newInterventionFeedback");
-    const equipeId = form.elements.equipeId.value;
+    if (!municipioNomeFuncionario) {
+      feedback.textContent = "Não foi possível identificar o município de atuação da sua conta.";
+      return;
+    }
     submitButton.disabled = true;
-    feedback.textContent = "Criando ordem de servi?o...";
+    feedback.textContent = "Registrando ocorrência...";
     try {
-      const resultado = await requisicao("/api/ordens-servico", {
+      const resultado = await requisicao("/api/ocorrencias", {
         method: "POST",
         body: JSON.stringify({
-          arvoreId: arvoreSelecionada.id,
-          titulo: form.elements.tipo.value,
+          tipoProblema: form.elements.tipoProblema.value,
+          localizacao: arvoreSelecionada.endereco,
+          numero: arvoreSelecionada.numero || null,
+          bairro: arvoreSelecionada.bairro,
           descricao: form.elements.descricao.value.trim(),
-          endereco: arvoreSelecionada.endereco || null,
-          bairro: arvoreSelecionada.bairro || null,
-          prioridade: form.elements.prioridade.value || null
+          prioridade: form.elements.prioridade.value,
+          municipioId: municipioNomeFuncionario,
+          arvoreId: arvoreSelecionada.id
         })
       });
-      const ordem = resultado?.ordem;
-      if (!ordem?.id) throw new Error("A ordem foi enviada, mas n?o foi poss?vel confirmar o registro.");
-      if (equipeId) {
-        feedback.textContent = "Ordem criada. Atribuindo a equipe...";
-        try {
-          await requisicao(`/api/ordens-servico/${encodeURIComponent(ordem.id)}/equipe`, {
-            method: "PATCH",
-            body: JSON.stringify({ equipeId })
-          });
-        } catch (erroEquipe) {
-          fecharModal(el("newInterventionModal"));
-          mostrarAviso(`Ordem ${ordem.codigo} criada, mas a equipe n?o foi atribu?da: ${erroEquipe.message}`, true);
-          return;
-        }
-      }
+      const protocolo = resultado?.protocolo;
+      if (!protocolo) throw new Error("A ocorrência foi enviada, mas não foi possível confirmar o registro.");
       fecharModal(el("newInterventionModal"));
-      mostrarAviso(`Ordem de servi?o ${ordem.codigo} criada com sucesso!`);
+      mostrarAviso(`Ocorrência ${protocolo} registrada e vinculada à árvore ${arvoreSelecionada.codigoArv}.`);
     } catch (erro) {
       feedback.textContent = erro.message;
     } finally {

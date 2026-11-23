@@ -411,6 +411,17 @@ public class EquipeRepository {
         return resultado.getModifiedCount() > 0;
     }
 
+    public boolean alterarDisponibilidadeColaborador(
+            ObjectId equipeId, ObjectId usuarioId, ObjectId colaboradorId, boolean disponivel) {
+        var filtro = and(
+                filtroEquipeDoUsuario(equipeId, usuarioId),
+                ne("status", "Indisponível"),
+                elemMatch("colaboradores", eq("_id", colaboradorId)));
+        UpdateResult resultado = colecao.updateOne(filtro,
+                new Document("$set", new Document("colaboradores.$.disponivel", disponivel)));
+        return resultado.getModifiedCount() > 0;
+    }
+
     // Consulta a ocupação atual sem gravar uma situação que pode ficar desatualizada.
     public boolean sincronizarStatusComOrdens(
             ObjectId equipeId,

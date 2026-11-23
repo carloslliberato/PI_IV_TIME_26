@@ -7,7 +7,9 @@
 const MUNICIPIO_IDS_PARA_CHAVE = {
   "6ae666a7680e8a4330a1ab66": "campinas",
   "6ae7854cb9962492d01e6af6": "hortolandia",
-  "6ae7856ab9962492d01e6af7": "sumare"
+  "6ae7856ab9962492d01e6af7": "sumare",
+  "6b0382ed251d742536f8cd10": "valinhos",
+  "6b0382ed251d742536f8cd11": "vinhedo"
 };
 let trees = [];
 let publicOccurrences = [];
@@ -131,7 +133,9 @@ async function carregarOcorrenciasPublicas() {
 const municipalityCenters = {
   campinas: { name: "Campinas - SP", lat: -22.9056, lng: -47.0608, zoom: 13 },
   hortolandia: { name: "Hortolândia - SP", lat: -22.8583, lng: -47.2200, zoom: 13 },
-  sumare: { name: "Sumaré - SP", lat: -22.8214, lng: -47.2660, zoom: 13 }
+  sumare: { name: "Sumaré - SP", lat: -22.8214, lng: -47.2660, zoom: 13 },
+  valinhos: { name: "Valinhos - SP", lat: -22.9702933, lng: -46.9978148, zoom: 13 },
+  vinhedo: { name: "Vinhedo - SP", lat: -23.0297, lng: -46.9753, zoom: 13 }
 };
 
 async function carregarMunicipioDaSessao() {

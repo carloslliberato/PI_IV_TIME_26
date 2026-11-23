@@ -98,8 +98,11 @@
 .team-members-empty-cell { padding: 24px !important; color: #87928b !important; text-align: center; }
 .team-email-link { color: #176344; font-size: 11px; text-decoration: none; }
 .team-email-link:hover { text-decoration: underline; }
-.team-delete-collaborator-button { width: 32px; height: 32px; display: inline-grid; place-items: center; border: 1px solid #f0d7d4; border-radius: 8px; background: #fff; color: #a63a32; cursor: pointer; }
-.team-delete-collaborator-button:hover:not(:disabled) { border-color: #d9a09b; background: #fff5f4; }
+.team-collaborator-actions { display: inline-flex; align-items: center; gap: 6px; }
+.team-delete-collaborator-button { width: 32px; height: 32px; display: inline-grid; place-items: center; border: 1px solid #e0e8e2; border-radius: 8px; background: #fff; color: #176344; cursor: pointer; }
+.team-delete-collaborator-button[data-remove-collaborator] { border-color: #f0d7d4; color: #a63a32; }
+.team-delete-collaborator-button:hover:not(:disabled) { border-color: #b7d2bf; background: #f2f8f4; }
+.team-delete-collaborator-button[data-remove-collaborator]:hover:not(:disabled) { border-color: #d9a09b; background: #fff5f4; }
 .team-delete-collaborator-button:disabled { border-color: #e7eae8; background: #f5f6f5; color: #aeb5b0; cursor: not-allowed; }
 
 /* Ações disponíveis na ficha: cadastrar pessoa e encaminhar OS aberta. */

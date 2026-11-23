@@ -245,11 +245,16 @@ public class ArvoreController {
 
             boolean ativa =
                     (Boolean) dados.get("ativa");
+            Object motivoRecebido = dados.get("motivo");
+            if (motivoRecebido != null && !(motivoRecebido instanceof String)) {
+                throw new IllegalArgumentException("O motivo do arquivamento deve ser um texto.");
+            }
 
             Arvore atualizada =
                     arvoreService.alterarStatus(
                             id,
-                            ativa);
+                            ativa,
+                            motivoRecebido instanceof String texto ? texto : null);
 
             responderJson(ctx, 200, atualizada);
         });

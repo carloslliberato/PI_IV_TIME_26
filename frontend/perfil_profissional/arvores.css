@@ -62,6 +62,7 @@
 .tree-species-tag { display: inline-flex; padding: 5px 10px; border-radius: 999px; background: #fff2c9; color: #866410; font-size: 11px; font-weight: 800; }
 .tree-detail-topline h2 { margin: 0; color: #202d25; font-size: 25px; font-weight: 820; letter-spacing: -.03em; }
 .tree-detail-topline p { margin: 0; color: #77827b; font-size: 14px; font-style: italic; }
+.tree-detail-topline .tree-detail-code { margin: 0 0 4px; color: #176344; font-size: 12px; font-style: normal; font-weight: 800; letter-spacing: .04em; }
 .tree-detail-actions { display: flex; flex-wrap: wrap; gap: 9px; }
 .tree-delete-panel { width: min(620px, 100%); display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 auto 16px; padding: 14px; border: 1px solid #f1d9d6; border-radius: 11px; background: #fff8f7; }
 .tree-delete-panel[hidden] { display: none; }
@@ -98,9 +99,19 @@
 .tree-tab.active::after { position: absolute; right: 10px; bottom: -1px; left: 10px; height: 3px; border-radius: 3px 3px 0 0; background: #278052; content: ""; }
 .tree-related-content { min-height: 125px; }
 .tree-related-table-wrap { overflow-x: auto; }
-.tree-related-table { width: 100%; min-width: 650px; border-collapse: collapse; text-align: left; }
+.tree-related-table { width: 100%; min-width: 820px; border-collapse: collapse; text-align: left; }
 .tree-related-table th { padding: 12px 13px; background: #f6f9f7; color: #66746c; font-size: 12px; }
 .tree-related-table td { padding: 12px 13px; border-bottom: 1px solid #edf1ee; color: #606d65; font-size: 13px; line-height: 1.5; }
+.tree-related-table td strong { color: #176344; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.tree-related-error { color: #a03727; }
+.tree-history-timeline { list-style: none; margin: 18px 0 0; padding: 0; }
+.tree-history-entry { position: relative; display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 14px; padding: 0 0 18px 20px; }
+.tree-history-entry::before { position: absolute; top: 5px; left: 1px; width: 10px; height: 10px; border: 2px solid #fff; border-radius: 50%; background: #278052; box-shadow: 0 0 0 1px #278052; content: ""; }
+.tree-history-entry:not(:last-child)::after { position: absolute; top: 18px; bottom: -1px; left: 6px; width: 2px; background: #dce9e1; content: ""; }
+.tree-history-entry time { padding-top: 9px; color: #68766e; font-size: 12px; font-weight: 700; }
+.tree-history-card { padding: 10px 13px; border: 1px solid #e5ece7; border-radius: 9px; background: #fbfdfb; }
+.tree-history-card strong { color: #176344; font-size: 13px; }
+.tree-history-card p { margin: 5px 0 0; color: #66746c; font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
 .tree-related-empty { min-height: 120px; display: flex; align-items: center; justify-content: center; gap: 9px; color: #87928b; font-size: 13px; }
 .tree-related-empty i { color: #7c9e88; font-size: 19px; }
 

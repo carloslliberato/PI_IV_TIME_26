@@ -236,6 +236,37 @@ public class EquipeController {
         }
     }
 
+    public void alterarDisponibilidadeColaborador(Context ctx) {
+        HttpSession sessao = obterSessaoDeFuncionario(ctx);
+        if (sessao == null) return;
+        try {
+            Map<String, Object> dados = gson.fromJson(ctx.body(), Map.class);
+            Object valor = dados == null ? null : dados.get("disponivel");
+            if (!(valor instanceof Boolean)) {
+                throw new IllegalArgumentException("Informe a disponibilidade do colaborador.");
+            }
+            boolean atualizado = equipeService.alterarDisponibilidadeColaborador(
+                    ctx.pathParam("equipeId"), ctx.pathParam("colaboradorId"),
+                    sessao.getAttribute("usuarioId").toString(), (Boolean) valor);
+            if (!atualizado) {
+                ctx.status(404).json(Map.of("erro", "Colaborador não encontrado nesta equipe."));
+                return;
+            }
+            ctx.status(200).json(Map.of(
+                    "mensagem", "Disponibilidade do colaborador atualizada.",
+                    "disponivel", valor));
+        } catch (IllegalStateException erro) {
+            ctx.status(409).json(Map.of("erro", erro.getMessage()));
+        } catch (IllegalArgumentException erro) {
+            ctx.status(400).json(Map.of("erro", erro.getMessage()));
+        } catch (SecurityException erro) {
+            ctx.status(403).json(Map.of("erro", erro.getMessage()));
+        } catch (Exception erro) {
+            erro.printStackTrace();
+            ctx.status(500).json(Map.of("erro", "Erro interno ao alterar a disponibilidade do colaborador."));
+        }
+    }
+
     // Valida autenticação e perfil profissional nos endpoints de colaborador.
     private HttpSession obterSessaoDeFuncionario(Context ctx) {
         HttpSession sessao = ctx.req().getSession(false);

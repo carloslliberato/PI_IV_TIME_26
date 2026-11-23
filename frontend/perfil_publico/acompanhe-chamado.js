@@ -37,7 +37,9 @@ function initializeTicketTracking() {
     const nomesPorId = {
       "6ae666a7680e8a4330a1ab66": "Campinas - SP",
       "6ae7854cb9962492d01e6af6": "Hortolândia - SP",
-      "6ae7856ab9962492d01e6af7": "Sumaré - SP"
+      "6ae7856ab9962492d01e6af7": "Sumaré - SP",
+      "6b0382ed251d742536f8cd10": "Valinhos - SP",
+      "6b0382ed251d742536f8cd11": "Vinhedo - SP"
     };
     if (nomesPorId[mun]) return nomesPorId[mun];
     if (mun.includes("-")) return mun;

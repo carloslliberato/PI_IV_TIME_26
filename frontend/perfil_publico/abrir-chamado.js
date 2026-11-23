@@ -23,7 +23,9 @@ function initializeReportForm() {
   const municipalityIds = {
     campinas: "6ae666a7680e8a4330a1ab66",
     hortolandia: "6ae7854cb9962492d01e6af6",
-    sumare: "6ae7856ab9962492d01e6af7"
+    sumare: "6ae7856ab9962492d01e6af7",
+    valinhos: "6b0382ed251d742536f8cd10",
+    vinhedo: "6b0382ed251d742536f8cd11"
   };
   const treeCache = new Map();
   let treeLookupRequest = 0;

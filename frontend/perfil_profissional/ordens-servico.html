@@ -16,7 +16,7 @@
 <body>
   <div class="app-shell">
     <!-- O sidebar valida login e setor, destaca Ordens de serviço e carrega o script da página. -->
-  <div id="sidebar-profissional" data-script="/perfil_profissional/ordens-servico.js?v=20261122-order-submit-retry-v2"></div>
+  <div id="sidebar-profissional" data-script="/perfil_profissional/ordens-servico.js?v=20261122-order-submit-retry-v3"></div>
 
     <main class="main professional-main">
       <!-- Apresenta a finalidade da tela e o município relacionado aos registros. -->
@@ -123,7 +123,7 @@
       <p class="service-order-create-intro">Informe o tipo de ocorrência e o local. A equipe poderá ser atribuída depois.</p>
       <p id="createServiceOrderOptionsStatus" class="service-order-create-intro" role="status" aria-live="polite"></p>
       <ul id="createServiceOrderWarnings" class="service-order-create-warnings" hidden></ul>
-      <form class="service-order-create-form" id="createServiceOrderForm">
+      <form class="service-order-create-form" id="createServiceOrderForm" novalidate>
         <label class="service-order-create-wide" for="createServiceOrderOccurrence">Ocorrência vinculada <span>(opcional)</span>
           <select id="createServiceOrderOccurrence" name="ocorrenciaId"><option value="">Sem ocorrência vinculada</option></select>
         </label>

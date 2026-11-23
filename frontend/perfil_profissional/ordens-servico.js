@@ -39,7 +39,7 @@ const serviceOrdersPage ={
 
 // O cadastro conserva seus dados ao fechar a janela ou perder a resposta do envio.
 const serviceOrderCreationState = {
-  phase: "idle", options: null, optionsLoading: false, optionsError: "", optionsRequest: 0,
+  phase: "idle", submitPending: false, options: null, optionsLoading: false, optionsPromise: null, optionsError: "", optionsRequest: 0,
   draft: { titulo: "", descricao: "", endereco: "", numero: "", bairro: "", arvoreId: "", ocorrenciaId: "", prioridade: "" },
   feedback: "", feedbackError: false, previousFocus: null, createdOrder: null, reviewing: false
 };
@@ -153,15 +153,15 @@ function renderServiceOrderCreation(){
     ? "Não existem árvores cadastradas nessa rua e bairro" : "Preencha rua e bairro para buscar árvores");
   if (trees.length){
     treeField.options[0].textContent = "Não vincular uma árvore";
-    trees.forEach(tree => treeField.add(option(tree.id,
-      `${tree.nome || "Árvore"} — ${tree.codigoArv || tree.id}`)));
+    trees.forEach(tree => treeField.add(new Option(`${tree.nome || "Árvore"} — ${tree.codigoArv || tree.id}`, tree.id)));
   }
   treeField.value = state.draft.arvoreId || "";
   treeField.disabled = locked || state.optionsLoading || Boolean(linkedOccurrence?.arvoreId)
     || !state.draft.endereco.trim() || !state.draft.bairro.trim();
   occurrence.disabled = locked || state.optionsLoading || !options;
-  document.getElementById("saveCreateServiceOrder").disabled = locked;
-  document.getElementById("saveCreateServiceOrder").textContent = state.phase === "sending" ? "Salvando..." : "Salvar ordem";
+  document.getElementById("saveCreateServiceOrder").disabled = locked || state.submitPending;
+  document.getElementById("saveCreateServiceOrder").textContent = state.phase === "sending" ? "Salvando..."
+    : state.submitPending ? "Carregando dados..." : "Salvar ordem";
   const status = document.getElementById("createServiceOrderOptionsStatus");
   status.textContent = state.optionsLoading ? "Carregando ocorrências do município..."
     : state.optionsError || (options && !occurrences.length
@@ -180,14 +180,15 @@ function renderServiceOrderCreation(){
   showServiceOrderCreationFeedback(state.feedback, state.feedbackError);
 }
 
-async function loadServiceOrderCreationOptions(){
+function loadServiceOrderCreationOptions(){
   const state = serviceOrderCreationState;
-  if (state.phase !== "idle") return;
+  if (state.phase !== "idle") return Promise.resolve();
+  if (state.optionsLoading && state.optionsPromise) return state.optionsPromise;
   const request = ++state.optionsRequest;
   state.optionsLoading = true;
   state.optionsError = "";
   renderServiceOrderCreation();
-  try {
+  state.optionsPromise = (async () => { try {
     const response = await fetch("/api/ordens-servico/opcoes-cadastro", {
       credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(15000)
     });
@@ -214,9 +215,11 @@ async function loadServiceOrderCreationOptions(){
   } finally {
     if (request === state.optionsRequest){
       state.optionsLoading = false;
+      state.optionsPromise = null;
       renderServiceOrderCreation();
     }
-  }
+  }})();
+  return state.optionsPromise;
 }
 
 function openCreateServiceOrderModal(){
@@ -311,23 +314,30 @@ function validateServiceOrderCreationDraft(){
 
 async function submitServiceOrderCreation(){
   const state = serviceOrderCreationState;
-  if (state.phase !== "idle") {
+  if (state.phase !== "idle" || state.submitPending) {
     showServiceOrderCreationFeedback("Aguarde a operação atual terminar.", true);
     return;
   }
-  if (state.optionsLoading) {
-    showServiceOrderCreationFeedback("Carregando ocorrências e árvores do município. Tente salvar novamente em instantes.");
-    return;
-  }
-  if (!state.options) {
-    showServiceOrderCreationFeedback(state.optionsError || "Recarregando as opções de ocorrência e árvore. Tente salvar novamente.", true);
-    loadServiceOrderCreationOptions();
-    return;
+  if (state.optionsLoading || !state.options) {
+    state.submitPending = true;
+    showServiceOrderCreationFeedback("Carregando ocorrências e árvores do município antes de salvar.");
+    renderServiceOrderCreation();
+    try { await loadServiceOrderCreationOptions(); }
+    finally { state.submitPending = false; }
+    if (!state.options) {
+      showServiceOrderCreationFeedback(state.optionsError || "Não foi possível carregar as opções. Confira a conexão e tente novamente.", true);
+      renderServiceOrderCreation();
+      return;
+    }
+    renderServiceOrderCreation();
   }
   saveServiceOrderCreationDraft();
   if (!serviceOrdersPage.createForm.reportValidity()) {
     const invalidField = serviceOrdersPage.createForm.querySelector(":invalid");
-    if (invalidField) showServiceOrderCreationFeedback(invalidField.validationMessage, true);
+    if (invalidField) {
+      showServiceOrderCreationFeedback(invalidField.validationMessage || "Revise os campos obrigatórios.", true);
+      serviceOrdersPage.createFeedback.focus();
+    }
     return;
   }
   let payload;
@@ -336,9 +346,9 @@ async function submitServiceOrderCreation(){
   state.phase = "sending";
   state.feedback = "Salvando a ordem de serviço...";
   state.feedbackError = false;
-  renderServiceOrderCreation();
-  document.getElementById("closeCreateServiceOrderModal").focus();
   try {
+    renderServiceOrderCreation();
+    document.getElementById("closeCreateServiceOrderModal").focus();
     const response = await fetch("/api/ordens-servico", {
       method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload), signal: AbortSignal.timeout(30000)

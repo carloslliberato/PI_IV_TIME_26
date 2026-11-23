@@ -162,6 +162,24 @@ public class EquipeService {
                 idColaborador);
     }
 
+    public boolean alterarDisponibilidadeColaborador(
+            String equipeId, String colaboradorId, String usuarioId, boolean disponivel) {
+        Conta funcionario = buscarFuncionarioAutenticado(usuarioId);
+        ObjectId idEquipe = converterId(equipeId, "ID da equipe inválido.");
+        ObjectId idColaborador = converterId(colaboradorId, "ID do colaborador inválido.");
+        boolean indisponivelPorOrdem = equipeRepository.sincronizarStatusComOrdens(
+                idEquipe, funcionario.getId());
+        if (!equipeRepository.pertenceAoUsuario(idEquipe, funcionario.getId())) {
+            throw new IllegalArgumentException("Equipe não encontrada para esta conta.");
+        }
+        if (indisponivelPorOrdem) {
+            throw new IllegalStateException(
+                    "Não é possível alterar colaboradores de uma equipe indisponível.");
+        }
+        return equipeRepository.alterarDisponibilidadeColaborador(
+                idEquipe, funcionario.getId(), idColaborador, disponivel);
+    }
+
     // Valida filtros e lista equipes limitadas ao município e à conta da sessão.
     public List<Equipe> listarEquipes(String usuarioId, String busca, String status) {
         Conta funcionario = buscarFuncionarioAutenticado(usuarioId);

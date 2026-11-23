@@ -23,7 +23,9 @@ const professionalMapDemo = {
 const MUNICIPIOS_MAPA = {
   "6ae666a7680e8a4330a1ab66": { id: "6ae666a7680e8a4330a1ab66", nome: "Campinas - SP", latitude: -22.9056, longitude: -47.0608, zoom: 13 },
   "6ae7854cb9962492d01e6af6": { id: "6ae7854cb9962492d01e6af6", nome: "Hortolândia - SP", latitude: -22.8583, longitude: -47.2200, zoom: 13 },
-  "6ae7856ab9962492d01e6af7": { id: "6ae7856ab9962492d01e6af7", nome: "Sumaré - SP", latitude: -22.8214, longitude: -47.2660, zoom: 13 }
+  "6ae7856ab9962492d01e6af7": { id: "6ae7856ab9962492d01e6af7", nome: "Sumaré - SP", latitude: -22.8214, longitude: -47.2660, zoom: 13 },
+  "6b0382ed251d742536f8cd10": { id: "6b0382ed251d742536f8cd10", nome: "Valinhos - SP", latitude: -22.9702933, longitude: -46.9978148, zoom: 13 },
+  "6b0382ed251d742536f8cd11": { id: "6b0382ed251d742536f8cd11", nome: "Vinhedo - SP", latitude: -23.0297, longitude: -46.9753, zoom: 13 }
 };
 let municipioIdMapa = null;
 

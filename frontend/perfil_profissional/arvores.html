@@ -22,7 +22,7 @@
 
   <link
     rel="stylesheet"
-    href="/perfil_profissional/arvores.css"
+      href="/perfil_profissional/arvores.css?v=tree-history-timeline-v1"
   >
 </head>
 
@@ -33,7 +33,7 @@
     <!-- Sidebar do perfil profissional -->
     <div
       id="sidebar-profissional"
-      data-script="/perfil_profissional/arvores.js">
+      data-script="/perfil_profissional/arvores.js?v=tree-occurrence-archive-code-v1">
     </div>
 
     <main class="main professional-main">
@@ -207,6 +207,7 @@
       <div class="tree-detail-topline">
 
         <div>
+          <p class="tree-detail-code" id="treeDetailsCode"></p>
           <h2 id="treeDetailsTitle"></h2>
         </div>
 
@@ -218,7 +219,7 @@
             type="button">
 
             <i class="bi bi-clipboard-plus"></i>
-            Registrar nova intervenção
+            Registrar nova ocorrência
           </button>
 
           <button
@@ -250,34 +251,14 @@
             class="tree-tabs"
             role="tablist"
             aria-label="Registros da árvore">
-
             <button
               class="tree-tab active"
               type="button"
               role="tab"
               aria-selected="true"
-              data-tree-tab="occurrences">
-              Ocorrências
-            </button>
-
-            <button
-              class="tree-tab"
-              type="button"
-              role="tab"
-              aria-selected="false"
               data-tree-tab="orders">
               Ordens de serviço
             </button>
-
-            <button
-              class="tree-tab"
-              type="button"
-              role="tab"
-              aria-selected="false"
-              data-tree-tab="documents">
-              Documentos
-            </button>
-
             <button
               class="tree-tab"
               type="button"
@@ -670,38 +651,43 @@
       <div class="tree-form-heading">
         <span class="tree-form-icon"><i class="bi bi-clipboard-plus"></i></span>
         <div>
-          <h2 id="newInterventionTitle">Registrar nova intervenção</h2>
-          <p>Informe os dados do serviço realizado nesta árvore.</p>
+          <h2 id="newInterventionTitle">Criar nova ocorrência</h2>
+          <p>A ocorrência será vinculada à árvore e ao endereço selecionados.</p>
         </div>
       </div>
       <form id="newInterventionForm" class="tree-form-grid">
+        <input type="hidden" name="municipioId">
         <label class="form-field-wide">
           Árvore vinculada
           <input name="arvoreNome" readonly>
         </label>
         <label class="form-field-wide">
-          Endereço
-          <input name="endereco" readonly>
+          Nome da rua
+          <input name="endereco" required readonly>
+        </label>
+        <label class="form-field-wide">
+          Número <span>(opcional)</span>
+          <input name="numero" readonly>
         </label>
         <label class="form-field-wide">
           Bairro
-          <input name="bairro" readonly>
+          <input name="bairro" required readonly>
         </label>
         <label class="form-field-wide">
-          Tipo de intervenção
-          <select name="tipo" required>
+          Tipo de ocorrência
+          <select name="tipoProblema" required>
             <option value="" selected disabled>Selecione o tipo de ocorrência</option>
-            <option>Galho quebrado</option>
-            <option>Árvore caída</option>
-            <option>Árvore em risco</option>
-            <option>Necessidade de poda</option>
-            <option>Outro</option>
+            <option value="galho-quebrado">Galho quebrado</option>
+            <option value="arvore-caida">Árvore caída</option>
+            <option value="arvore-em-risco">Árvore em risco</option>
+            <option value="necessidade-de-poda">Necessidade de poda</option>
+            <option value="outro">Outro</option>
           </select>
         </label>
         <label class="form-field-wide">
-          Prioridade <span>(opcional)</span>
-          <select name="prioridade">
-            <option value="">Sem prioridade informada</option>
+          Prioridade
+          <select name="prioridade" required>
+            <option value="" selected disabled>Selecione a prioridade</option>
             <option>Baixa</option>
             <option>Média</option>
             <option>Alta</option>
@@ -709,19 +695,13 @@
           </select>
         </label>
         <label class="form-field-wide">
-          Equipe designada <span>(opcional)</span>
-          <select name="equipeId">
-            <option value="">Não atribuir equipe agora</option>
-          </select>
-        </label>
-        <label class="form-field-wide">
-          Descrição do serviço
-          <textarea name="descricao" rows="4" required maxlength="4000" placeholder="Descreva o serviço realizado"></textarea>
+          Descrição do problema
+          <textarea name="descricao" rows="4" required minlength="10" maxlength="4000" placeholder="Descreva o problema"></textarea>
         </label>
         <p id="newInterventionFeedback" class="form-field-wide" role="status" aria-live="polite"></p>
         <div class="tree-form-actions">
           <button class="tree-button tree-button-secondary" data-close-modal type="button">Cancelar</button>
-          <button class="tree-button tree-button-primary" type="submit">Registrar intervenção</button>
+          <button class="tree-button tree-button-primary" type="submit">Registrar ocorrência</button>
         </div>
       </form>
     </section>

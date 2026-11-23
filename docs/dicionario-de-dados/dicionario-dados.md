@@ -47,7 +47,7 @@ Descrição: Armazena o inventário de árvores do município, incluindo identif
 | Nome | Tipo | Obrigatoriedade | Descrição |
 | --- | --- | --- | --- |
 | _id | ObjectId | Sim | Identificador interno BSON. É usado em referências como `arvoreId` nas ordens de serviço. Gerado pelo backend. |
-| codigoArv | String | Sim | Código legível e único da árvore, gerado sequencialmente com base no município (por exemplo, `ARV-CAMP-00001`). |
+| codigoArv | String | Sim | Código legível e único da árvore, gerado em sequência no formato `AR-00001`. |
 | municipioId | ObjectId | Sim | Identificador do município associado. |
 | nomePopular | String | Sim | Nome popular da árvore. Obrigatório no cadastro. |
 | nomeCientifico | String | Não | Nome científico da espécie. |

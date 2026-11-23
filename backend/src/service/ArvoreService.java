@@ -154,7 +154,7 @@ public class ArvoreService {
 
         // O identificador é sempre gerado como ObjectId pelo backend.
         arvore.setId(null);
-        arvore.setCodigoArv(repository.gerarCodigoArv(arvore.getMunicipioId(), nomeMunicipio));
+        arvore.setCodigoArv(repository.gerarCodigoArv());
         arvore.setAtiva(true);
 
         repository.salvar(arvore);
@@ -217,14 +217,20 @@ public class ArvoreService {
 
     public Arvore alterarStatus(
             ObjectId id,
-            boolean ativa) {
+            boolean ativa,
+            String motivo) {
+
+        if (!ativa && (motivo == null || motivo.isBlank() || motivo.trim().length() > 500)) {
+            throw new IllegalArgumentException("Informe o motivo do arquivamento com até 500 caracteres.");
+        }
 
         Arvore arvore = buscarPorId(id);
 
         boolean atualizou =
                 repository.alterarStatus(
                         id,
-                        ativa);
+                        ativa,
+                        ativa ? null : motivo.trim());
 
         if (!atualizou) {
             throw new NoSuchElementException(

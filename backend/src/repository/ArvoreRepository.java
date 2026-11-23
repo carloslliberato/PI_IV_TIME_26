@@ -306,21 +306,12 @@ public class ArvoreRepository {
         colecao.insertOne(documento);
     }
 
-    // Gera uma sequência atômica por município, retomando do maior código já cadastrado.
-    public String gerarCodigoArv(ObjectId municipioId, String nomeMunicipio) {
-        String nomeNormalizado = normalizarTexto(nomeMunicipio).replaceAll("[^A-Z]", "");
-        if (nomeNormalizado.length() < 3) {
-            throw new IllegalArgumentException("Nome de município inválido para gerar o código da árvore.");
-        }
-        String prefixo = "ARV-" + nomeNormalizado.substring(0, 3) + "-";
-        Pattern formato = Pattern.compile("^" + Pattern.quote(prefixo) + "(\\d+)$");
+    // Gera sequencia global e considera codigos AR existentes antes de migrar.
+    public String gerarCodigoArv() {
+        String prefixo = "AR-";
+        Pattern formato = Pattern.compile("^AR-(\\d+)$");
         long maiorExistente = 0;
-
-        Bson filtroMunicipio = Filters.or(
-                Filters.eq("municipioId", municipioId),
-                Filters.eq("municipioId", municipioId.toHexString()));
-        for (Document documento : colecao.find(filtroMunicipio)
-                .projection(new Document("codigoArv", 1))) {
+        for (Document documento : colecao.find().projection(new Document("codigoArv", 1))) {
             String codigo = documento.getString("codigoArv");
             if (codigo == null) continue;
             Matcher matcher = formato.matcher(codigo);
@@ -328,27 +319,21 @@ public class ArvoreRepository {
                 try {
                     maiorExistente = Math.max(maiorExistente, Long.parseLong(matcher.group(1)));
                 } catch (NumberFormatException ignored) {
-                    // Ignora códigos malformados; o índice único ainda impede duplicatas.
+                    // Ignora codigo malformado; o indice unico ainda impede duplicatas.
                 }
             }
         }
+        maiorExistente = Math.max(maiorExistente, colecao.countDocuments());
 
-        Bson filtroContador = Filters.eq("_id", municipioId);
+        Bson filtroContador = Filters.eq("_id", "arvores-global");
         try {
-            contadores.updateOne(
-                    filtroContador,
-                    Updates.max("sequencia", maiorExistente),
+            contadores.updateOne(filtroContador, Updates.max("sequencia", maiorExistente),
                     new UpdateOptions().upsert(true));
         } catch (MongoWriteException e) {
-            // Outra requisição pode ter criado simultaneamente o contador desse município.
             if (e.getError().getCode() != 11000) throw e;
         }
-
-        Document contador = contadores.findOneAndUpdate(
-                filtroContador,
-                Updates.inc("sequencia", 1L),
-                new FindOneAndUpdateOptions()
-                        .returnDocument(ReturnDocument.AFTER));
+        Document contador = contadores.findOneAndUpdate(filtroContador, Updates.inc("sequencia", 1L),
+                new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
         long sequencia = ((Number) contador.get("sequencia")).longValue();
         return String.format(Locale.ROOT, "%s%05d", prefixo, sequencia);
     }
@@ -382,19 +367,17 @@ public class ArvoreRepository {
 
     // ATIVAR OU ARQUIVAR UMA ARVORE
 
-    public boolean alterarStatus(
-            ObjectId id,
-            boolean ativa) {
-
-        Document atualizacao = new Document(
-                "$set",
-                new Document("ativa", ativa));
-
-        long quantidade = colecao.updateOne(
-                Filters.eq("_id", id),
-                atualizacao
-        ).getMatchedCount();
-
+    public boolean alterarStatus(ObjectId id, boolean ativa, String motivo) {
+        Document campos = new Document("ativa", ativa);
+        Document atualizacao = new Document("$set", campos);
+        if (ativa) {
+            atualizacao.append("$unset", new Document("motivoArquivamento", "")
+                    .append("arquivadaEm", ""));
+        } else {
+            campos.append("motivoArquivamento", motivo)
+                    .append("arquivadaEm", new java.util.Date());
+        }
+        long quantidade = colecao.updateOne(Filters.eq("_id", id), atualizacao).getMatchedCount();
         return quantidade > 0;
     }
 

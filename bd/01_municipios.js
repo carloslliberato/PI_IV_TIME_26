@@ -36,6 +36,24 @@
     },
     zoomMapa: 13,
     idsAlternativosFrontend: ["Sumaré - SP", "Sumaré"]
+  },
+  {
+    _id: ObjectId("6b0382ed251d742536f8cd10"),
+    nome: "Valinhos",
+    estado: "SP",
+    ativo: true,
+    localizacao: { type: "Point", coordinates: [-46.9978148, -22.9702933] },
+    zoomMapa: 13,
+    idsAlternativosFrontend: ["Valinhos - SP", "Valinhos"]
+  },
+  {
+    _id: ObjectId("6b0382ed251d742536f8cd11"),
+    nome: "Vinhedo",
+    estado: "SP",
+    ativo: true,
+    localizacao: { type: "Point", coordinates: [-46.9753, -23.0297] },
+    zoomMapa: 13,
+    idsAlternativosFrontend: ["Vinhedo - SP", "Vinhedo"]
   }
 ].forEach(municipio => {
   const municipioId = municipio._id;

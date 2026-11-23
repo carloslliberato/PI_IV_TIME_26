@@ -265,7 +265,7 @@ function renderTeamDetails(team) {
         <td>${escapeTeamText(employee.role)}</td>
         <td>${renderEmployeeAvailability(employee)}</td>
         <td>${isValidTeamEmail(employee.email) ? `<a class="team-email-link" href="mailto:${escapeTeamText(employee.email)}">${escapeTeamText(employee.email)}</a>` : escapeTeamText(employee.email || "—")}</td>
-        <td><button class="team-delete-collaborator-button" type="button" data-remove-collaborator="${escapeTeamText(employee.id)}" aria-label="Excluir ${escapeTeamText(employee.name)}" title="${team.status === "Indisponível" ? "Não é possível excluir colaboradores de uma equipe indisponível." : "Excluir colaborador"}" ${team.status === "Indisponível" ? "disabled" : ""}><i class="bi bi-trash3" aria-hidden="true"></i></button></td>
+        <td><div class="team-collaborator-actions"><button class="team-delete-collaborator-button" type="button" data-toggle-collaborator-availability="${escapeTeamText(employee.id)}" aria-label="${employee.available ? "Indisponibilizar" : "Disponibilizar"} ${escapeTeamText(employee.name)}" title="${team.status === "Indispon\u00edvel" ? "A equipe est\u00e1 indispon\u00edvel." : employee.available ? "Indisponibilizar colaborador" : "Disponibilizar colaborador"}" ${team.status === "Indispon\u00edvel" ? "disabled" : ""}><i class="bi ${employee.available ? "bi-lock-fill" : "bi-unlock-fill"}" aria-hidden="true"></i></button><button class="team-delete-collaborator-button" type="button" data-remove-collaborator="${escapeTeamText(employee.id)}" aria-label="Excluir ${escapeTeamText(employee.name)}" title="${team.status === "Indispon\u00edvel" ? "N\u00e3o \u00e9 poss\u00edvel excluir colaboradores de uma equipe indispon\u00edvel." : "Excluir colaborador"}" ${team.status === "Indispon\u00edvel" ? "disabled" : ""}><i class="bi bi-trash3" aria-hidden="true"></i></button></div></td>
       </tr>
     `).join("")
     : '<tr><td class="team-members-empty-cell" colspan="5">Ainda não há colaboradores cadastrados nessa equipe.</td></tr>';
@@ -462,6 +462,35 @@ async function removeCollaborator(collaboratorId) {
   } catch (error) {
     // Informa falhas sem remover o colaborador da visualização local.
     showTeamsToast(`Não foi possível excluir o colaborador. ${error.message}`);
+  }
+}
+
+// Alterna a disponibilidade de um colaborador pela API e atualiza a linha apos salvar.
+async function toggleCollaboratorAvailability(collaboratorId) {
+  const team = getSelectedTeam();
+  if (!team || team.status === "Indispon\u00edvel") return;
+  const employee = team.employees.find(item => item.id === collaboratorId);
+  if (!employee) return;
+  const button = teamsPage.detailsContent.querySelector(`[data-toggle-collaborator-availability="${CSS.escape(collaboratorId)}"]`);
+  if (button) button.disabled = true;
+  try {
+    const response = await fetch(`/api/equipes/${encodeURIComponent(team.id)}/colaboradores/${encodeURIComponent(collaboratorId)}/disponibilidade`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ disponivel: !employee.available })
+    });
+    const responseText = await response.text();
+    let result;
+    try { result = responseText ? JSON.parse(responseText) : {}; }
+    catch { throw new Error("O servidor retornou uma resposta inv\u00e1lida."); }
+    if (!response.ok) throw new Error(result.erro || `O servidor respondeu com status ${response.status}.`);
+    employee.available = Boolean(result.disponivel);
+    renderTeamDetails(team);
+    renderTeamsTable();
+    showTeamsToast(employee.available ? "Colaborador marcado como dispon\u00edvel." : "Colaborador marcado como indispon\u00edvel.");
+  } catch (error) {
+    showTeamsToast(`N\u00e3o foi poss\u00edvel alterar a disponibilidade. ${error.message}`);
   }
 }
 
@@ -693,6 +722,8 @@ function setupTeamsPageEvents() {
     if (deleteTeamButton) removeTeam(deleteTeamButton.dataset.deleteTeam);
     const deleteButton = event.target.closest("[data-remove-collaborator]");
     if (deleteButton) removeCollaborator(deleteButton.dataset.removeCollaborator);
+    const availabilityButton = event.target.closest("[data-toggle-collaborator-availability]");
+    if (availabilityButton) toggleCollaboratorAvailability(availabilityButton.dataset.toggleCollaboratorAvailability);
   });
   teamsPage.employeeContent.addEventListener("click", event => {
     if (event.target.closest("[data-close-employee]")) closeEmployeeForm();
